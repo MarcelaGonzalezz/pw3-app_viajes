@@ -221,13 +221,16 @@ namespace TpMiercoles.Entidades.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
 
                     b.ToTable("Usuarios");
                 });
@@ -283,7 +286,7 @@ namespace TpMiercoles.Entidades.Migrations
                     b.HasOne("TpMiercoles.Entidades.Viaje", "Viaje")
                         .WithMany("Asignaciones")
                         .HasForeignKey("ViajeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Envio");

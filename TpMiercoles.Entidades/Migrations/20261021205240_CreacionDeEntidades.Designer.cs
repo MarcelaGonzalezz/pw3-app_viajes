@@ -12,7 +12,7 @@ using TpMiercoles.Entidades;
 namespace TpMiercoles.Entidades.Migrations
 {
     [DbContext(typeof(ViajesDbContext))]
-    [Migration("20261021182456_CreacionDeEntidades")]
+    [Migration("20261021205240_CreacionDeEntidades")]
     partial class CreacionDeEntidades
     {
         /// <inheritdoc />
@@ -224,13 +224,16 @@ namespace TpMiercoles.Entidades.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
 
                     b.ToTable("Usuarios");
                 });
@@ -286,7 +289,7 @@ namespace TpMiercoles.Entidades.Migrations
                     b.HasOne("TpMiercoles.Entidades.Viaje", "Viaje")
                         .WithMany("Asignaciones")
                         .HasForeignKey("ViajeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Envio");

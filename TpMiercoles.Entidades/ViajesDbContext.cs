@@ -43,6 +43,12 @@ namespace TpMiercoles.Entidades
                 .WithMany()
                 .HasForeignKey(v => v.DireccionDestinoId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Asignacion>()
+                .HasOne(a => a.Viaje)
+                .WithMany(v => v.Asignaciones)
+                .HasForeignKey(a => a.ViajeId)
+                .OnDelete(DeleteBehavior.Restrict); 
         }
     }
 

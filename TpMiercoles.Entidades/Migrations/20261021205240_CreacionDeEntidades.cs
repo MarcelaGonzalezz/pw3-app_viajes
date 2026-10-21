@@ -35,7 +35,7 @@ namespace TpMiercoles.Entidades.Migrations
             migrationBuilder.AddColumn<string>(
                 name: "Email",
                 table: "Usuarios",
-                type: "nvarchar(max)",
+                type: "nvarchar(450)",
                 nullable: false,
                 defaultValue: "");
 
@@ -242,8 +242,14 @@ namespace TpMiercoles.Entidades.Migrations
                         column: x => x.ViajeId,
                         principalTable: "Viaje",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Usuarios_Email",
+                table: "Usuarios",
+                column: "Email",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Asignacion_EnvioId",
@@ -339,6 +345,10 @@ namespace TpMiercoles.Entidades.Migrations
 
             migrationBuilder.DropTable(
                 name: "Direccion");
+
+            migrationBuilder.DropIndex(
+                name: "IX_Usuarios_Email",
+                table: "Usuarios");
 
             migrationBuilder.DropColumn(
                 name: "Apellido",
