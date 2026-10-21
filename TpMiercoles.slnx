@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="TpMiercoles.Entidades/TpMiercoles.Entidades.csproj" />
+  <Project Path="TpMiercoles.Repositorios/TpMiercoles.Repositorios.csproj" />
+  <Project Path="TpMiercoles.Servicios/TpMiercoles.Servicios.csproj" />
+  <Project Path="TpMiercoles.Web/TpMiercoles.Web.csproj" />
+</Solution>
