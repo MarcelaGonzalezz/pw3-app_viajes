@@ -1,38 +1,27 @@
+@model LoginUsuarioViewModel
 @{
     ViewData["Title"] = "Iniciar sesión";
 }
 
 @section Styles { <partial name="_AvatarStyles" /> }
 <div class="login-page">
-<form class="login-form" method="post" novalidate>
+    <form class="login-form" asp-controller="Usuario" asp-action="Login" method="post">
 
 <partial name="_AvatarSvg" />
 
-@*
-    ===== TU FORMULARIO VA ACÁ =====
-
-    Para que el avatar reaccione, marcá tus controles con estos atributos:
-
-      input del email                          -> data-avatar-email
-      input de la contraseña                   -> data-avatar-password
-      checkbox "mostrar contraseña" (opcional) -> data-avatar-toggle
-
-    Con asp-for se ve así, por ejemplo:
-      <input asp-for="Email" data-avatar-email />
-*@
 <div class="input-group">
             <label for="loginEmail">Email</label>
-            <input type="email" id="loginEmail" class="input-email" maxlength="254"
+            <input asp-for="Email" type="email" id="loginEmail" class="input-email" maxlength="254"
                    placeholder=" " autocomplete="email" data-avatar-email />
             <p class="helper">email@@domain.com</p>
         </div>
 
         <div class="input-group input-group--password">
             <label for="loginPassword">Contraseña</label>
-            <input type="password" id="loginPassword" autocomplete="current-password" data-avatar-password />
+            <input asp-for="Contrasenia" type="password" id="loginPassword" autocomplete="current-password" data-avatar-password />
             <label class="show-password" for="showPasswordCheck">
                 Mostrar
-                <input type="checkbox" id="showPasswordCheck" data-avatar-toggle />
+                <input asp-for="Recordarme" type="checkbox" id="showPasswordCheck" data-avatar-toggle />
                 <span class="indicator"></span>
             </label>
         </div>

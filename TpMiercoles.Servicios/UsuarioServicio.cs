@@ -10,6 +10,7 @@ namespace TpMiercoles.Servicios
     public interface IUsuarioServicio
     {
         public Task RegistrarAsync(UsuarioDTO usuario);
+        public Task<UsuarioSesionDTO?> LoginAsync(UsuarioLoginDTO usuario);
     }
 
     public class UsuarioServicio : IUsuarioServicio
@@ -34,6 +35,26 @@ namespace TpMiercoles.Servicios
             string contraseniaHash = _hasher.HashPassword(nuevoUsuario, usuario.ContraseniaPlana);
             nuevoUsuario.ContraseniaHash = contraseniaHash;
             await _repositorio.RegistrarAsync(nuevoUsuario);
+        }
+
+        public async Task<UsuarioSesionDTO?> LoginAsync(UsuarioLoginDTO usuarioDTO)
+        {
+        
+            Usuario? usuario = await _repositorio.BuscarPorEmailAsync(usuarioDTO.Email);
+            if (usuario is null)
+            {
+                return null;
+            }
+            PasswordVerificationResult resultado = this.ValidarContrasenia(usuario, usuarioDTO.ContraseniaPlana);
+            if (resultado == PasswordVerificationResult.Failed)
+                return null;
+
+            return _mapper.Map<UsuarioSesionDTO>(usuario);
+        }
+
+        private PasswordVerificationResult ValidarContrasenia(Usuario usuario, string contraseniaPlana)
+        {
+            return _hasher.VerifyHashedPassword(usuario, usuario.ContraseniaHash, contraseniaPlana);
         }
     }
 }

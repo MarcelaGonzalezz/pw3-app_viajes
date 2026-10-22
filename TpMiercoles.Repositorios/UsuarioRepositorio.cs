@@ -13,6 +13,7 @@ namespace TpMiercoles.Repositorios
     {
         Task RegistrarAsync(Usuario usuario);
         Task<bool> ExisteEmailAsync(string email);
+        Task<Usuario?> BuscarPorEmailAsync(string email);
     }
         public class UsuarioRepositorio : IUsuarioRepositorio
     {
@@ -39,6 +40,11 @@ namespace TpMiercoles.Repositorios
         public async Task<bool> ExisteEmailAsync(string email)
         {
             return await _viajesDbContext.Usuarios.AnyAsync(u => u.Email == email);
+        }
+
+        public async Task<Usuario?> BuscarPorEmailAsync(string email)
+        {
+            return await _viajesDbContext.Usuarios.FirstOrDefaultAsync(u => u.Email == email);
         }
     }
 }

@@ -8,7 +8,8 @@ namespace TpMiercoles.Servicios
     {
         public PerfilDeMapeo() {
             CreateMap<UsuarioDTO, Usuario>();
-
+            CreateMap<UsuarioLoginDTO, Usuario>();
+            CreateMap<Usuario, UsuarioSesionDTO>();
         }
     }
 }
