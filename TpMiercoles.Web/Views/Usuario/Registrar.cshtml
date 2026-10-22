@@ -1,0 +1,56 @@
+﻿
+@model RegistroUsuarioViewModel
+@{
+}
+@section Styles { <partial name="_AvatarStyles" /> 
+ 
+}
+<div class="login-page">
+<form class="login-form" asp-controller="Usuario" asp-action="Registrar" method="post">
+
+<partial name="_AvatarSvg" />
+
+<div class="input-group">
+    <label for="registroNombre">Nombre</label>
+    <input asp-for="Nombre" type="text" id="registroNombre" class="input-plain" autocomplete="given-name" />
+            <span asp-validation-for="Nombre" class="field-error"></span>
+</div>
+
+<div class="input-group">
+    <label for="registroApellido">Apellido</label>
+    <input asp-for="Apellido" type="text" id="registroApellido" class="input-plain" autocomplete="family-name" />
+            <span asp-validation-for="Apellido" class="field-error"></span>
+</div>
+
+<div class="input-group">
+    <label for="loginEmail">Email</label>
+    <input asp-for="Email" type="email" id="loginEmail" class="input-email" maxlength="254"
+           placeholder=" " autocomplete="email" data-avatar-email />
+    <p class="helper">email@@domain.com</p>
+                <span asp-validation-for="Email" class="field-error"></span>
+</div>
+
+<div class="input-group input-group--password">
+    <label for="registroPassword">Contraseña</label>
+    <input asp-for="Contrasenia" type="password" id="registroPassword" autocomplete="new-password" data-avatar-password />
+                <span asp-validation-for="Contrasenia" class="field-error"></span>
+    <label class="show-password" for="showPasswordCheck">
+        Mostrar
+        <input type="checkbox" id="showPasswordCheck" data-avatar-toggle />
+        <span class="indicator"></span>
+    </label>
+</div>
+
+<div class="input-group input-group--password">
+    <label for="registroConfirmar">Confirmar contraseña</label>
+            <input asp-for="RepetirContrasenia" type="password" id="registroConfirmar" autocomplete="new-password" data-avatar-password />
+                <span asp-validation-for="RepetirContrasenia" class="field-error"></span>
+</div>
+    <div class="input-group">
+        <button type="submit">Registrarse</button>
+    </div>
+</form>
+</div>
+@section Scripts {
+    <partial name="_AvatarScripts" />
+}

@@ -29,3 +29,7 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+.login-form .input-plain {
+    padding: 0.4em 1em 0.5em;
+}
