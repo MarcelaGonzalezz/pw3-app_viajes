@@ -1,8 +1,16 @@
-/* Estilos del formulario de login (equivalente al pen original, en CSS plano). */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
 
 .login-page {
-    --login-min-height: 100dvh; /* bajalo si tu _Layout tiene navbar o footer */
-
+    --login-min-height: 100dvh;
     display: grid;
     place-items: center;
     min-height: var(--login-min-height);
@@ -15,7 +23,6 @@
     --med-blue: #4eb8dd;
     --light-blue: #ddf1fa;
     --input-bg: #f3fafd;
-
     box-sizing: border-box;
     width: 100%;
     max-width: 400px;
@@ -31,6 +38,16 @@
     -webkit-font-smoothing: antialiased;
 }
 
+/* ---------- Título ---------- */
+
+.login-title {
+    margin: 0.5rem 0 1.25rem;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #3A5E77;
+}
+
 /* ---------- Grupos de campos ---------- */
 
 .login-form .input-group {
@@ -39,9 +56,9 @@
     padding: 0;
 }
 
-.login-form .input-group:last-child {
-    margin-bottom: 0;
-}
+    .login-form .input-group:last-child {
+        margin-bottom: 0;
+    }
 
 .login-form label {
     display: block;
@@ -75,13 +92,13 @@
     transition: box-shadow 0.2s linear, border-color 0.25s ease-out;
 }
 
-.login-form input[type="email"]:focus,
-.login-form input[type="text"]:focus,
-.login-form input[type="password"]:focus {
-    outline: none;
-    border-color: var(--med-blue);
-    box-shadow: 0 2px 10px rgb(0 0 0 / 10%);
-}
+    .login-form input[type="email"]:focus,
+    .login-form input[type="text"]:focus,
+    .login-form input[type="password"]:focus {
+        outline: none;
+        border-color: var(--med-blue);
+        box-shadow: 0 2px 10px rgb(0 0 0 / 10%);
+    }
 
 /* El input de contraseña no lleva texto flotante, así que usa otro padding */
 .login-form .input-group--password input[type="password"] {
@@ -117,67 +134,76 @@
     transform: translate(1em, 1.55em) scale(0.6);
 }
 
-/* ---------- Checkbox "Show" ---------- */
+/* ---------- Campo de contraseña con ojo (login y registro) ---------- */
 
-.login-form .show-password {
+.password-field {
+    position: relative;
+}
+
+/* Misma especificidad que las reglas de padding de arriba, pero van después y ganan */
+.login-form .password-field input[type="password"],
+.login-form .password-field input[type="text"] {
+    width: 100%;
+    padding-right: 44px;
+}
+
+.login-form .input-group .toggle-eye {
+    all: unset;
     position: absolute;
-    top: 0.25em;
-    right: 0;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #3A5E77;
+    border-radius: 4px;
+}
+
+    .login-form .input-group .toggle-eye:hover,
+    .login-form .input-group .toggle-eye:focus-visible {
+        color: #2b4658;
+        background: rgba(169, 221, 243, 0.4);
+    }
+
+.toggle-eye svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Ojo abierto = contraseña oculta; ojo tachado = contraseña visible */
+.toggle-eye .eye-closed {
+    display: none;
+}
+
+.toggle-eye[aria-pressed="true"] .eye-open {
+    display: none;
+}
+
+.toggle-eye[aria-pressed="true"] .eye-closed {
     display: block;
-    padding: 0 0 0 1.45em;
-    font-size: 1em;
 }
 
-.login-form .show-password input {
+/* Checkbox oculto (sigue existiendo para el script del avatar) */
+.toggle-hidden {
     position: absolute;
-    z-index: -1;
+    width: 0;
+    height: 0;
     opacity: 0;
-}
-
-.login-form .show-password .indicator {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 0.85em;
-    height: 0.85em;
-    background-color: var(--input-bg);
-    border: solid 2px var(--dark-blue);
-    border-radius: 3px;
-}
-
-.login-form .show-password .indicator::after {
-    content: "";
-    position: absolute;
-    top: 0.025em;
-    left: 0.25em;
-    width: 0.2em;
-    height: 0.5em;
-    border: solid var(--dark-blue);
-    border-width: 0 3px 3px 0;
-    transform: rotate(45deg);
-    visibility: hidden;
-}
-
-.login-form .show-password input:checked ~ .indicator::after {
-    visibility: visible;
-}
-
-.login-form .show-password input:focus ~ .indicator,
-.login-form .show-password input:hover ~ .indicator {
-    border-color: var(--med-blue);
-}
-
-.login-form .show-password input:disabled ~ .indicator {
-    opacity: 0.5;
-}
-
-.login-form .show-password input:disabled ~ .indicator::after {
-    visibility: hidden;
+    pointer-events: none;
 }
 
 /* ---------- Botón ---------- */
 
-.login-form button {
+.login-form button[type="submit"] {
     display: block;
     box-sizing: border-box;
     width: 100%;
@@ -196,7 +222,152 @@
     transition: background-color 0.2s ease-out;
 }
 
-.login-form button:hover,
-.login-form button:active {
-    background-color: var(--dark-blue);
+    .login-form button[type="submit"]:hover,
+    .login-form button[type="submit"]:active {
+        background-color: var(--dark-blue);
+    }
+
+/* ---------- Link del registro ---------- */
+
+.register-link {
+    margin: 0.75rem 0 0;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #617E92;
+}
+
+    .register-link a {
+        color: #3A5E77;
+        font-weight: 600;
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition: border-color 0.2s ease, color 0.2s ease;
+    }
+
+        .register-link a:hover,
+        .register-link a:focus-visible {
+            color: #2b4658;
+            border-bottom-color: currentColor;
+        }
+/* ---------- Recordarme ---------- */
+
+.login-form .input-group--remember {
+    margin-bottom: 1.25em;
+}
+
+.login-form .remember-me {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6em;
+    margin: 0;
+    font-size: 1.05em;
+    font-weight: 600;
+    color: var(--dark-blue);
+    cursor: pointer;
+    user-select: none;
+}
+
+    /* Checkbox nativo oculto pero enfocable con teclado */
+    .login-form .remember-me input[type="checkbox"] {
+        position: absolute;
+        opacity: 0;
+        width: 1px;
+        height: 1px;
+    }
+
+    .login-form .remember-me .indicator {
+        position: relative;
+        flex: none;
+        width: 1.1em;
+        height: 1.1em;
+        background-color: var(--input-bg);
+        border: solid 2px var(--dark-blue);
+        border-radius: 3px;
+        transition: border-color 0.2s ease-out;
+    }
+
+        .login-form .remember-me .indicator::after {
+            content: "";
+            position: absolute;
+            top: 0.05em;
+            left: 0.28em;
+            width: 0.25em;
+            height: 0.55em;
+            border: solid var(--dark-blue);
+            border-width: 0 3px 3px 0;
+            transform: rotate(45deg);
+            visibility: hidden;
+        }
+
+    .login-form .remember-me input:checked ~ .indicator::after {
+        visibility: visible;
+    }
+
+    .login-form .remember-me input:focus-visible ~ .indicator,
+    .login-form .remember-me:hover .indicator {
+        border-color: var(--med-blue);
+    }
+
+/* ---------- Registro ---------- */
+
+.login-form--registro {
+    width: 100%;
+    max-width: 560px;
+}
+
+    .login-form--registro .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        column-gap: 1rem;
+        row-gap: 0.5rem;
+    }
+
+    .login-form--registro .input-group--full {
+        grid-column: 1 / -1;
+    }
+
+    .login-form--registro .input-group {
+        min-width: 0;
+        margin-bottom: 0;
+    }
+
+    /* Solo el margen: el tamaño lo define .avatar (200px), igual que el login */
+    .login-form--registro .avatar {
+        margin: 0 auto 0.5rem;
+    }
+
+    /*Error*/
+.login-form .error {
+    display: block;
+    margin-top: 0.35em;
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #d93025;
+}
+
+    .login-form .error ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+/* ---------- Pantallas bajas: achicar el avatar para evitar scroll ---------- */
+
+@media (max-height: 760px) {
+    .login-form--registro .avatar {
+        --avatar-size: 120px;
+    }
+
+    .login-form--registro .form-grid {
+        row-gap: 0.25rem;
+    }
+}
+
+/* ---------- Celulares angostos: una sola columna ---------- */
+
+@media (max-width: 520px) {
+    .login-form--registro .form-grid {
+        grid-template-columns: 1fr;
+    }
 }

@@ -1,38 +1,83 @@
 @model LoginUsuarioViewModel
 @{
+    Layout = null;
     ViewData["Title"] = "Iniciar sesión";
 }
 
-@section Styles { <partial name="_AvatarStyles" /> }
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - TpMiercoles.Web</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/TpMiercoles.Web.styles.css" asp-append-version="true" />
+    <partial name="_AvatarStyles" /> 
+</head>
+<body>
+
 <div class="login-page">
     <form class="login-form" asp-controller="Usuario" asp-action="Login" method="post">
-
+       
 <partial name="_AvatarSvg" />
-
+ <h1 class="login-title">Ingresá a tu cuenta</h1>
 <div class="input-group">
             <label for="loginEmail">Email</label>
             <input asp-for="Email" type="email" id="loginEmail" class="input-email" maxlength="254"
                    placeholder=" " autocomplete="email" data-avatar-email />
-            <p class="helper">email@@domain.com</p>
+           <p class="helper">email@@domain.com</p>
+            <span asp-validation-for="Email" class="error"></span>
         </div>
+
 
         <div class="input-group input-group--password">
-            <label for="loginPassword">Contraseña</label>
-            <input asp-for="Contrasenia" type="password" id="loginPassword" autocomplete="current-password" data-avatar-password />
-            <label class="show-password" for="showPasswordCheck">
-                Mostrar
-                <input asp-for="Recordarme" type="checkbox" id="showPasswordCheck" data-avatar-toggle />
-                <span class="indicator"></span>
-            </label>
-        </div>
+    <label for="loginPassword">Contraseña</label>
+    <div class="password-field">
+        <input asp-for="Contrasenia" type="password" id="loginPassword" autocomplete="current-password" data-avatar-password />
+        <button type="button" class="toggle-eye" aria-label="Mostrar contraseña" aria-pressed="false">
+            <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z" />
+                <circle cx="12" cy="12" r="3" />
+            </svg>
+            <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z" />
+                <circle cx="12" cy="12" r="3" />
+                <path d="M3 3l18 18" />
+            </svg>
+        </button>
+        <span asp-validation-for="Contrasenia" class="error"></span>
+        <div asp-validation-summary="ModelOnly" class="error"></div>
+    </div>
 
+    <!-- checkbox oculto: lo usa el script del avatar -->
+    <input type="checkbox" id="showPasswordCheck" class="toggle-hidden" data-avatar-toggle tabindex="-1" aria-hidden="true" />
+</div>
+
+<div class="input-group input-group--remember">
+    <label class="remember-me" for="recordarme">
+        <input asp-for="Recordarme" type="checkbox" id="recordarme" />
+        <span class="indicator"></span>
+        Recordarme
+    </label>
+</div>
         <div class="input-group">
             <button type="submit">Iniciar sesión</button>
         </div>
+
+<p class="register-link">
+    ¿No tenés cuenta?
+    <a asp-controller="Usuario" asp-action="Registrar">Registrate</a>
+</p>
     </form>
-    </div>
 </div>
 
 
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <partial name="_AvatarScripts" />
 
-@section Scripts { <partial name="_AvatarScripts" /> }
+</body>
+</html>

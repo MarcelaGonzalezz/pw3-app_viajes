@@ -42,3 +42,16 @@
 .avatar .armR {
     visibility: hidden;
 }
+
+.login-form--registro .avatar {
+    width: clamp(100px, 20vh, 170px);
+    height: clamp(100px, 20vh, 170px);
+    margin: 0 auto 0.5rem;
+}
+
+@media (max-height: 720px) {
+    .login-form--registro .avatar {
+        width: 84px;
+        height: 84px;
+    }
+}

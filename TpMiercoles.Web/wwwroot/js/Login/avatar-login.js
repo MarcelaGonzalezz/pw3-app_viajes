@@ -23,6 +23,7 @@
         const email = document.querySelector('[data-avatar-email]');
         const passwords = [...document.querySelectorAll('[data-avatar-password]')];
         const toggle = document.querySelector('[data-avatar-toggle]');
+        const eyeButtons = [...document.querySelectorAll('.toggle-eye')];
 
         if (!root || !email || passwords.length === 0) return;
 
@@ -243,21 +244,23 @@
         let pointerOnToggle = false; // evita bajar los brazos mientras se hace clic en el checkbox
 
         function update() {
-            if (pointerOnToggle) return;
-            const active = document.activeElement;
-            const inPassword = passwords.includes(active) || (toggle !== null && active === toggle);
+    if (pointerOnToggle) return;
+    const active = document.activeElement;
+    const inPassword = passwords.includes(active)
+        || eyeButtons.includes(active)
+        || (toggle !== null && active === toggle);
 
-            if (inPassword && !eyesCovered) coverEyes();
-            else if (!inPassword && eyesCovered) uncoverEyes();
+    if (inPassword && !eyesCovered) coverEyes();
+    else if (!inPassword && eyesCovered) uncoverEyes();
 
-            if (active === email) {
-                emailFocused = true;
-                onEmailInput();
-            } else if (emailFocused) {
-                emailFocused = false;
-                resetFace();
-            }
-        }
+    if (active === email) {
+        emailFocused = true;
+        onEmailInput();
+    } else if (emailFocused) {
+        emailFocused = false;
+        resetFace();
+    }
+}
 
         /* ---------- Parpadeo ---------- */
 
@@ -287,23 +290,30 @@
         document.addEventListener('focusin', update);
         document.addEventListener('focusout', () => setTimeout(update, 50));
 
-        if (toggle) {
-            const onToggle = () => {
-                passwords.forEach((p) => { p.type = toggle.checked ? 'text' : 'password'; });
-                if (toggle.checked) spreadFingers(); else closeFingers();
-            };
-            const zone = toggle.closest('label') ?? toggle;
+       if (toggle) {
+    const onToggle = () => {
+        passwords.forEach((p) => { p.type = toggle.checked ? 'text' : 'password'; });
+        eyeButtons.forEach((b) => {
+            b.setAttribute('aria-pressed', toggle.checked);
+            b.setAttribute('aria-label', toggle.checked ? 'Ocultar contraseña' : 'Mostrar contraseña');
+        });
+        if (toggle.checked) spreadFingers(); else closeFingers();
+    };
 
-            toggle.addEventListener('change', onToggle);
-            toggle.addEventListener('click', () => toggle.focus()); // Safari no enfoca checkboxes al hacer clic
-            zone.addEventListener('pointerdown', () => { pointerOnToggle = true; });
-            document.addEventListener('pointerup', () => {
-                if (!pointerOnToggle) return;
-                pointerOnToggle = false;
-                setTimeout(update, 50);
-            });
-            onToggle();
-        }
+    // Zonas de clic: los botones del ojo (o el label original si no hay ojos, como en el login actual)
+    const zones = eyeButtons.length ? eyeButtons : [toggle.closest('label') ?? toggle];
+
+    toggle.addEventListener('change', onToggle);
+    toggle.addEventListener('click', () => toggle.focus()); // Safari no enfoca checkboxes al hacer clic
+    zones.forEach((z) => z.addEventListener('pointerdown', () => { pointerOnToggle = true; }));
+    eyeButtons.forEach((b) => b.addEventListener('click', () => toggle.click())); // ambos ojos accionan el mismo checkbox
+    document.addEventListener('pointerup', () => {
+        if (!pointerOnToggle) return;
+        pointerOnToggle = false;
+        setTimeout(update, 50);
+    });
+    onToggle();
+}
 
         update(); // cubre un campo con autofocus
     }
