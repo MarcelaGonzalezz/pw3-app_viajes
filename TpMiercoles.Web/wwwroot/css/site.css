@@ -1,5 +1,5 @@
 html {
-  font-size: 14px;
+    font-size: 14px;
 }
 
 @media (min-width: 768px) {
@@ -14,11 +14,12 @@ html {
 
 html {
   position: relative;
-  min-height: 100%;
+  min-height: 100vh;
 }
 
-body {
-  margin-bottom: 60px;
+html, body {
+  margin: 0;
+  padding: 0;
 }
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
@@ -33,3 +34,67 @@ body {
 .login-form .input-plain {
     padding: 0.4em 1em 0.5em;
 }
+
+:root {
+    --app-dark-blue: #217093;
+    --app-med-blue: #4eb8dd;
+    --app-light-blue: #ddf1fa;
+    --app-input-bg: #f3fafd;
+    --app-page-bg: #eff3f4;
+    --app-title: #3a5e77;
+    --app-text: #353538;
+    --app-muted: #617e92;
+    --app-hover-dark: #2b4658;
+    --app-font: "Source Sans 3", "Source Sans Pro", sans-serif;
+}
+
+body {
+    font-family: var(--app-font);
+    color: var(--app-text);
+}
+
+.app-shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+.app-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.app-content {
+    padding: 1.5rem;
+    background-color: var(--app-page-bg);
+    min-height: 100vh;
+}
+
+.app-anon-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    background-color: #fff;
+    border-bottom: 1px solid var(--app-light-blue);
+}
+
+.app-brand {
+    color: var(--app-dark-blue);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+    .app-brand:hover {
+        color: var(--app-hover-dark);
+    }
+
+.app-login-link {
+    color: var(--app-dark-blue);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+    .app-login-link:hover {
+        color: var(--app-hover-dark);
+        text-decoration: underline;
+    }

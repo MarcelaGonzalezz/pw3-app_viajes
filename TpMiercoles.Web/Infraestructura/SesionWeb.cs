@@ -26,6 +26,7 @@ namespace TpMiercoles.Web.Infraestructura
         {
             new(ClaimTypes.NameIdentifier, sesion.Id.ToString()),
             new(ClaimTypes.Name, sesion.Nombre),
+            new(ClaimTypes.Surname, sesion.Apellido),
             new(ClaimTypes.Email, sesion.Email)
         };
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

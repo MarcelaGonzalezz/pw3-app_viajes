@@ -76,7 +76,7 @@ namespace TpMiercoles.Web.Controllers
         public async Task<IActionResult> CerrarSesion()
         {
             await _sesionWeb.CerrarAsync();
-            return RedirectToAction("Login", "Usuario");
+            return RedirectToAction("Index", "Home");
         }
     }
 }
