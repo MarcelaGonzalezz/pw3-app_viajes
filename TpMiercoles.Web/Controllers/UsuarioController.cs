@@ -71,5 +71,12 @@ namespace TpMiercoles.Web.Controllers
             await _sesionWeb.IniciarAsync(usuarioSesionDTO, usuario.Recordarme);
             return RedirectToAction("Index", "Home");
         }
+
+        [HttpPost]
+        public async Task<IActionResult> CerrarSesion()
+        {
+            await _sesionWeb.CerrarAsync();
+            return RedirectToAction("Login", "Usuario");
+        }
     }
 }

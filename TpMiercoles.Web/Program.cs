@@ -50,7 +50,8 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 
-app.UseAuthorization();
+app.UseAuthentication(); // lee la cookie en cada request y genera el User en HttpContext.User
+app.UseAuthorization(); // verifica si el User tiene permisos para acceder a una ruta
 
 app.MapStaticAssets();
 

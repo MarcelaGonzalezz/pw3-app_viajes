@@ -29,6 +29,13 @@
                         </li>
                     </ul>
                 </div>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <span class="me-2">@User.Identity.Name</span>
+                    <form asp-controller="Usuario" asp-action="CerrarSesion" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-link nav-link text-dark">Cerrar sesión</button>
+                    </form>
+                }
             </div>
         </nav>
     </header>
