@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using TpMiercoles.Entidades;
 using TpMiercoles.Servicios.DTOs;
+using TpMiercoles.Servicios.DTOs.Ruta;
 
 namespace TpMiercoles.Servicios
 {
@@ -10,6 +11,7 @@ namespace TpMiercoles.Servicios
             CreateMap<UsuarioDTO, Usuario>();
             CreateMap<UsuarioLoginDTO, Usuario>();
             CreateMap<Usuario, UsuarioSesionDTO>();
+            CreateMap<RutaDTO, Ruta>();
         }
     }
 }

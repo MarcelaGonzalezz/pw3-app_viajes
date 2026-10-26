@@ -10,6 +10,7 @@ namespace TpMiercoles.Entidades
         public int RutaId { get; set; }
         public Ruta Ruta { get; set; } = null!;
         public int DireccionId { get; set; }
+        public int Orden { get; set; }
         public Direccion Direccion { get; set; } = null!;
 
     }

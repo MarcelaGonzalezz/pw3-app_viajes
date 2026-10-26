@@ -127,6 +127,9 @@ namespace TpMiercoles.Entidades.Migrations
                     b.Property<int>("DireccionId")
                         .HasColumnType("int");
 
+                    b.Property<int>("Orden")
+                        .HasColumnType("int");
+
                     b.Property<int>("RutaId")
                         .HasColumnType("int");
 
@@ -161,6 +164,12 @@ namespace TpMiercoles.Entidades.Migrations
 
                     b.Property<DateTime>("FechaInicio")
                         .HasColumnType("datetime2");
+
+                    b.Property<TimeOnly>("HoraLlegada")
+                        .HasColumnType("time");
+
+                    b.Property<TimeOnly>("HoraSalida")
+                        .HasColumnType("time");
 
                     b.Property<double>("PesoMax")
                         .HasColumnType("float");

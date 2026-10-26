@@ -20,5 +20,7 @@ namespace TpMiercoles.Entidades
         public List<RutaDia> RutaDias { get; set; } = [];
         public List<Viaje> Viajes { get; set; } = [];
         public List<Parada> Paradas { get; set; } = [];
+        public TimeOnly HoraSalida { get; set; }
+        public TimeOnly HoraLlegada { get; set; }
     }
 }
