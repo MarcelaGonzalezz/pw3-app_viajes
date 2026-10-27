@@ -1,4 +1,4 @@
-﻿@model DashboardViewModel
+@model DashboardViewModel
 @using System.Globalization
 @{
     ViewData["Title"] = "Home";
@@ -20,20 +20,20 @@
 </div>
 <div class="row g-3 mb-4">
     <div class="col-6 col-lg-3">
-        <div class="card h-100">
+        <a asp-controller="Viajes" asp-action="Index" class="card h-100 text-decoration-none text-reset">
             <div class="card-body">
                 <small class="text-muted">Próximos viajes</small>
                 <div class="fs-3 fw-bold">@Model.ProximosViajes</div>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-6 col-lg-3">
-        <div class="card h-100">
+        <a asp-controller="Envio" asp-action="Index" class="card h-100 text-decoration-none text-reset">
             <div class="card-body">
                 <small class="text-muted">Envíos pendientes</small>
                 <div class="fs-3 fw-bold">@Model.EnviosPendientes</div>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-6 col-lg-3">
         <div class="card h-100">
@@ -56,7 +56,10 @@
     <div class="col-lg-6">
         <div class="card h-100">
             <div class="card-body">
-                <h2 class="h6">Próximos viajes</h2>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h2 class="h6 mb-0">Próximos viajes</h2>
+                    <a asp-controller="Viajes" asp-action="Index" class="small text-decoration-none">Ver mis viajes</a>
+                </div>
                 <p class="text-muted mb-0">Todavía no registraste viajes.</p>
             </div>
         </div>
@@ -64,7 +67,10 @@
     <div class="col-lg-6">
         <div class="card h-100">
             <div class="card-body">
-                <h2 class="h6">Envíos pendientes</h2>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h2 class="h6 mb-0">Envíos pendientes</h2>
+                    <a asp-controller="Envio" asp-action="Index" class="small text-decoration-none">Ver mis envíos</a>
+                </div>
                 <p class="text-muted mb-0">Todavía no publicaste envíos.</p>
             </div>
         </div>
