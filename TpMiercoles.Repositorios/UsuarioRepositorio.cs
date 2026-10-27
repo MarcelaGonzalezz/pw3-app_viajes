@@ -1,5 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -30,10 +29,13 @@ namespace TpMiercoles.Repositorios
                 _viajesDbContext.Add(usuario);
                 await _viajesDbContext.SaveChangesAsync();
             }
-            catch (DbUpdateException ex) when (ex.InnerException is SqlException sql
-                                               && (sql.Number == 2601 || sql.Number == 2627))
+            catch (DbUpdateException ex)
             {
-                throw new EmailExistenteException("El email ya está registrado", ex);
+                if (await ExisteEmailAsync(usuario.Email))
+                {
+                    throw new EmailExistenteException("El email ya está registrado", ex);
+                }
+                throw;
             }
         }
 
