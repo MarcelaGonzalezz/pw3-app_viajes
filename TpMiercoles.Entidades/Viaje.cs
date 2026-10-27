@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -17,7 +17,8 @@ namespace TpMiercoles.Entidades
         public int CapacidadMaxPaquetes { get; set; }
         public DateTime FechaSalida { get; set; }
         public DateTime? FechaLlegada { get; set; }
+        public EstadoActividadViaje Estado { get; set; } = EstadoActividadViaje.ACTIVO;
         public List<Asignacion> Asignaciones { get; set; } = [];
-       
+
     }
 }

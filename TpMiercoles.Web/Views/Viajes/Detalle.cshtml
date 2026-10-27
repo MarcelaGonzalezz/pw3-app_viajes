@@ -1,0 +1,195 @@
+﻿@model ViajeDetalleViewModel
+@{
+    ViewData["Title"] = $"Viaje #{Model.Id}";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/viajes/detalle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/viajes/viajes.css" asp-append-version="true" />
+}
+
+<div class="vd">
+
+    <header class="vd-header">
+        <div class="vd-header-main">
+            <p class="vd-eyebrow">Viaje #@Model.Id &middot; Ruta #@Model.RutaId</p>
+            <h1 class="vd-title">
+                <span>@Model.DireccionOrigen</span>
+                <span class="vd-flecha" aria-hidden="true">&rarr;</span>
+                <span>@Model.DireccionDestino</span>
+            </h1>
+        </div>
+        <span class="vd-estado @(Model.EstaActivo ? "vd-estado--activo" : "vd-estado--inactivo")">
+            @Model.EstadoTexto
+        </span>
+    </header>
+
+    @if (TempData["Mensaje"] is string mensaje)
+    {
+        <div class="vl-aviso" role="status">@mensaje</div>
+    }
+
+    <div class="vl-acciones">
+        <a class="vl-btn" asp-action="Index">Volver a mis viajes</a>
+        <a class="vl-btn vl-btn--principal" asp-action="Editar" asp-route-id="@Model.Id">Editar</a>
+
+        @if (Model.EstaActivo)
+        {
+            <form asp-action="Desactivar" asp-route-id="@Model.Id" method="post" class="vl-form-inline">
+                <input type="hidden" name="volverADetalle" value="true" />
+                <button type="submit" class="vl-btn vl-btn--peligro">Desactivar</button>
+            </form>
+        }
+        else
+        {
+            <form asp-action="Activar" asp-route-id="@Model.Id" method="post" class="vl-form-inline">
+                <input type="hidden" name="volverADetalle" value="true" />
+                <button type="submit" class="vl-btn">Activar</button>
+            </form>
+        }
+
+        <span class="vl-btn vl-btn--inhabilitado" title="Pantalla todavía no implementada">Ver oportunidades</span>
+    </div>
+
+    <section class="vd-datos" aria-label="Datos del viaje">
+        <div class="vd-dato">
+            <span class="vd-dato-label">Salida</span>
+            <span class="vd-dato-valor">@Model.FechaSalida.ToString("dd/MM/yyyy HH:mm")</span>
+        </div>
+        <div class="vd-dato">
+            <span class="vd-dato-label">Llegada</span>
+            <span class="vd-dato-valor">
+                @(Model.FechaLlegada.HasValue
+                    ? Model.FechaLlegada.Value.ToString("dd/MM/yyyy HH:mm")
+                    : "Sin definir")
+            </span>
+        </div>
+        <div class="vd-dato">
+            <span class="vd-dato-label">Peso máximo</span>
+            <span class="vd-dato-valor">@Model.PesoMax.ToString("0.##") kg</span>
+        </div>
+        <div class="vd-dato">
+            <span class="vd-dato-label">Capacidad</span>
+            <span class="vd-dato-valor">@Model.CantidadPaquetes / @Model.CapacidadMaxPaquetes paquetes</span>
+            <span class="vd-dato-extra">@Model.LugaresDisponibles @(Model.LugaresDisponibles == 1 ? "lugar libre" : "lugares libres")</span>
+        </div>
+    </section>
+
+    <section class="vd-card vd-dias" aria-label="Días de la ruta">
+        <h2 class="vd-card-titulo">Días de la ruta</h2>
+        @if (Model.DiasSemana.Count == 0)
+        {
+            <p class="vd-vacio">La ruta no tiene días cargados.</p>
+        }
+        else
+        {
+            <ul class="vd-chips">
+                @foreach (var dia in OrdenSemana)
+                {
+                    bool activo = Model.DiasSemana.Contains(dia);
+                    <li class="vd-dia @(activo ? "vd-dia--on" : "")" title="@Nombre(dia)">@Inicial(dia)</li>
+                }
+            </ul>
+        }
+    </section>
+
+    <div class="vd-cols">
+
+        <section class="vd-card" aria-label="Recorrido">
+            <h2 class="vd-card-titulo">Recorrido</h2>
+            <ol class="vd-recorrido">
+                <li class="vd-punto vd-punto--extremo">
+                    <span class="vd-punto-tipo">Origen</span>
+                    <span class="vd-punto-dir">@Model.DireccionOrigen</span>
+                </li>
+                @foreach (var parada in Model.Paradas)
+                {
+                    <li class="vd-punto">
+                        <span class="vd-punto-tipo">Parada @parada.Orden</span>
+                        <span class="vd-punto-dir">@parada.Direccion</span>
+                    </li>
+                }
+                <li class="vd-punto vd-punto--extremo">
+                    <span class="vd-punto-tipo">Destino</span>
+                    <span class="vd-punto-dir">@Model.DireccionDestino</span>
+                </li>
+            </ol>
+            @if (Model.Paradas.Count == 0)
+            {
+                <p class="vd-vacio">Sin paradas intermedias.</p>
+            }
+        </section>
+
+        <section class="vd-card" aria-label="Paquetes asignados">
+            <h2 class="vd-card-titulo">
+                Paquetes asignados
+                <span class="vd-contador">@Model.CantidadPaquetes</span>
+            </h2>
+
+            @if (Model.Paquetes.Count == 0)
+            {
+                <p class="vd-vacio">Todavía no hay paquetes asignados a este viaje.</p>
+            }
+            else
+            {
+                <ul class="vd-paquetes">
+                    @foreach (var paquete in Model.Paquetes)
+                    {
+                        <li class="vd-paquete">
+                            <div class="vd-paquete-top">
+                                <span class="vd-paquete-id">Envío #@paquete.EnvioId</span>
+                                <span class="vd-chip @paquete.EstadoClase">@paquete.EstadoTexto</span>
+                            </div>
+                            <p class="vd-paquete-remitente">@paquete.Remitente</p>
+                            <dl class="vd-paquete-datos">
+                                <div>
+                                    <dt>Retiro</dt>
+                                    <dd>@paquete.DireccionRetiro</dd>
+                                </div>
+                                <div>
+                                    <dt>Entrega</dt>
+                                    <dd>@paquete.DireccionEntrega</dd>
+                                </div>
+                                <div>
+                                    <dt>Ventana</dt>
+                                    <dd>@paquete.FechaDesde.ToString("dd/MM/yyyy") &ndash; @paquete.FechaHasta.ToString("dd/MM/yyyy")</dd>
+                                </div>
+                            </dl>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+    </div>
+</div>
+
+@functions {
+    private static readonly DayOfWeek[] OrdenSemana = new[]
+    {
+        DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday,
+        DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday
+    };
+
+    private static string Inicial(DayOfWeek dia) => dia switch
+    {
+        DayOfWeek.Monday => "L",
+        DayOfWeek.Tuesday => "M",
+        DayOfWeek.Wednesday => "X",
+        DayOfWeek.Thursday => "J",
+        DayOfWeek.Friday => "V",
+        DayOfWeek.Saturday => "S",
+        _ => "D"
+    };
+
+    private static string Nombre(DayOfWeek dia) => dia switch
+    {
+        DayOfWeek.Monday => "Lunes",
+        DayOfWeek.Tuesday => "Martes",
+        DayOfWeek.Wednesday => "Miércoles",
+        DayOfWeek.Thursday => "Jueves",
+        DayOfWeek.Friday => "Viernes",
+        DayOfWeek.Saturday => "Sábado",
+        _ => "Domingo"
+    };
+}
