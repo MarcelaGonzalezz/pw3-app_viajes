@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,12 @@ using TpMiercoles.Servicios;
 using TpMiercoles.Web.Infraestructura;
 using TpMiercoles.Web.Mapeos;
 
+
 var builder = WebApplication.CreateBuilder(args);
+// --- CONFIGURACIÓN DE CULTURA (SOLUCIÓN PARA DECIMALES CON PUNTO/COMA) ---
+var cultureInfo = new CultureInfo("es-AR");
+CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
 
 // Add services to the container.
 builder.Services.AddHttpContextAccessor();
@@ -25,6 +31,8 @@ builder.Services.AddScoped<IViajeServicio, ViajeServicio>();
 builder.Services.AddScoped<IViajeRepositorio, ViajeRepositorio>();
 builder.Services.AddScoped<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 builder.Services.AddScoped<ISesionWeb, SesionWeb>();
+builder.Services.AddScoped<IEnvioServicio, EnvioServicio>();
+builder.Services.AddScoped<IEnvioRepositorio, EnvioRepositorio>();
 builder.Services.AddScoped<ISeedDeDesarrollo, SeedDeDesarrollo>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

@@ -4,6 +4,9 @@
     ViewData["Title"] = "Home";
     var pesos = new CultureInfo("es-AR");
 }
+@if (TempData["Mensaje"] is string mensaje) {
+    <div class="alert alert-success">@mensaje</div>
+}
 
 <div class="d-flex justify-content-between align-items-start mb-4">
     <div>
@@ -11,7 +14,7 @@
         <small class="text-muted">Esto pasa con tus viajes y envíos.</small>
     </div>
     <div class="d-flex gap-2">
-        <a href="#" class="btn btn-outline-dark">Nuevo envío</a>
+        <a asp-controller="Envio" asp-action="Nuevo" class="btn btn-outline-dark">Nuevo envío</a>     
         <a href="#" class="btn btn-dark">Nuevo viaje</a>
     </div>
 </div>
