@@ -13,6 +13,7 @@ namespace TpMiercoles.Web.Mapeos
                  .ForMember(d => d.ContraseniaPlana, o => o.MapFrom(s => s.Contrasenia));
             CreateMap<LoginUsuarioViewModel, UsuarioLoginDTO>()
                 .ForMember(d => d.ContraseniaPlana, o => o.MapFrom(s => s.Contrasenia));
+            CreateMap<NuevoEnvioViewModel, EnvioDTO>();
         }
     }
 }
