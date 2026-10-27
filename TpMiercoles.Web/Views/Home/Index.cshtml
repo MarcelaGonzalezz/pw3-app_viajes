@@ -1,8 +1,69 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model DashboardViewModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Home";
+    var pesos = new CultureInfo("es-AR");
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h3 mb-0">Hola, @Model.NombreUsuario</h1>
+        <small class="text-muted">Esto pasa con tus viajes y envíos.</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="#" class="btn btn-outline-dark">Nuevo envío</a>
+        <a href="#" class="btn btn-dark">Nuevo viaje</a>
+    </div>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <small class="text-muted">Próximos viajes</small>
+                <div class="fs-3 fw-bold">@Model.ProximosViajes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <small class="text-muted">Envíos pendientes</small>
+                <div class="fs-3 fw-bold">@Model.EnviosPendientes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <small class="text-muted">Oportunidades</small>
+                <div class="fs-3 fw-bold">@Model.Oportunidades</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 bg-success-subtle">
+            <div class="card-body">
+                <small class="text-success">Potencial del mes</small>
+                <div class="fs-3 fw-bold text-success">@Model.PotencialMes.ToString("C0", pesos)</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6">Próximos viajes</h2>
+                <p class="text-muted mb-0">Todavía no registraste viajes.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6">Envíos pendientes</h2>
+                <p class="text-muted mb-0">Todavía no publicaste envíos.</p>
+            </div>
+        </div>
+    </div>
 </div>
