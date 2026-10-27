@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
 using TpMiercoles.Servicios.DTOs;
@@ -10,6 +10,9 @@ namespace TpMiercoles.Web.Infraestructura
     {
         Task IniciarAsync(UsuarioSesionDTO sesion, bool recordarme);
         Task CerrarAsync();
+
+        // Id del usuario logueado, o null si no hay sesion activa.
+        int? UsuarioId { get; }
     }
     public class SesionWeb : ISesionWeb
     {
@@ -18,6 +21,15 @@ namespace TpMiercoles.Web.Infraestructura
         public SesionWeb(IHttpContextAccessor accessor)
         {
             _accessor = accessor;
+        }
+
+        public int? UsuarioId
+        {
+            get
+            {
+                string? valor = _accessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                return int.TryParse(valor, out int id) ? id : null;
+            }
         }
 
         public async Task IniciarAsync(UsuarioSesionDTO sesion, bool recordarme)

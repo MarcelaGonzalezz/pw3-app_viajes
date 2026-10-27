@@ -1,0 +1,113 @@
+﻿@using TpMiercoles.Entidades
+@model MisViajesViewModel
+@{
+    ViewData["Title"] = "Mis viajes";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/viajes/detalle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/viajes/viajes.css" asp-append-version="true" />
+}
+
+<div class="vd">
+
+    <header class="vd-header">
+        <div class="vd-header-main">
+            <p class="vd-eyebrow">Conductor</p>
+            <h1 class="vd-title">Mis viajes</h1>
+        </div>
+    </header>
+
+    @if (TempData["Mensaje"] is string mensaje)
+    {
+        <div class="vl-aviso" role="status">@mensaje</div>
+    }
+
+    <nav class="vl-filtros" aria-label="Filtrar viajes">
+        <a class="vl-filtro @(Model.Filtro is null ? "vl-filtro--on" : "")"
+           asp-action="Index">
+            Todos <span class="vl-filtro-n">@(Model.TotalActivos + Model.TotalInactivos)</span>
+        </a>
+        <a class="vl-filtro @(Model.Filtro == EstadoActividadViaje.ACTIVO ? "vl-filtro--on" : "")"
+           asp-action="Index" asp-route-estado="@EstadoActividadViaje.ACTIVO">
+            Activos <span class="vl-filtro-n">@Model.TotalActivos</span>
+        </a>
+        <a class="vl-filtro @(Model.Filtro == EstadoActividadViaje.INACTIVO ? "vl-filtro--on" : "")"
+           asp-action="Index" asp-route-estado="@EstadoActividadViaje.INACTIVO">
+            Inactivos <span class="vl-filtro-n">@Model.TotalInactivos</span>
+        </a>
+    </nav>
+
+    @if (Model.Viajes.Count == 0)
+    {
+        <section class="vd-card">
+            <p class="vd-vacio">
+                @(Model.Filtro is null
+                    ? "Todavía no tenés viajes cargados."
+                    : "No hay viajes con ese estado.")
+            </p>
+        </section>
+    }
+    else
+    {
+        <ul class="vl-lista">
+            @foreach (var viaje in Model.Viajes)
+            {
+                <li class="vd-card vl-item">
+                    <div class="vl-item-info">
+                        <div class="vl-item-top">
+                            <span class="vl-item-id">Viaje #@viaje.Id</span>
+                            <span class="vd-estado @(viaje.EstaActivo ? "vd-estado--activo" : "vd-estado--inactivo")">
+                                @viaje.EstadoTexto
+                            </span>
+                        </div>
+
+                        <p class="vl-item-ruta">
+                            @viaje.DireccionOrigen
+                            <span class="vd-flecha" aria-hidden="true">&rarr;</span>
+                            @viaje.DireccionDestino
+                        </p>
+
+                        <dl class="vl-item-datos">
+                            <div>
+                                <dt>Salida</dt>
+                                <dd>@viaje.FechaSalida.ToString("dd/MM/yyyy HH:mm")</dd>
+                            </div>
+                            <div>
+                                <dt>Llegada</dt>
+                                <dd>
+                                    @(viaje.FechaLlegada.HasValue
+                                        ? viaje.FechaLlegada.Value.ToString("dd/MM/yyyy HH:mm")
+                                        : "Sin definir")
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Paquetes</dt>
+                                <dd>@viaje.CantidadPaquetes / @viaje.CapacidadMaxPaquetes</dd>
+                            </div>
+                        </dl>
+                    </div>
+
+                    <div class="vl-acciones">
+                        <a class="vl-btn vl-btn--principal" asp-action="Detalle" asp-route-id="@viaje.Id">Ver detalle</a>
+                        <a class="vl-btn" asp-action="Editar" asp-route-id="@viaje.Id">Editar</a>
+                        <span class="vl-btn vl-btn--inhabilitado" title="Pantalla todavía no implementada">Oportunidades</span>
+
+                        @if (viaje.EstaActivo)
+                        {
+                            <form asp-action="Desactivar" asp-route-id="@viaje.Id" method="post" class="vl-form-inline">
+                                <button type="submit" class="vl-btn vl-btn--peligro">Desactivar</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <form asp-action="Activar" asp-route-id="@viaje.Id" method="post" class="vl-form-inline">
+                                <button type="submit" class="vl-btn">Activar</button>
+                            </form>
+                        }
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</div>

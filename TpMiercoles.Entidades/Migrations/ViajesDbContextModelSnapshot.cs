@@ -275,6 +275,9 @@ namespace TpMiercoles.Entidades.Migrations
                     b.Property<int>("DireccionOrigenId")
                         .HasColumnType("int");
 
+                    b.Property<int>("Estado")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("FechaLlegada")
                         .HasColumnType("datetime2");
 
@@ -295,7 +298,7 @@ namespace TpMiercoles.Entidades.Migrations
 
                     b.HasIndex("RutaId");
 
-                    b.ToTable("Viaje");
+                    b.ToTable("Viaje", (string)null);
                 });
 
             modelBuilder.Entity("TpMiercoles.Entidades.Asignacion", b =>

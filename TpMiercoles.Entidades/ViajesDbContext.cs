@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace TpMiercoles.Entidades
@@ -9,8 +9,12 @@ namespace TpMiercoles.Entidades
 
         public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<Envio> Envios { get; set; }
+        public DbSet<Viaje> Viajes { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Viaje>()
+                .ToTable("Viaje");
+
             modelBuilder.Entity<Ruta>()
                 .HasOne(r => r.DireccionOrigen)
                 .WithMany()
