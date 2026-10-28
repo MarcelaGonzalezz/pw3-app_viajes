@@ -10,6 +10,7 @@ namespace TpMiercoles.Servicios {
     public interface IEnvioServicio {
         Task CrearAsync(EnvioDTO envio, int usuarioId);
         Task<List<EnvioListadoDTO>> ListarAsync(int usuarioId, EstadoEnvio? estado);
+        Task<EnvioDetalleDTO?> ObtenerDetalleAsync(int envioId, int usuarioId);
     }
 
     public class EnvioServicio : IEnvioServicio {
@@ -53,6 +54,50 @@ namespace TpMiercoles.Servicios {
                 Monto = e.Monto,
                 Estado = e.Estado
             }).ToList();
+        }
+
+        public async Task<EnvioDetalleDTO?> ObtenerDetalleAsync(int envioId, int usuarioId) {
+            Envio? envio = await _repositorio.ObtenerDetalleAsync(envioId);
+
+            if (envio == null || envio.UsuarioId != usuarioId) {
+                return null;
+            }
+
+            var dto = new EnvioDetalleDTO {
+                Id = envio.Id,
+                Origen = envio.DireccionRetiro?.Texto ?? string.Empty,
+                Destino = envio.DireccionEntrega?.Texto ?? string.Empty,
+                FechaDesde = envio.FechaDesde,
+                FechaHasta = envio.FechaHasta,
+                PesoKg = envio.Paquete != null ? envio.Paquete.PesoKg : 0,
+                Tamanio = envio.Paquete != null ? envio.Paquete.Tamanio : default,
+                Descripcion = envio.Paquete?.Descripcion ?? string.Empty,
+                Monto = envio.Monto,
+                Estado = envio.Estado
+            };
+
+            var asignacion = envio.Asignaciones?
+                .FirstOrDefault(a => a.Estado != EstadoViaje.CANCELADO && a.Viaje != null)
+                ?? envio.Asignaciones?.FirstOrDefault(a => a.Viaje != null);
+
+            if (asignacion != null && asignacion.Viaje != null) {
+                dto.TieneConductorAsignado = asignacion.Estado != EstadoViaje.CANCELADO;
+                dto.ViajeId = asignacion.ViajeId;
+
+                var conductor = asignacion.Viaje.Ruta?.Usuario;
+                if (conductor != null) {
+                    var nombreCompleto = $"{conductor.Nombre} {conductor.Apellido}".Trim();
+                    dto.ConductorNombre = string.IsNullOrWhiteSpace(nombreCompleto) ? null : nombreCompleto;
+                    dto.ConductorEmail = conductor.Email;
+                }
+
+                dto.FechaSalidaViaje = asignacion.Viaje.FechaSalida;
+                dto.FechaAceptacion = asignacion.FechaAceptacion;
+                dto.FechaRetiro = asignacion.FechaRetiro;
+                dto.FechaEntrega = asignacion.FechaEntrega;
+            }
+
+            return dto;
         }
     }
 }

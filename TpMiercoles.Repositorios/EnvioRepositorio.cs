@@ -9,6 +9,7 @@ namespace TpMiercoles.Repositorios {
     public interface IEnvioRepositorio {
         Task CrearAsync(Envio envio);
         Task<List<Envio>> ListarPorUsuarioAsync(int usuarioId, EstadoEnvio? estado);
+        Task<Envio?> ObtenerDetalleAsync(int envioId);
     }
     public class EnvioRepositorio : IEnvioRepositorio {
         private readonly ViajesDbContext _viajesDbContext;
@@ -36,6 +37,18 @@ namespace TpMiercoles.Repositorios {
             return await consulta
                 .OrderByDescending(e => e.Id)
                 .ToListAsync();
+        }
+
+        public async Task<Envio?> ObtenerDetalleAsync(int envioId) {
+            return await _viajesDbContext.Envios
+                .AsNoTracking()
+                .Include(e => e.DireccionRetiro)
+                .Include(e => e.DireccionEntrega)
+                .Include(e => e.Asignaciones)
+                    .ThenInclude(a => a.Viaje)
+                        .ThenInclude(v => v.Ruta)
+                            .ThenInclude(r => r.Usuario)
+                .FirstOrDefaultAsync(e => e.Id == envioId);
         }
     }
 }
