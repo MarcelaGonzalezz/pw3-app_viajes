@@ -16,6 +16,12 @@
     font-size: .9375rem;
 }
 
+.vl-aviso--error {
+    background-color: #fde8e8;
+    border-color: #f8b4b4;
+    color: #9b1c1c;
+}
+
 /* ---------- Filtros ---------- */
 
 .vl-filtros {
