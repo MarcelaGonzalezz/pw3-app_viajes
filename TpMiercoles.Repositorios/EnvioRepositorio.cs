@@ -1,11 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
 using TpMiercoles.Entidades;
 
 namespace TpMiercoles.Repositorios {
     public interface IEnvioRepositorio {
         Task CrearAsync(Envio envio);
+        Task<List<Envio>> ListarPorUsuarioAsync(int usuarioId, EstadoEnvio? estado);
     }
     public class EnvioRepositorio : IEnvioRepositorio {
         private readonly ViajesDbContext _viajesDbContext;
@@ -17,6 +20,22 @@ namespace TpMiercoles.Repositorios {
         public async Task CrearAsync(Envio envio) {
             _viajesDbContext.Envios.Add(envio);
             await _viajesDbContext.SaveChangesAsync();
+        }
+
+        public async Task<List<Envio>> ListarPorUsuarioAsync(int usuarioId, EstadoEnvio? estado) {
+            IQueryable<Envio> consulta = _viajesDbContext.Envios
+                .AsNoTracking()
+                .Include(e => e.DireccionRetiro)
+                .Include(e => e.DireccionEntrega)
+                .Where(e => e.UsuarioId == usuarioId);
+
+            if (estado.HasValue) {
+                consulta = consulta.Where(e => e.Estado == estado.Value);
+            }
+
+            return await consulta
+                .OrderByDescending(e => e.Id)
+                .ToListAsync();
         }
     }
 }

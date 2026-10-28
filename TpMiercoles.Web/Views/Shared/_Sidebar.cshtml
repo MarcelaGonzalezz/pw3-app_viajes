@@ -1,4 +1,7 @@
-﻿@using System.Security.Claims
+@using System.Security.Claims
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+}
 
 <!-- solo mobile -->
 <button type="button" class="sidebar-fab-toggle" id="sidebarFabToggle" aria-label="Abrir menú">
@@ -19,10 +22,10 @@
     </div>
 
     <nav class="sidebar-nav">
-        <a href="#" class="sidebar-link active">Inicio</a>
+        <a asp-controller="Home" asp-action="Index" class="sidebar-link">Inicio</a>
         <a asp-controller="Ruta" asp-action="Crear" class="sidebar-link active">Crear Nueva Ruta</a>
         <a asp-controller="Viajes" asp-action="Index" class="sidebar-link">Mis viajes</a>
-        <a href="#" class="sidebar-link">Mis envíos</a>
+        <a asp-controller="Envio" asp-action="Index" class="sidebar-link">Mis envíos</a>
         <a href="#" class="sidebar-link">Oportunidades</a>
         <a href="#" class="sidebar-link">Optimizador</a>
         <a href="#" class="sidebar-link">Mis transportes</a>
