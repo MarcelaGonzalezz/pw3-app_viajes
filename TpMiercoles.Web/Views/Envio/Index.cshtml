@@ -51,6 +51,10 @@
            asp-action="Index" asp-route-estado="@EstadoEnvio.Entregado">
             Entregados <span class="vl-filtro-n">@Model.TotalEntregados</span>
         </a>
+        <a class="vl-filtro @(Model.Filtro == EstadoEnvio.Cancelado ? "vl-filtro--on" : "")"
+           asp-action="Index" asp-route-estado="@EstadoEnvio.Cancelado">
+            Cancelados <span class="vl-filtro-n">@Model.TotalCancelados</span>
+        </a>
     </nav>
 
     @if (Model.Envios.Count == 0)
