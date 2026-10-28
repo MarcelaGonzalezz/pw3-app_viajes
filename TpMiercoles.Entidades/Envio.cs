@@ -17,6 +17,10 @@ namespace TpMiercoles.Entidades
         public DateTime FechaHasta { get; set; }
         public List<Asignacion> Asignaciones { get; set; } = [];
 
+        public Paquete Paquete { get; set; } = new();
+        public decimal Monto { get; set; }
+        public EstadoEnvio Estado { get; set; } = EstadoEnvio.BuscandoConductor;
+
 
     }
 }

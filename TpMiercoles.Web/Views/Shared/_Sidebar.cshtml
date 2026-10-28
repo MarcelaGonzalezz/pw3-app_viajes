@@ -1,0 +1,62 @@
+﻿@using System.Security.Claims
+
+<!-- solo mobile -->
+<button type="button" class="sidebar-fab-toggle" id="sidebarFabToggle" aria-label="Abrir menú">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+</button>
+
+<!-- para cerrar al tocar afuera en mobile -->
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-brand">RuteaYa</div>
+        <button type="button" class="sidebar-close" id="sidebarCloseBtn" aria-label="Cerrar menú">&times;</button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <a href="#" class="sidebar-link active">Inicio</a>
+        <a asp-controller="Ruta" asp-action="Crear" class="sidebar-link active">Crear Nueva Ruta</a>
+        <a asp-controller="Viajes" asp-action="Index" class="sidebar-link">Mis viajes</a>
+        <a href="#" class="sidebar-link">Mis envíos</a>
+        <a href="#" class="sidebar-link">Oportunidades</a>
+        <a href="#" class="sidebar-link">Optimizador</a>
+        <a href="#" class="sidebar-link">Mis transportes</a>
+        <a href="#" class="sidebar-link">Historial</a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-user-card">
+            <span class="sidebar-user">
+                @User.Identity!.Name @User.FindFirst(ClaimTypes.Surname)?.Value
+            </span>
+            <form asp-controller="Usuario" asp-action="CerrarSesion" method="post" class="sidebar-logout-form">
+                <button type="submit" class="sidebar-logout">Cerrar sesión</button>
+            </form>
+        </div>
+    </div>
+</aside>
+
+<script>
+    (() => {
+        const sidebar = document.getElementById("sidebar");
+        const backdrop = document.getElementById("sidebarBackdrop");
+        const fabBtn = document.getElementById("sidebarFabToggle");
+        const closeBtn = document.getElementById("sidebarCloseBtn");
+
+        const toggleMenu = (open) => {
+            if (!sidebar || !backdrop) return;
+            sidebar.classList.toggle("open", open);
+            backdrop.classList.toggle("active", open);
+            document.body.style.overflow = open ? "hidden" : "";
+        };
+
+        fabBtn?.addEventListener("click", () => toggleMenu(true));
+        closeBtn?.addEventListener("click", () => toggleMenu(false));
+        backdrop?.addEventListener("click", () => toggleMenu(false));
+    })();
+</script>

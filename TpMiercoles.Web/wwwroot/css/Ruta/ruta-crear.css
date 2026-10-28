@@ -1,0 +1,461 @@
+/* =====================================================================
+   Formulario "Nuevo viaje" — mismo estilo que Login / Registro
+   ===================================================================== */
+
+/* El fondo y el padding los pone .app-content del layout */
+.ruta-page {
+    display: flex;
+    justify-content: center;
+    padding-bottom: 2rem;
+}
+
+.ruta-form {
+    --dark-blue: var(--app-dark-blue, #217093);
+    --med-blue: var(--app-med-blue, #4eb8dd);
+    --light-blue: var(--app-light-blue, #ddf1fa);
+    --input-bg: var(--app-input-bg, #f3fafd);
+    --texto: var(--app-title, #3a5e77);
+    --error: #d93025;
+    --ok: #2e9e6b;
+
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 720px;
+    padding: 2.25em;
+    background-color: #fff;
+    border: solid 1px #ddd;
+    border-radius: 0.5em;
+    font-family: "Source Sans 3", "Source Sans Pro", sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+}
+
+.ruta-form *,
+.ruta-form *::before,
+.ruta-form *::after {
+    box-sizing: border-box;
+}
+
+/* ---------- Títulos ---------- */
+
+.ruta-titulo {
+    margin: 0 0 0.25rem;
+    text-align: center;
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.ruta-subtitulo {
+    margin: 0 0 2rem;
+    text-align: center;
+    font-size: 1rem;
+    color: #617E92;
+}
+
+.ruta-seccion {
+    margin-bottom: 2.25rem;
+}
+
+.ruta-seccion__titulo {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0 0 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--light-blue);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--texto);
+}
+
+.ruta-seccion__titulo .paso {
+    display: inline-grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--med-blue);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+/* ---------- Grupos y etiquetas ---------- */
+
+.ruta-form .campo {
+    position: relative;
+    margin: 0 0 1.25rem;
+    min-width: 0;
+}
+
+.ruta-form .campo:last-child {
+    margin-bottom: 0;
+}
+
+.ruta-form label {
+    display: block;
+    margin: 0 0 8px;
+    font-size: 1.1em;
+    font-weight: 700;
+    color: var(--dark-blue);
+}
+
+.ruta-form .opcional {
+    font-size: 0.85em;
+    font-weight: 400;
+    color: #617E92;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 1rem;
+}
+
+/* ---------- Inputs ---------- */
+
+.ruta-form input[type="text"],
+.ruta-form input[type="number"],
+.ruta-form input[type="date"],
+.ruta-form input[type="time"] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    height: 52px;
+    margin: 0;
+    padding: 0.4em 1em;
+    background-color: var(--input-bg);
+    border: solid 2px var(--dark-blue);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #353538;
+    transition: box-shadow 0.2s linear, border-color 0.25s ease-out;
+}
+
+.ruta-form input[type="text"]::placeholder {
+    font-weight: 400;
+    color: #7a97a8;
+}
+
+.ruta-form input[type="text"]:focus,
+.ruta-form input[type="number"]:focus,
+.ruta-form input[type="date"]:focus,
+.ruta-form input[type="time"]:focus {
+    outline: none;
+    border-color: var(--med-blue);
+    box-shadow: 0 2px 10px rgb(0 0 0 / 10%);
+}
+
+/* ---------- Errores ---------- */
+
+.ruta-form .error {
+    display: block;
+    margin-top: 0.35em;
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--error);
+}
+
+.ruta-form .error:empty {
+    display: none;
+}
+
+.ruta-form .error--resumen {
+    margin-bottom: 1.5rem;
+    padding: 0.75rem 1rem;
+    background: #fdecea;
+    border-radius: 4px;
+}
+
+.ruta-form .error--resumen ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* ---------- Campo de dirección (buscador Nominatim) ---------- */
+
+.direccion-field {
+    position: relative;
+}
+
+.direccion-field--ok input[data-buscador] {
+    border-color: var(--ok);
+}
+
+.direccion-field--error input[data-buscador] {
+    border-color: var(--error);
+}
+
+.resultados {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    max-height: 240px;
+    margin: 4px 0 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+    background: #fff;
+    border: 2px solid var(--med-blue);
+    border-radius: 4px;
+    box-shadow: 0 6px 18px rgb(0 0 0 / 12%);
+}
+
+.resultados:empty {
+    display: none;
+}
+
+.resultados li {
+    padding: 0.6em 1em;
+    font-size: 0.95rem;
+    color: var(--texto);
+    cursor: pointer;
+}
+
+.resultados li + li {
+    border-top: 1px solid var(--light-blue);
+}
+
+.resultados li:hover,
+.resultados li:focus-visible {
+    background: var(--light-blue);
+    outline: none;
+}
+
+.resultados li.sin-accion {
+    cursor: default;
+    color: #617E92;
+}
+
+.resultados li.sin-accion:hover {
+    background: transparent;
+}
+
+/* ---------- Días de la semana ---------- */
+
+.dias {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.ruta-form label.dia {
+    position: relative;
+    display: inline-block;
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+}
+
+.dia input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+
+.dia span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 60px;
+    height: 44px;
+    padding: 0 1rem;
+    background: var(--input-bg);
+    border: solid 2px var(--dark-blue);
+    border-radius: 999px;
+    font-weight: 700;
+    color: var(--dark-blue);
+    transition: background-color 0.2s ease-out, color 0.2s ease-out;
+}
+
+.dia:hover span {
+    border-color: var(--med-blue);
+}
+
+.dia input:checked + span {
+    background: var(--dark-blue);
+    border-color: var(--dark-blue);
+    color: #fff;
+}
+
+.dia input:focus-visible + span {
+    outline: 3px solid var(--med-blue);
+    outline-offset: 2px;
+}
+
+/* ---------- Paradas ---------- */
+
+.parada-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    column-gap: 0.75rem;
+    align-items: start;
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    background: #f8fcfe;
+    border: 1px solid var(--light-blue);
+    border-radius: 6px;
+}
+
+.parada-numero {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    margin-top: 10px;
+    border-radius: 50%;
+    background: var(--med-blue);
+    color: #fff;
+    font-weight: 700;
+}
+
+.parada-item__acciones {
+    display: flex;
+    gap: 0.3rem;
+    margin-top: 8px;
+}
+
+.btn-icono {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: #fff;
+    border: solid 2px var(--dark-blue);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--dark-blue);
+    cursor: pointer;
+    transition: background-color 0.2s ease-out;
+}
+
+.btn-icono:hover,
+.btn-icono:focus-visible {
+    background: var(--light-blue);
+}
+
+.btn-icono--peligro {
+    border-color: var(--error);
+    color: var(--error);
+}
+
+.btn-icono--peligro:hover,
+.btn-icono--peligro:focus-visible {
+    background: #fdecea;
+}
+
+.paradas-vacio {
+    margin: 0 0 0.75rem;
+    font-size: 0.95rem;
+    color: #617E92;
+}
+
+.paradas-vacio[hidden] {
+    display: none;
+}
+
+/* ---------- Botones ---------- */
+
+.btn-secundario {
+    height: 46px;
+    padding: 0 1.25rem;
+    background: #fff;
+    border: solid 2px var(--med-blue);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--dark-blue);
+    cursor: pointer;
+    transition: background-color 0.2s ease-out;
+}
+
+.btn-secundario:hover,
+.btn-secundario:focus-visible {
+    background: var(--light-blue);
+}
+
+.acciones {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.ruta-form .btn-guardar {
+    flex: 1;
+    height: 56px;
+    padding: 0 1rem;
+    background-color: var(--med-blue);
+    border: none;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.2s ease-out;
+}
+
+.ruta-form .btn-guardar:hover,
+.ruta-form .btn-guardar:active {
+    background-color: var(--dark-blue);
+}
+
+.ruta-form .btn-cancelar {
+    padding: 0 0.5rem;
+    font-weight: 600;
+    color: var(--texto);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.ruta-form .btn-cancelar:hover,
+.ruta-form .btn-cancelar:focus-visible {
+    color: #2b4658;
+    border-bottom-color: currentColor;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 560px) {
+    .ruta-form {
+        padding: 1.5em 1.1em;
+    }
+
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .parada-item {
+        grid-template-columns: auto 1fr;
+    }
+
+    .parada-item__acciones {
+        grid-column: 1 / -1;
+        justify-content: flex-end;
+        margin-top: 0.5rem;
+    }
+
+    .acciones {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .ruta-form .btn-cancelar {
+        text-align: center;
+        border-bottom: none;
+    }
+}

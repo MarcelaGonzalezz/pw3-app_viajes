@@ -1,5 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -14,6 +13,7 @@ namespace TpMiercoles.Repositorios
         Task RegistrarAsync(Usuario usuario);
         Task<bool> ExisteEmailAsync(string email);
         Task<Usuario?> BuscarPorEmailAsync(string email);
+        Task<Usuario?> BuscarPorIdAsync(int id);
     }
         public class UsuarioRepositorio : IUsuarioRepositorio
     {
@@ -30,10 +30,13 @@ namespace TpMiercoles.Repositorios
                 _viajesDbContext.Add(usuario);
                 await _viajesDbContext.SaveChangesAsync();
             }
-            catch (DbUpdateException ex) when (ex.InnerException is SqlException sql
-                                               && (sql.Number == 2601 || sql.Number == 2627))
+            catch (DbUpdateException ex)
             {
-                throw new EmailExistenteException("El email ya está registrado", ex);
+                if (await ExisteEmailAsync(usuario.Email))
+                {
+                    throw new EmailExistenteException("El email ya está registrado", ex);
+                }
+                throw;
             }
         }
 
@@ -45,6 +48,11 @@ namespace TpMiercoles.Repositorios
         public async Task<Usuario?> BuscarPorEmailAsync(string email)
         {
             return await _viajesDbContext.Usuarios.FirstOrDefaultAsync(u => u.Email == email);
+        }
+
+        public async Task<Usuario?> BuscarPorIdAsync(int id)
+        {
+            return await _viajesDbContext.Usuarios.FirstOrDefaultAsync(u => u.Id == id);
         }
     }
 }

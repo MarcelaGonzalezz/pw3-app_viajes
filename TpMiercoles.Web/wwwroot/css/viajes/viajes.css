@@ -1,0 +1,263 @@
+/* Pantallas de gestion de viajes: lista (vl-) y formulario de edicion (vf-).
+   Reutiliza las tarjetas y badges de detalle.css, que se carga antes que esta hoja. */
+
+.vd--angosto {
+    max-width: 720px;
+}
+
+/* ---------- Aviso / toast ---------- */
+
+.vl-aviso {
+    background-color: #e4f6ec;
+    border: 1px solid #a9ddbf;
+    color: #1d6b40;
+    border-radius: 10px;
+    padding: .75rem 1rem;
+    font-size: .9375rem;
+}
+
+/* ---------- Filtros ---------- */
+
+.vl-filtros {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+
+.vl-filtro {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .4rem .9rem;
+    border-radius: 999px;
+    border: 1px solid var(--app-light-blue);
+    background-color: #fff;
+    color: var(--app-muted);
+    font-weight: 600;
+    font-size: .875rem;
+    text-decoration: none;
+}
+
+    .vl-filtro:hover {
+        border-color: var(--app-med-blue);
+        color: var(--app-dark-blue);
+    }
+
+.vl-filtro--on {
+    background-color: var(--app-dark-blue);
+    border-color: var(--app-dark-blue);
+    color: #fff;
+}
+
+.vl-filtro-n {
+    background-color: rgba(0, 0, 0, .12);
+    border-radius: 999px;
+    padding: 0 .45rem;
+    font-size: .75rem;
+}
+
+.vl-filtro--on .vl-filtro-n {
+    background-color: rgba(255, 255, 255, .25);
+}
+
+/* ---------- Lista ---------- */
+
+.vl-lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .9rem;
+}
+
+.vl-item {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.vl-item-info {
+    min-width: 0;
+    flex: 1 1 320px;
+}
+
+.vl-item-top {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin-bottom: .3rem;
+}
+
+.vl-item-id {
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--app-muted);
+}
+
+.vl-item-ruta {
+    margin: 0 0 .7rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    color: var(--app-title);
+}
+
+.vl-item-datos {
+    margin: 0;
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+    .vl-item-datos dt {
+        font-size: .7rem;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: var(--app-muted);
+    }
+
+    .vl-item-datos dd {
+        margin: 0;
+        color: var(--app-text);
+        font-size: .9375rem;
+    }
+
+/* ---------- Botones ---------- */
+
+.vl-acciones {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.vl-form-inline {
+    display: inline;
+    margin: 0;
+}
+
+.vl-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: .45rem .9rem;
+    border-radius: 8px;
+    border: 1px solid var(--app-light-blue);
+    background-color: #fff;
+    color: var(--app-dark-blue);
+    font-family: inherit;
+    font-weight: 600;
+    font-size: .875rem;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+    .vl-btn:hover {
+        border-color: var(--app-med-blue);
+        color: var(--app-hover-dark);
+    }
+
+.vl-btn--principal {
+    background-color: var(--app-dark-blue);
+    border-color: var(--app-dark-blue);
+    color: #fff;
+}
+
+    .vl-btn--principal:hover {
+        background-color: var(--app-hover-dark);
+        border-color: var(--app-hover-dark);
+        color: #fff;
+    }
+
+.vl-btn--peligro {
+    border-color: #f0b7b7;
+    color: #8c2b2b;
+}
+
+    .vl-btn--peligro:hover {
+        background-color: #fdeaea;
+        border-color: #e08b8b;
+        color: #8c2b2b;
+    }
+
+.vl-btn--inhabilitado {
+    color: #a3afb8;
+    border-color: #e7ecef;
+    background-color: var(--app-page-bg);
+    cursor: not-allowed;
+}
+
+    .vl-btn--inhabilitado:hover {
+        color: #a3afb8;
+        border-color: #e7ecef;
+    }
+
+/* ---------- Formulario ---------- */
+
+.vf-nota {
+    margin-bottom: 1rem;
+}
+
+.vf-campos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.vf-campo {
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+}
+
+    .vf-campo label {
+        font-size: .75rem;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: var(--app-muted);
+    }
+
+    .vf-campo input {
+        font-family: inherit;
+        font-size: 1rem;
+        color: var(--app-text);
+        background-color: var(--app-input-bg);
+        border: 1px solid var(--app-light-blue);
+        border-radius: 8px;
+        padding: .55rem .7rem;
+    }
+
+        .vf-campo input:focus {
+            outline: none;
+            border-color: var(--app-med-blue);
+            box-shadow: 0 0 0 3px rgba(78, 184, 221, .25);
+        }
+
+.vf-error {
+    color: #8c2b2b;
+    font-size: .8125rem;
+}
+
+.vf-errores {
+    color: #8c2b2b;
+    font-size: .9375rem;
+}
+
+    .vf-errores ul {
+        margin: 0 0 .75rem;
+        padding-left: 1.1rem;
+    }
+
+.vf-acciones {
+    display: flex;
+    gap: .5rem;
+    margin-top: 1.25rem;
+    flex-wrap: wrap;
+}

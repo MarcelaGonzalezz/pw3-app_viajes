@@ -1,0 +1,190 @@
+@using System.Globalization
+@model CrearRutaViewModel
+@*
+    Ajustá el namespace del ViewModel (o agregalo en _ViewImports.cshtml) y los nombres
+    de controller/acción (Ruta / Crear / Index) a los reales de tu proyecto.
+*@
+@{
+    ViewData["Title"] = "Nuevo viaje";
+
+    var inv = CultureInfo.InvariantCulture;
+
+    var dias = new[]
+    {
+        (DayOfWeek.Monday, "Lun"), (DayOfWeek.Tuesday, "Mar"), (DayOfWeek.Wednesday, "Mié"),
+        (DayOfWeek.Thursday, "Jue"), (DayOfWeek.Friday, "Vie"), (DayOfWeek.Saturday, "Sáb"),
+        (DayOfWeek.Sunday, "Dom")
+    };
+
+    // Las coordenadas vacías (0) se renderizan en blanco para obligar a elegir una dirección de la lista
+    string Coord(decimal? v) => (v is null || v == 0) ? "" : v.Value.ToString(inv);
+
+    // Campo de dirección reutilizable: origen, destino y paradas
+    void CampoDireccion(string prefijo, DireccionViewModel? d, string placeholder)
+    {
+        var hayErrorTexto = ViewData.ModelState[prefijo + ".Texto"]?.Errors.FirstOrDefault()?.ErrorMessage;
+        var hayErrorCoord = ViewData.ModelState[prefijo + ".Latitud"]?.Errors.Any() == true
+                         || ViewData.ModelState[prefijo + ".Longitud"]?.Errors.Any() == true;
+        var mensaje = hayErrorTexto ?? (hayErrorCoord ? "Elegí una dirección de la lista." : null);
+
+        <div class="direccion-field @(mensaje is null ? "" : "direccion-field--error")" data-direccion>
+            <input type="text" class="input-plain" data-buscador autocomplete="off"
+                   placeholder="@placeholder" value="@d?.Texto" />
+            <ul class="resultados" data-lista></ul>
+
+            <input type="hidden" name="@(prefijo + ".Texto")" value="@d?.Texto" data-campo="texto" />
+            <input type="hidden" name="@(prefijo + ".Latitud")" value="@Coord(d?.Latitud)" data-campo="lat" />
+            <input type="hidden" name="@(prefijo + ".Longitud")" value="@Coord(d?.Longitud)" data-campo="lng" />
+
+            <span class="error" data-error>@mensaje</span>
+        </div>
+    }
+
+    // Una fila de parada. "indice" es el número real o __INDEX__ para la plantilla
+    void FilaParada(string indice, ParadaViewModel? p)
+    {
+        <div class="parada-item" data-parada>
+            <span class="parada-numero" data-numero></span>
+
+            @{ CampoDireccion($"Paradas[{indice}].Direccion", p?.Direccion, "Buscá la dirección de la parada"); }
+
+            <input type="hidden" name="Paradas[@(indice)].Orden" value="@(p?.Orden ?? 0)" data-orden />
+
+            <div class="parada-item__acciones">
+                <button type="button" class="btn-icono" data-accion="subir" aria-label="Subir parada" title="Subir">↑</button>
+                <button type="button" class="btn-icono" data-accion="bajar" aria-label="Bajar parada" title="Bajar">↓</button>
+                <button type="button" class="btn-icono btn-icono--peligro" data-accion="quitar" aria-label="Quitar parada" title="Quitar">✕</button>
+            </div>
+        </div>
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/ruta/ruta-crear.css" asp-append-version="true" />
+}
+
+<div class="ruta-page">
+    <form class="ruta-form" asp-controller="Ruta" asp-action="Crear" method="post" id="formRuta">
+
+        <h1 class="ruta-titulo">Nuevo viaje</h1>
+        <p class="ruta-subtitulo">Registrá un recorrido habitual y encontraremos envíos compatibles.</p>
+
+        <div asp-validation-summary="ModelOnly" class="error error--resumen"></div>
+
+        @* ---------- 1. Recorrido ---------- *@
+        <section class="ruta-seccion">
+            <h2 class="ruta-seccion__titulo"><span class="paso">1</span> Recorrido</h2>
+
+            <div class="campo">
+                <label>Origen</label>
+                @{ CampoDireccion("DireccionOrigen", Model.DireccionOrigen, "Buscá la dirección de origen"); }
+            </div>
+
+            <div class="campo">
+                <label>Destino</label>
+                @{ CampoDireccion("DireccionDestino", Model.DireccionDestino, "Buscá la dirección de destino"); }
+            </div>
+
+            <div class="campo">
+                <label>Paradas intermedias <span class="opcional">(opcional)</span></label>
+
+                <div id="listaParadas" class="paradas">
+                    @for (int i = 0; i < Model.Paradas.Count; i++)
+                    {
+                        FilaParada(i.ToString(), Model.Paradas[i]);
+                    }
+                </div>
+
+                <p class="paradas-vacio" id="paradasVacio">Sin paradas. El recorrido va directo de origen a destino.</p>
+
+                <button type="button" class="btn-secundario" id="btnAgregarParada">+ Agregar parada</button>
+            </div>
+        </section>
+
+        @* ---------- 2. Horario ---------- *@
+        <section class="ruta-seccion">
+            <h2 class="ruta-seccion__titulo"><span class="paso">2</span> Días y horario</h2>
+
+            <div class="campo">
+                <label>Días de la semana</label>
+                <div class="dias">
+                    @foreach (var (valor, etiqueta) in dias)
+                    {
+                        <label class="dia">
+                            <input type="checkbox" name="RutaDias" value="@valor" @(Model.RutaDias.Contains(valor) ? "checked" : "") />
+                            <span>@etiqueta</span>
+                        </label>
+                    }
+                </div>
+                <span class="error" data-valmsg-for="RutaDias"></span>
+            </div>
+
+            <div class="grid-2">
+                <div class="campo">
+                    <label asp-for="HoraSalida">Hora de salida</label>
+                    <input asp-for="HoraSalida" type="time" class="input-plain" />
+                    <span asp-validation-for="HoraSalida" class="error"></span>
+                </div>
+
+                <div class="campo">
+                    <label asp-for="HoraLlegada">Hora estimada de llegada</label>
+                    <input asp-for="HoraLlegada" type="time" class="input-plain" />
+                    <span asp-validation-for="HoraLlegada" class="error"></span>
+                </div>
+            </div>
+        </section>
+
+        @* ---------- 3. Vigencia ---------- *@
+        <section class="ruta-seccion">
+            <h2 class="ruta-seccion__titulo"><span class="paso">3</span> Vigencia</h2>
+
+            <div class="grid-2">
+                <div class="campo">
+                    <label asp-for="FechaInicio">Desde</label>
+                    <input asp-for="FechaInicio" type="date" class="input-plain" />
+                    <span asp-validation-for="FechaInicio" class="error"></span>
+                </div>
+
+                <div class="campo">
+                    <label asp-for="FechaFin">Hasta <span class="opcional">(opcional)</span></label>
+                    <input asp-for="FechaFin" type="date" class="input-plain" />
+                    <span asp-validation-for="FechaFin" class="error"></span>
+                </div>
+            </div>
+        </section>
+
+        @* ---------- 4. Capacidad ---------- *@
+        <section class="ruta-seccion">
+            <h2 class="ruta-seccion__titulo"><span class="paso">4</span> Capacidad</h2>
+
+            <div class="grid-2">
+                <div class="campo">
+                    <label asp-for="CapacidadMaxPaquetes">Cantidad máxima de paquetes</label>
+                    <input asp-for="CapacidadMaxPaquetes" type="number" min="1" step="1" class="input-plain" />
+                    <span asp-validation-for="CapacidadMaxPaquetes" class="error"></span>
+                </div>
+
+                <div class="campo">
+                    <label asp-for="PesoMax">Peso máximo total (kg)</label>
+                    <input asp-for="PesoMax" type="number" min="0.01" step="0.01" class="input-plain" />
+                    <span asp-validation-for="PesoMax" class="error"></span>
+                </div>
+            </div>
+        </section>
+         <div asp-validation-summary="ModelOnly" class="error"></div>
+        <div class="acciones">
+            <a class="btn-cancelar" asp-controller="Viajes" asp-action="Index">Cancelar</a>
+            <button type="submit" class="btn-guardar">Guardar viaje</button>
+        </div>
+    </form>
+</div>
+
+@* Plantilla para agregar paradas con JS (no se envía con el formulario) *@
+<template id="plantillaParada">
+    @{ FilaParada("__INDEX__", null); }
+</template>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/ruta/ruta-crear.js" asp-append-version="true"></script>
+}

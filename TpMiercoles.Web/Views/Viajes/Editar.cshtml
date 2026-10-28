@@ -1,0 +1,79 @@
+﻿@model ViajeEdicionViewModel
+@{
+    ViewData["Title"] = $"Editar viaje #{Model.Id}";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/viajes/detalle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/viajes/viajes.css" asp-append-version="true" />
+}
+
+<div class="vd vd--angosto">
+
+    <header class="vd-header">
+        <div class="vd-header-main">
+            <p class="vd-eyebrow">Editar viaje #@Model.Id</p>
+            <h1 class="vd-title">
+                <span>@Model.DireccionOrigen</span>
+                <span class="vd-flecha" aria-hidden="true">&rarr;</span>
+                <span>@Model.DireccionDestino</span>
+            </h1>
+        </div>
+        <span class="vd-estado @(Model.EstaActivo ? "vd-estado--activo" : "vd-estado--inactivo")">
+            @Model.EstadoTexto
+        </span>
+    </header>
+
+    <section class="vd-card">
+        <h2 class="vd-card-titulo">Horarios y capacidad</h2>
+
+        <p class="vd-vacio vf-nota">
+            El origen, el destino, las paradas y los días se editan desde la ruta, no desde el viaje.
+            @if (Model.CantidadPaquetes > 0)
+            {
+                <text>Este viaje ya tiene <strong>@Model.CantidadPaquetes paquete(s) asignado(s)</strong>, así que la capacidad no puede quedar por debajo de ese número.</text>
+            }
+        </p>
+
+        <form asp-action="EditarDesdeFormulario" asp-route-id="@Model.Id" method="post" class="vf-form">
+            <div asp-validation-summary="ModelOnly" class="vf-errores"></div>
+
+            <input type="hidden" asp-for="Id" />
+
+            <div class="vf-campos">
+                <div class="vf-campo">
+                    <label asp-for="FechaSalida"></label>
+                    <input asp-for="FechaSalida" type="datetime-local" />
+                    <span asp-validation-for="FechaSalida" class="vf-error"></span>
+                </div>
+
+                <div class="vf-campo">
+                    <label asp-for="FechaLlegada"></label>
+                    <input asp-for="FechaLlegada" type="datetime-local" />
+                    <span asp-validation-for="FechaLlegada" class="vf-error"></span>
+                </div>
+
+                <div class="vf-campo">
+                    <label asp-for="PesoMax"></label>
+                    <input asp-for="PesoMax" type="number" step="0.1" min="0.1" />
+                    <span asp-validation-for="PesoMax" class="vf-error"></span>
+                </div>
+
+                <div class="vf-campo">
+                    <label asp-for="CapacidadMaxPaquetes"></label>
+                    <input asp-for="CapacidadMaxPaquetes" type="number" step="1" min="1" />
+                    <span asp-validation-for="CapacidadMaxPaquetes" class="vf-error"></span>
+                </div>
+            </div>
+
+            <div class="vf-acciones">
+                <button type="submit" class="vl-btn vl-btn--principal">Guardar cambios</button>
+                <a class="vl-btn" asp-action="Detalle" asp-route-id="@Model.Id">Cancelar</a>
+            </div>
+        </form>
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

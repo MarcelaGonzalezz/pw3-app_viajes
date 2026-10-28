@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace TpMiercoles.Entidades
@@ -8,8 +8,14 @@ namespace TpMiercoles.Entidades
         public ViajesDbContext(DbContextOptions<ViajesDbContext> options) : base(options) { }
 
         public DbSet<Usuario> Usuarios { get; set; }
+        public DbSet<Envio> Envios { get; set; }
+        public DbSet<Viaje> Viajes { get; set; }
+        public DbSet<Ruta> Rutas { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Viaje>()
+                .ToTable("Viaje");
+
             modelBuilder.Entity<Ruta>()
                 .HasOne(r => r.DireccionOrigen)
                 .WithMany()
@@ -48,7 +54,11 @@ namespace TpMiercoles.Entidades
                 .HasOne(a => a.Viaje)
                 .WithMany(v => v.Asignaciones)
                 .HasForeignKey(a => a.ViajeId)
-                .OnDelete(DeleteBehavior.Restrict); 
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Envio>()
+                .Property(e => e.Monto)
+                .HasPrecision(18, 2);
         }
     }
 

@@ -1,36 +1,46 @@
 ﻿using AutoMapper;
-using System;
-using System.Collections.Generic;
-using System.Text;
+
 using TpMiercoles.Entidades;
+using TpMiercoles.Entidades.Excepciones;
 using TpMiercoles.Repositorios;
 using TpMiercoles.Servicios.DTOs.Direccion;
 using TpMiercoles.Servicios.DTOs.Ruta;
 
 namespace TpMiercoles.Servicios
 {
-    public class RutaServicio
+    public interface IRutaServicio
+    {
+        Task CrearRutaAsync(int usuarioId, CrearRutaDTO rutaDTO);
+        Task<List<RutaDTO>> ObtenerRutasActivasDeUnUsuarioAsync(int usuarioId);
+    }
+
+    public class RutaServicio : IRutaServicio
     {
         private readonly IRutaRepositorio _rutaRepositorio;
         private readonly IUsuarioRepositorio _usuarioRepositorio;
         private readonly IMapper _mapper;
         public RutaServicio(IRutaRepositorio rutaRepositorio, IUsuarioRepositorio usuarioRepositorio, IMapper mapper)
         {
-            _rutaRepositorio = RutaRepositorio;
-            _rutaRepositorio = usuarioRepositorio;
+            _rutaRepositorio = rutaRepositorio;
+            _usuarioRepositorio = usuarioRepositorio;
             _mapper = mapper;
         }
-        public async Task<RutaDTO> CrearRutaAsync(int usuarioId, CrearRutaDTO rutaDTO)
+        public async Task CrearRutaAsync(int usuarioId, CrearRutaDTO rutaDTO)
         {
-            Usuario usuario =  await _usuarioRepositorio.BuscarPorIdAsync(usuarioId)
-    ?? throw new NoEncontradoException("Usuario no encontrado."); 
-
             ValidarRuta(rutaDTO);
+            Usuario usuario = await _usuarioRepositorio.BuscarPorIdAsync(usuarioId);
+
+           
 
             Ruta ruta = _mapper.Map<Ruta>(rutaDTO);
             ruta.Usuario = usuario;
             await _rutaRepositorio.CrearRutaAsync(ruta);
-            return _mapper.Map<RutaDTO>(ruta);
+        }
+
+        public async Task<List<RutaDTO>> ObtenerRutasActivasDeUnUsuarioAsync(int usuarioId)
+        {
+            List<Ruta> rutas = await _rutaRepositorio.ObtenerRutasActivasDeUnUsuarioAsync(usuarioId);
+            return _mapper.Map<List<RutaDTO>>(rutas);
         }
 
         private void ValidarRuta(CrearRutaDTO rutaDTO)
@@ -62,9 +72,12 @@ namespace TpMiercoles.Servicios
                     throw new ValidacionRutaException("La parada no puede ser igual a la direccion de origen o destino");
 
                 if (!paradasVistas.Add(clave))   
-                    throw new ReglaNegocioException("No se pueden repetir paradas.");
+                    throw new ValidacionRutaException("No se pueden repetir paradas.");
             }
-            if()
+            var ordenes = rutaDTO.Paradas.Select(p => p.Orden).OrderBy(o => o).ToList();
+
+            if (!ordenes.SequenceEqual(Enumerable.Range(1, rutaDTO.Paradas.Count)))
+                throw new ValidacionRutaException("El orden de las paradas debe ser consecutivo, empezando en 1.");
         }
         private (decimal Lat, decimal Lng) Clave(DireccionDTO d)
     => (Math.Round(d.Latitud, 5), Math.Round(d.Longitud, 5));

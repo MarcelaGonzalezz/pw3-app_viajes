@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using TpMiercoles.Web.Models;
@@ -6,9 +7,13 @@ namespace TpMiercoles.Web.Controllers
 {
     public class HomeController : Controller
     {
+        [Authorize]
         public IActionResult Index()
         {
-            return View();
+            var modelo = new DashboardViewModel {
+                NombreUsuario = User.Identity?.Name ?? string.Empty
+            };
+            return View(modelo);
         }
 
         public IActionResult Privacy()

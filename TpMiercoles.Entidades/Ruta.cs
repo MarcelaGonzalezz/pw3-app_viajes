@@ -22,5 +22,6 @@ namespace TpMiercoles.Entidades
         public List<Parada> Paradas { get; set; } = [];
         public TimeOnly HoraSalida { get; set; }
         public TimeOnly HoraLlegada { get; set; }
+        public EstadoRuta Estado { get; set; }
     }
 }
