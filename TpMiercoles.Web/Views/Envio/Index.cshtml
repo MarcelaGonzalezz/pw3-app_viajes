@@ -1,0 +1,124 @@
+@using TpMiercoles.Entidades
+@using System.Globalization
+@model MisEnviosViewModel
+@{
+    ViewData["Title"] = "Mis envíos";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/viajes/detalle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/viajes/viajes.css" asp-append-version="true" />
+}
+
+<div class="vd">
+
+    <header class="vd-header">
+        <div class="vd-header-main">
+            <p class="vd-eyebrow">Emisor</p>
+            <h1 class="vd-title">Mis envíos</h1>
+        </div>
+        <a asp-action="Nuevo" class="vl-btn vl-btn--principal">Nuevo envío</a>
+    </header>
+
+    @if (TempData["Mensaje"] is string mensaje)
+    {
+        <div class="vl-aviso" role="status">@mensaje</div>
+    }
+
+    <nav class="vl-filtros" aria-label="Filtrar envíos">
+        <a class="vl-filtro @(Model.Filtro is null ? "vl-filtro--on" : "")"
+           asp-action="Index">
+            Todos <span class="vl-filtro-n">@Model.TotalTodos</span>
+        </a>
+        <a class="vl-filtro @(Model.Filtro == EstadoEnvio.BuscandoConductor ? "vl-filtro--on" : "")"
+           asp-action="Index" asp-route-estado="@EstadoEnvio.BuscandoConductor">
+            Buscando conductor <span class="vl-filtro-n">@Model.TotalBuscando</span>
+        </a>
+        <a class="vl-filtro @(Model.Filtro == EstadoEnvio.ConductorAsignado ? "vl-filtro--on" : "")"
+           asp-action="Index" asp-route-estado="@EstadoEnvio.ConductorAsignado">
+            Conductor asignado <span class="vl-filtro-n">@Model.TotalAsignados</span>
+        </a>
+        <a class="vl-filtro @(Model.Filtro == EstadoEnvio.EnCamino ? "vl-filtro--on" : "")"
+           asp-action="Index" asp-route-estado="@EstadoEnvio.EnCamino">
+            En camino <span class="vl-filtro-n">@Model.TotalEnCamino</span>
+        </a>
+        <a class="vl-filtro @(Model.Filtro == EstadoEnvio.Entregado ? "vl-filtro--on" : "")"
+           asp-action="Index" asp-route-estado="@EstadoEnvio.Entregado">
+            Entregados <span class="vl-filtro-n">@Model.TotalEntregados</span>
+        </a>
+    </nav>
+
+    @if (Model.Envios.Count == 0)
+    {
+        <section class="vd-card text-center py-5">
+            <p class="vd-vacio mb-3">
+                @(Model.Filtro is null
+                    ? "Todavía no publicaste envíos."
+                    : "No hay envíos con ese estado.")
+            </p>
+            <a asp-action="Nuevo" class="vl-btn vl-btn--principal">Nuevo envío</a>
+        </section>
+    }
+    else
+    {
+        <ul class="vl-lista">
+            @foreach (var envio in Model.Envios)
+            {
+                var badgeClase = envio.Estado switch
+                {
+                    EstadoEnvio.BuscandoConductor => "vd-estado--activo",
+                    EstadoEnvio.ConductorAsignado => "vd-estado--activo",
+                    EstadoEnvio.Retirado => "vd-estado--activo",
+                    EstadoEnvio.EnCamino => "vd-estado--activo",
+                    EstadoEnvio.Entregado => "vd-estado--inactivo",
+                    EstadoEnvio.Cancelado => "vd-estado--inactivo",
+                    _ => "vd-estado--inactivo"
+                };
+
+                <li class="vd-card vl-item">
+                    <div class="vl-item-info">
+                        <div class="vl-item-top">
+                            <span class="vl-item-id">Envío #@envio.Id</span>
+                            <span class="vd-estado @badgeClase">
+                                @envio.EstadoTexto
+                            </span>
+                        </div>
+
+                        <p class="vl-item-ruta">
+                            @envio.Origen <span class="vd-flecha" aria-hidden="true">&rarr;</span> @envio.Destino
+                        </p>
+
+                        <dl class="vl-item-datos">
+                            <div>
+                                <dt>Entrega hasta</dt>
+                                <dd>@envio.FechaHasta.ToString("dd/MM/yyyy")</dd>
+                            </div>
+                            <div>
+                                <dt>Paquete</dt>
+                                <dd>@envio.TamanioTexto (@envio.PesoKg kg)</dd>
+                            </div>
+                            <div>
+                                <dt>Monto</dt>
+                                <dd>@envio.Monto.ToString("C0", new CultureInfo("es-AR"))</dd>
+                            </div>
+                        </dl>
+
+                        @if (!string.IsNullOrWhiteSpace(envio.Descripcion))
+                        {
+                            <p class="text-muted small mt-2">@envio.Descripcion</p>
+                        }
+                    </div>
+
+                    <div class="vl-acciones">
+                        <a asp-action="Detalle" asp-route-id="@envio.Id" class="vl-btn">Ver detalle</a>
+                        @if (envio.PuedeCancelar)
+                        {
+                            <button type="button" class="vl-btn vl-btn--peligro">Cancelar</button>
+                        }
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+
+</div>

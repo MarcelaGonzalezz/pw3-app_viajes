@@ -35,7 +35,7 @@
         </div>
         <div class="col-md-4">
             <label asp-for="Tamanio" class="form-label">Tamaño</label>
-            <select asp-for="Tamanio" asp-items="ViewBag.Tamanios" class="form-select">
+            <select asp-for="Tamanio" asp-items="Html.GetEnumSelectList<TamanioEnvio>()" class="form-select">
                 <option value="">Seleccioná...</option>
             </select>
             <span asp-validation-for="Tamanio" class="text-danger"></span>
