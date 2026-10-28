@@ -10,6 +10,8 @@ namespace TpMiercoles.Repositorios {
         Task CrearAsync(Envio envio);
         Task<List<Envio>> ListarPorUsuarioAsync(int usuarioId, EstadoEnvio? estado);
         Task<Envio?> ObtenerDetalleAsync(int envioId);
+        Task<Envio?> ObtenerParaModificarAsync(int envioId);
+        Task GuardarCambiosAsync();
     }
     public class EnvioRepositorio : IEnvioRepositorio {
         private readonly ViajesDbContext _viajesDbContext;
@@ -50,5 +52,15 @@ namespace TpMiercoles.Repositorios {
                             .ThenInclude(r => r.Usuario)
                 .FirstOrDefaultAsync(e => e.Id == envioId);
         }
+
+        public async Task<Envio?> ObtenerParaModificarAsync(int envioId) {
+            return await _viajesDbContext.Envios
+                .Include(e => e.DireccionRetiro)
+                .Include(e => e.DireccionEntrega)
+                .Include(e => e.Asignaciones)
+                .FirstOrDefaultAsync(e => e.Id == envioId);
+        }
+
+        public Task GuardarCambiosAsync() => _viajesDbContext.SaveChangesAsync();
     }
 }

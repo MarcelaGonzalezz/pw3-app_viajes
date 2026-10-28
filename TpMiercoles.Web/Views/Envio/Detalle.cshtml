@@ -1,0 +1,165 @@
+@using TpMiercoles.Entidades
+@using System.Globalization
+@model EnvioDetalleViewModel
+@{
+    ViewData["Title"] = $"Envío #{Model.Id}";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/viajes/detalle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/viajes/viajes.css" asp-append-version="true" />
+}
+
+<div class="vd">
+
+    <header class="vd-header">
+        <div class="vd-header-main">
+            <p class="vd-eyebrow">Envío #@Model.Id</p>
+            <h1 class="vd-title">
+                <span>@Model.Origen</span>
+                <span class="vd-flecha" aria-hidden="true">&rarr;</span>
+                <span>@Model.Destino</span>
+            </h1>
+        </div>
+        <span class="vd-estado @Model.EstadoBadgeClass">
+            @Model.EstadoTexto
+        </span>
+    </header>
+
+    @if (TempData["Mensaje"] is string mensaje)
+    {
+        <div class="vl-aviso" role="status">@mensaje</div>
+    }
+
+    @if (TempData["Error"] is string error)
+    {
+        <div class="vl-aviso vl-aviso--error" role="alert">@error</div>
+    }
+
+    <div class="vl-acciones">
+        <a class="vl-btn" asp-action="Index">Volver a mis envíos</a>
+
+        @if (Model.PuedeCancelar)
+        {
+            <form asp-action="Cancelar" asp-route-id="@Model.Id" method="post" class="vl-form-inline" onsubmit="return confirm('¿Estás seguro de que querés cancelar este envío?');">
+                <input type="hidden" name="volverADetalle" value="true" />
+                <button type="submit" class="vl-btn vl-btn--peligro">Cancelar envío</button>
+            </form>
+        }
+    </div>
+
+    <section class="vd-datos" aria-label="Datos del envío">
+        <div class="vd-dato">
+            <span class="vd-dato-label">Monto ofrecido</span>
+            <span class="vd-dato-valor">@Model.Monto.ToString("C0", new CultureInfo("es-AR"))</span>
+        </div>
+        <div class="vd-dato">
+            <span class="vd-dato-label">Entrega hasta</span>
+            <span class="vd-dato-valor">@Model.FechaHasta.ToString("dd/MM/yyyy")</span>
+        </div>
+        <div class="vd-dato">
+            <span class="vd-dato-label">Publicado el</span>
+            <span class="vd-dato-valor">@Model.FechaDesde.ToString("dd/MM/yyyy")</span>
+        </div>
+        <div class="vd-dato">
+            <span class="vd-dato-label">Peso</span>
+            <span class="vd-dato-valor">@Model.PesoKg.ToString("0.##") kg</span>
+        </div>
+        <div class="vd-dato">
+            <span class="vd-dato-label">Tamaño</span>
+            <span class="vd-dato-valor">@Model.TamanioTexto</span>
+        </div>
+    </section>
+
+    <div class="vd-cols">
+
+        <section class="vd-card" aria-label="Puntos de entrega">
+            <h2 class="vd-card-titulo">Puntos de entrega</h2>
+            <ol class="vd-recorrido vd-recorrido--espaciado">
+                <li class="vd-punto vd-punto--extremo">
+                    <span class="vd-punto-tipo">Origen (Retiro)</span>
+                    <span class="vd-punto-dir">@Model.Origen</span>
+                </li>
+                <li class="vd-punto vd-punto--extremo">
+                    <span class="vd-punto-tipo">Destino (Entrega)</span>
+                    <span class="vd-punto-dir">@Model.Destino</span>
+                </li>
+            </ol>
+        </section>
+
+        <section class="vd-card" aria-label="Información del envío">
+            <div class="mb-4">
+                <h2 class="vd-card-titulo">Paquete</h2>
+                @if (string.IsNullOrWhiteSpace(Model.Descripcion))
+                {
+                    <p class="vd-vacio">Sin descripción adicional.</p>
+                }
+                else
+                {
+                    <p class="mb-0 text-break">@Model.Descripcion</p>
+                }
+            </div>
+
+            <div class="pt-3 border-top mt-auto">
+                <h2 class="vd-card-titulo">Transportista asignado</h2>
+
+                @if (Model.TieneConductorAsignado)
+                {
+                    <dl class="vd-paquete-datos">
+                        <div>
+                            <dt>Conductor</dt>
+                            <dd>@(string.IsNullOrWhiteSpace(Model.ConductorNombre) ? "Conductor asignado" : Model.ConductorNombre)</dd>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(Model.ConductorEmail))
+                        {
+                            <div>
+                                <dt>Contacto</dt>
+                                <dd><a href="mailto:@Model.ConductorEmail" class="text-decoration-none">@Model.ConductorEmail</a></dd>
+                            </div>
+                        }
+                        @if (Model.ViajeId.HasValue)
+                        {
+                            <div>
+                                <dt>Viaje</dt>
+                                <dd>
+                                    Viaje #@Model.ViajeId
+                                    @if (Model.FechaSalidaViaje.HasValue)
+                                    {
+                                        <span class="text-muted small ms-1">(Salida: @Model.FechaSalidaViaje.Value.ToString("dd/MM/yyyy HH:mm"))</span>
+                                    }
+                                </dd>
+                            </div>
+                        }
+                        @if (Model.FechaAceptacion.HasValue)
+                        {
+                            <div>
+                                <dt>Aceptado</dt>
+                                <dd>@Model.FechaAceptacion.Value.ToString("dd/MM/yyyy HH:mm")</dd>
+                            </div>
+                        }
+                        @if (Model.FechaRetiro.HasValue)
+                        {
+                            <div>
+                                <dt>Retiro</dt>
+                                <dd>@Model.FechaRetiro.Value.ToString("dd/MM/yyyy HH:mm")</dd>
+                            </div>
+                        }
+                        @if (Model.FechaEntrega.HasValue)
+                        {
+                            <div>
+                                <dt>Entrega</dt>
+                                <dd>@Model.FechaEntrega.Value.ToString("dd/MM/yyyy HH:mm")</dd>
+                            </div>
+                        }
+                    </dl>
+                }
+                else
+                {
+                    <p class="vd-vacio">Buscando conductor disponible. Te notificaremos cuando un transportista acepte tu paquete.</p>
+                }
+            </div>
+        </section>
+
+    </div>
+
+</div>

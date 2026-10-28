@@ -59,6 +59,55 @@ namespace TpMiercoles.Web.Controllers
             return View(modelo);
         }
 
+        [HttpGet("/envios/detalle/{id:int}")]
+        public async Task<IActionResult> Detalle(int id)
+        {
+            int? usuarioId = _sesionWeb.UsuarioId;
+            if (usuarioId is null)
+            {
+                return Challenge();
+            }
+
+            EnvioDetalleDTO? dto = await _servicio.ObtenerDetalleAsync(id, usuarioId.Value);
+            if (dto is null)
+            {
+                return NotFound();
+            }
+
+            return View(_mapper.Map<EnvioDetalleViewModel>(dto));
+        }
+
+        [HttpPost("/envios/{id:int}/cancelar")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Cancelar(int id, bool volverADetalle = false)
+        {
+            int? usuarioId = _sesionWeb.UsuarioId;
+            if (usuarioId is null)
+            {
+                return Challenge();
+            }
+
+            ResultadoOperacionEnvio resultado = await _servicio.CancelarAsync(id, usuarioId.Value);
+
+            if (resultado.NoEncontrado)
+            {
+                return NotFound();
+            }
+
+            if (!resultado.EsExitoso)
+            {
+                TempData["Error"] = resultado.Error;
+            }
+            else
+            {
+                TempData["Mensaje"] = $"El envío #{id} fue cancelado correctamente.";
+            }
+
+            return volverADetalle
+                ? RedirectToAction(nameof(Detalle), new { id })
+                : RedirectToAction(nameof(Index));
+        }
+
         [HttpGet("/envios/nuevo")]
         public IActionResult Nuevo()
         {

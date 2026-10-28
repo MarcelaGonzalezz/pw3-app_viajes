@@ -25,6 +25,11 @@
         <div class="vl-aviso" role="status">@mensaje</div>
     }
 
+    @if (TempData["Error"] is string error)
+    {
+        <div class="vl-aviso vl-aviso--error" role="alert">@error</div>
+    }
+
     <nav class="vl-filtros" aria-label="Filtrar envíos">
         <a class="vl-filtro @(Model.Filtro is null ? "vl-filtro--on" : "")"
            asp-action="Index">
@@ -113,7 +118,9 @@
                         <a asp-action="Detalle" asp-route-id="@envio.Id" class="vl-btn">Ver detalle</a>
                         @if (envio.PuedeCancelar)
                         {
-                            <button type="button" class="vl-btn vl-btn--peligro">Cancelar</button>
+                            <form asp-action="Cancelar" asp-route-id="@envio.Id" method="post" class="vl-form-inline" onsubmit="return confirm('¿Estás seguro de que querés cancelar este envío?');">
+                                <button type="submit" class="vl-btn vl-btn--peligro">Cancelar</button>
+                            </form>
                         }
                     </div>
                 </li>

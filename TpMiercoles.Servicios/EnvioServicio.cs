@@ -11,6 +11,7 @@ namespace TpMiercoles.Servicios {
         Task CrearAsync(EnvioDTO envio, int usuarioId);
         Task<List<EnvioListadoDTO>> ListarAsync(int usuarioId, EstadoEnvio? estado);
         Task<EnvioDetalleDTO?> ObtenerDetalleAsync(int envioId, int usuarioId);
+        Task<ResultadoOperacionEnvio> CancelarAsync(int envioId, int usuarioId);
     }
 
     public class EnvioServicio : IEnvioServicio {
@@ -98,6 +99,23 @@ namespace TpMiercoles.Servicios {
             }
 
             return dto;
+        }
+
+        public async Task<ResultadoOperacionEnvio> CancelarAsync(int envioId, int usuarioId) {
+            Envio? envio = await _repositorio.ObtenerParaModificarAsync(envioId);
+
+            if (envio is null || envio.UsuarioId != usuarioId) {
+                return ResultadoOperacionEnvio.NoExiste();
+            }
+
+            if (envio.Estado != EstadoEnvio.BuscandoConductor) {
+                return ResultadoOperacionEnvio.Invalido("Solo se pueden cancelar envíos que se encuentren en búsqueda de conductor.");
+            }
+
+            envio.Estado = EstadoEnvio.Cancelado;
+            await _repositorio.GuardarCambiosAsync();
+
+            return ResultadoOperacionEnvio.Exitoso();
         }
     }
 }
