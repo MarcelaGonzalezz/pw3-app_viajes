@@ -1,5 +1,6 @@
 @model DashboardViewModel
 @using System.Globalization
+@using TpMiercoles.Entidades
 @{
     ViewData["Title"] = "Home";
     var pesos = new CultureInfo("es-AR");
@@ -71,7 +72,36 @@
                     <h2 class="h6 mb-0">Envíos pendientes</h2>
                     <a asp-controller="Envio" asp-action="Index" class="small text-decoration-none">Ver mis envíos</a>
                 </div>
-                <p class="text-muted mb-0">Todavía no publicaste envíos.</p>
+                @if (Model.EnviosPendientesLista.Count == 0)
+                {
+                    <p class="text-muted mb-0">Todavía no publicaste envíos pendientes.</p>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var envio in Model.EnviosPendientesLista)
+                        {
+                            var badgeClase = envio.Estado switch
+                            {
+                                EstadoEnvio.BuscandoConductor => "bg-primary-subtle text-primary border border-primary-subtle",
+                                EstadoEnvio.ConductorAsignado => "bg-info-subtle text-info border border-info-subtle",
+                                EstadoEnvio.Retirado or EstadoEnvio.EnCamino => "bg-warning-subtle text-warning-emphasis border border-warning-subtle",
+                                _ => "bg-secondary-subtle text-secondary"
+                            };
+
+                            <a asp-controller="Envio" asp-action="Detalle" asp-route-id="@envio.Id"
+                               class="list-group-item list-group-item-action px-0 py-2 border-0 border-bottom">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="text-truncate me-2">
+                                        <div class="fw-semibold text-truncate">@envio.Origen &rarr; @envio.Destino</div>
+                                        <small class="text-muted">Entrega hasta: @envio.FechaHasta.ToString("dd/MM/yyyy") &bull; @envio.TamanioTexto</small>
+                                    </div>
+                                    <span class="badge @badgeClase">@envio.EstadoTexto</span>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                }
             </div>
         </div>
     </div>
