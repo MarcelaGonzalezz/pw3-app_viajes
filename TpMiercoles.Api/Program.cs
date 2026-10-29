@@ -54,6 +54,12 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+using (IServiceScope ambitoBase = app.Services.CreateScope())
+{
+    ViajesDbContext contextoDb = ambitoBase.ServiceProvider.GetRequiredService<ViajesDbContext>();
+    await contextoDb.Database.MigrateAsync();
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

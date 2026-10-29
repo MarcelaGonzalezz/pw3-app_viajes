@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using TpMiercoles.Entidades;
 using TpMiercoles.Repositorios;
@@ -175,7 +176,17 @@ namespace TpMiercoles.Servicios
                 Estado = EstadoActividadViaje.ACTIVO
             };
 
-            await _repositorio.AgregarAsync([viajeConPaquetes, viajeInactivo, viajeAjeno]);
+            try
+            {
+                await _repositorio.AgregarAsync([viajeConPaquetes, viajeInactivo, viajeAjeno]);
+            }
+            catch (DbUpdateException ex)
+            {
+                _registro.LogWarning(ex,
+                    "No se pudieron guardar los datos de prueba porque la base no coincide con el modelo actual. " +
+                    "Corre Update-Database y vuelve a arrancar la app.");
+                return;
+            }
 
             _registro.LogInformation(
                 "Datos de prueba cargados. Viaje con paquetes: /viajes/{ConPaquetes} | " +

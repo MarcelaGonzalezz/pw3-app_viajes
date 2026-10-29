@@ -21,6 +21,7 @@ namespace TpMiercoles.Tests.Web.Controllers
         private readonly Mock<ISesionWeb> _sesionMock;
         private readonly IMapper _mapper;
         private readonly ViajesController _controller;
+        private readonly Mock<IHttpClientFactory> _httpClientFactoryMock;
 
         public ViajesControllerTests()
         {
@@ -29,8 +30,9 @@ namespace TpMiercoles.Tests.Web.Controllers
             _mapper = MapperFactory.Crear();
 
             _sesionMock.SetupGet(s => s.UsuarioId).Returns(UsuarioId);
+            _httpClientFactoryMock = new Mock<IHttpClientFactory>();
 
-            _controller = new ViajesController(_servicioMock.Object, _sesionMock.Object, _mapper)
+            _controller = new ViajesController(_servicioMock.Object, _sesionMock.Object, _mapper, _httpClientFactoryMock.Object)
             {
                 TempData = new TempDataDictionary(
                     new DefaultHttpContext(),
