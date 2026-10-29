@@ -1,6 +1,6 @@
 ﻿
-using Microsoft.EntityFrameworkCore;
 using TpMiercoles.Entidades;
+using Microsoft.EntityFrameworkCore;
 
 namespace TpMiercoles.Repositorios
 {
