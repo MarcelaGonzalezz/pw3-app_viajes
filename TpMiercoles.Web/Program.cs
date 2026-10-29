@@ -93,12 +93,6 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    using (IServiceScope ambitoDb = app.Services.CreateScope())
-    {
-        var db = ambitoDb.ServiceProvider.GetRequiredService<ViajesDbContext>();
-        db.Database.Migrate();
-    }
-
     // Datos de ejemplo para poder probar las pantallas. No corre en produccion.
     using IServiceScope ambitoDeSeed = app.Services.CreateScope();
     await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeDesarrollo>().SembrarAsync();
