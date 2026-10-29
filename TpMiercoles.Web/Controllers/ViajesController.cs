@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Net.Http.Json;
 using TpMiercoles.Entidades;
 using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.DTOs;
@@ -15,12 +16,18 @@ namespace TpMiercoles.Web.Controllers
         private readonly IViajeServicio _viajeServicio;
         private readonly ISesionWeb _sesionWeb;
         private readonly IMapper _mapper;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public ViajesController(IViajeServicio viajeServicio, ISesionWeb sesionWeb, IMapper mapper)
+        public ViajesController(
+            IViajeServicio viajeServicio,
+            ISesionWeb sesionWeb,
+            IMapper mapper,
+            IHttpClientFactory httpClientFactory)
         {
             _viajeServicio = viajeServicio;
             _sesionWeb = sesionWeb;
             _mapper = mapper;
+            _httpClientFactory = httpClientFactory;
         }
 
         // GET /viajes  (opcional ?estado=ACTIVO | INACTIVO; sin parametro trae todos)
@@ -33,7 +40,32 @@ namespace TpMiercoles.Web.Controllers
                 return Challenge();
             }
 
-            List<ViajeListadoDTO> todos = await _viajeServicio.ListarAsync(usuarioId.Value, null);
+            HttpClient clienteApi = _httpClientFactory.CreateClient("ViajesApi");
+            using HttpRequestMessage solicitud = new(HttpMethod.Get, "api/viajes");
+
+            // HttpClient no copia automáticamente la cookie del navegador.
+            // La reenviamos para que la API pueda identificar al usuario.
+            string cookie = Request.Headers.Cookie.ToString();
+            if (!string.IsNullOrWhiteSpace(cookie))
+            {
+                solicitud.Headers.TryAddWithoutValidation("Cookie", cookie);
+            }
+
+            using HttpResponseMessage respuesta = await clienteApi.SendAsync(solicitud);
+
+            if (respuesta.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                return Challenge();
+            }
+
+            if (!respuesta.IsSuccessStatusCode)
+            {
+                return StatusCode((int)respuesta.StatusCode,
+                    "No se pudo consultar la API de viajes.");
+            }
+
+            List<ViajeListadoDTO> todos =
+                await respuesta.Content.ReadFromJsonAsync<List<ViajeListadoDTO>>() ?? [];
 
             List<ViajeListadoDTO> filtrados = estado is null
                 ? todos

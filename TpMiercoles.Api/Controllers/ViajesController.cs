@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using TpMiercoles.Entidades;
 using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.DTOs;
-using TpMiercoles.Web.Infraestructura;
 
-namespace TpMiercoles.Web.Controllers.Api
+namespace TpMiercoles.Api.Controllers
 {
     // Web API REST de viajes. Devuelve DTOs, nunca entidades.
     // Comparte la capa de servicio con el controlador MVC para no duplicar
@@ -14,15 +14,13 @@ namespace TpMiercoles.Web.Controllers.Api
     [Authorize]
     [Route("api/viajes")]
     [Produces("application/json")]
-    public class ViajesApiController : ControllerBase
+    public class ViajesController : ControllerBase
     {
         private readonly IViajeServicio _viajeServicio;
-        private readonly ISesionWeb _sesionWeb;
 
-        public ViajesApiController(IViajeServicio viajeServicio, ISesionWeb sesionWeb)
+        public ViajesController(IViajeServicio viajeServicio)
         {
             _viajeServicio = viajeServicio;
-            _sesionWeb = sesionWeb;
         }
 
         // GET /api/viajes
@@ -32,13 +30,12 @@ namespace TpMiercoles.Web.Controllers.Api
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<IEnumerable<ViajeListadoDTO>>> Listar([FromQuery] EstadoActividadViaje? estado)
         {
-            int? usuarioId = _sesionWeb.UsuarioId;
-            if (usuarioId is null)
+            if (!TryObtenerUsuarioId(out int usuarioId))
             {
                 return Unauthorized();
             }
 
-            List<ViajeListadoDTO> viajes = await _viajeServicio.ListarAsync(usuarioId.Value, estado);
+            List<ViajeListadoDTO> viajes = await _viajeServicio.ListarAsync(usuarioId, estado);
             return Ok(viajes);
         }
 
@@ -49,13 +46,12 @@ namespace TpMiercoles.Web.Controllers.Api
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<ViajeDetalleDTO>> Obtener(int id)
         {
-            int? usuarioId = _sesionWeb.UsuarioId;
-            if (usuarioId is null)
+            if (!TryObtenerUsuarioId(out int usuarioId))
             {
                 return Unauthorized();
             }
 
-            ViajeDetalleDTO? viaje = await _viajeServicio.ObtenerDetalleAsync(id, usuarioId.Value);
+            ViajeDetalleDTO? viaje = await _viajeServicio.ObtenerDetalleAsync(id, usuarioId);
 
             // 404 tanto si no existe como si es de otro usuario: no delatamos que existe.
             return viaje is null ? NotFound() : Ok(viaje);
@@ -69,13 +65,12 @@ namespace TpMiercoles.Web.Controllers.Api
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Actualizar(int id, [FromBody] ViajeEdicionDTO datos)
         {
-            int? usuarioId = _sesionWeb.UsuarioId;
-            if (usuarioId is null)
+            if (!TryObtenerUsuarioId(out int usuarioId))
             {
                 return Unauthorized();
             }
 
-            ResultadoOperacionViaje resultado = await _viajeServicio.ActualizarAsync(id, usuarioId.Value, datos);
+            ResultadoOperacionViaje resultado = await _viajeServicio.ActualizarAsync(id, usuarioId, datos);
 
             if (resultado.NoEncontrado)
             {
@@ -97,13 +92,12 @@ namespace TpMiercoles.Web.Controllers.Api
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Desactivar(int id)
         {
-            int? usuarioId = _sesionWeb.UsuarioId;
-            if (usuarioId is null)
+            if (!TryObtenerUsuarioId(out int usuarioId))
             {
                 return Unauthorized();
             }
 
-            ResultadoOperacionViaje resultado = await _viajeServicio.DesactivarAsync(id, usuarioId.Value);
+            ResultadoOperacionViaje resultado = await _viajeServicio.DesactivarAsync(id, usuarioId);
 
             if (resultado.NoEncontrado)
             {
@@ -125,13 +119,12 @@ namespace TpMiercoles.Web.Controllers.Api
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Activar(int id)
         {
-            int? usuarioId = _sesionWeb.UsuarioId;
-            if (usuarioId is null)
+            if (!TryObtenerUsuarioId(out int usuarioId))
             {
                 return Unauthorized();
             }
 
-            ResultadoOperacionViaje resultado = await _viajeServicio.ActivarAsync(id, usuarioId.Value);
+            ResultadoOperacionViaje resultado = await _viajeServicio.ActivarAsync(id, usuarioId);
 
             if (resultado.NoEncontrado)
             {
@@ -144,6 +137,12 @@ namespace TpMiercoles.Web.Controllers.Api
                 estado = EstadoActividadViaje.ACTIVO.ToString(),
                 paquetesAsignados = resultado.PaquetesAfectados
             });
+        }
+
+        private bool TryObtenerUsuarioId(out int usuarioId)
+        {
+            string? valor = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(valor, out usuarioId);
         }
     }
 }
