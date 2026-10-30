@@ -480,5 +480,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
-# Claves de protección de datos locales de ASP.NET Core
+
+# Claves locales de autenticacion compartida
 shared-keys/

@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Http.Json;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -23,6 +25,7 @@ namespace TpMiercoles.Tests.Web.Controllers
         private readonly Mock<ISesionWeb> _sesionMock;
         private readonly IMapper _mapper;
         private readonly ViajesController _controller;
+        private readonly Mock<IHttpClientFactory> _httpClientFactoryMock;
 
         public ViajesControllerTests()
         {
@@ -31,8 +34,9 @@ namespace TpMiercoles.Tests.Web.Controllers
             _mapper = MapperFactory.Crear();
 
             _sesionMock.SetupGet(s => s.UsuarioId).Returns(UsuarioId);
+            _httpClientFactoryMock = new Mock<IHttpClientFactory>();
 
-            _controller = new ViajesController(_servicioMock.Object, _sesionMock.Object, _mapper)
+            _controller = new ViajesController(_servicioMock.Object, _sesionMock.Object, _mapper, _httpClientFactoryMock.Object)
             {
                 TempData = new TempDataDictionary(
                     new DefaultHttpContext(),
@@ -45,11 +49,9 @@ namespace TpMiercoles.Tests.Web.Controllers
         {
             var activo = CrearListadoDto(1, EstadoActividadViaje.ACTIVO);
             var inactivo = CrearListadoDto(2, EstadoActividadViaje.INACTIVO);
-            _servicioMock
-                .Setup(s => s.ListarAsync(UsuarioId, null))
-                .ReturnsAsync([activo, inactivo]);
+            var controller = CrearController(_ => RespuestaJson(new[] { activo, inactivo }));
 
-            var resultado = await _controller.Index(null);
+            var resultado = await controller.Index(null);
 
             var vista = Assert.IsType<ViewResult>(resultado);
             var modelo = Assert.IsType<MisViajesViewModel>(vista.Model);
@@ -70,11 +72,9 @@ namespace TpMiercoles.Tests.Web.Controllers
         {
             var activo = CrearListadoDto(1, EstadoActividadViaje.ACTIVO);
             var inactivo = CrearListadoDto(2, EstadoActividadViaje.INACTIVO);
-            _servicioMock
-                .Setup(s => s.ListarAsync(UsuarioId, null))
-                .ReturnsAsync([activo, inactivo]);
+            var controller = CrearController(_ => RespuestaJson(new[] { activo, inactivo }));
 
-            var resultado = await _controller.Index(estado);
+            var resultado = await controller.Index(estado);
 
             var vista = Assert.IsType<ViewResult>(resultado);
             var modelo = Assert.IsType<MisViajesViewModel>(vista.Model);
@@ -84,6 +84,75 @@ namespace TpMiercoles.Tests.Web.Controllers
             Assert.Equal(estado, viaje.Estado);
             Assert.Equal(1, modelo.TotalActivos);
             Assert.Equal(1, modelo.TotalInactivos);
+        }
+
+        [Fact]
+        public async Task Index_CuandoLaApiDevuelveListaVacia_DevuelveElModeloVacio()
+        {
+            var controller = CrearController(_ => RespuestaJson(Array.Empty<ViajeListadoDTO>()));
+
+            var resultado = await controller.Index(null);
+
+            var vista = Assert.IsType<ViewResult>(resultado);
+            var modelo = Assert.IsType<MisViajesViewModel>(vista.Model);
+            Assert.Empty(modelo.Viajes);
+            Assert.Equal(0, modelo.TotalActivos);
+            Assert.Equal(0, modelo.TotalInactivos);
+        }
+
+        [Fact]
+        public async Task Index_CuandoHaySesion_LlamaAlEndpointYReenviaLaCookie()
+        {
+            var handler = new StubHttpMessageHandler(_ => RespuestaJson(Array.Empty<ViajeListadoDTO>()));
+            var controller = CrearController(handler);
+            controller.ControllerContext.HttpContext.Request.Headers.Cookie = ".TpMiercoles.Auth=abc";
+
+            await controller.Index(null);
+
+            Assert.Equal(1, handler.Llamadas);
+            Assert.Equal("http://localhost:5069/api/viajes", handler.UltimaUrl);
+            Assert.Equal(".TpMiercoles.Auth=abc", handler.UltimaCookie);
+        }
+
+        [Fact]
+        public async Task Index_CuandoNoHaySesion_DevuelveChallengeSinLlamarALaApi()
+        {
+            _sesionMock.SetupGet(s => s.UsuarioId).Returns((int?)null);
+            var handler = new StubHttpMessageHandler(
+                _ => throw new InvalidOperationException("No debería llamarse a la API."));
+            var controller = CrearController(handler);
+
+            var resultado = await controller.Index(null);
+
+            Assert.IsType<ChallengeResult>(resultado);
+            Assert.Equal(0, handler.Llamadas);
+        }
+
+        [Fact]
+        public async Task Index_CuandoLaApiDevuelve401_DevuelveChallenge()
+        {
+            var handler = new StubHttpMessageHandler(
+                _ => new HttpResponseMessage(HttpStatusCode.Unauthorized));
+            var controller = CrearController(handler);
+
+            var resultado = await controller.Index(null);
+
+            Assert.IsType<ChallengeResult>(resultado);
+            Assert.Equal(1, handler.Llamadas);
+        }
+
+        [Fact]
+        public async Task Index_CuandoLaApiFalla_DevuelveElStatusDeLaApi()
+        {
+            var handler = new StubHttpMessageHandler(
+                _ => new HttpResponseMessage(HttpStatusCode.InternalServerError));
+            var controller = CrearController(handler);
+
+            var resultado = await controller.Index(null);
+
+            var objeto = Assert.IsType<ObjectResult>(resultado);
+            Assert.Equal(StatusCodes.Status500InternalServerError, objeto.StatusCode);
+            Assert.Equal("No se pudo consultar la API de viajes.", objeto.Value);
         }
 
         [Fact]
@@ -345,6 +414,42 @@ namespace TpMiercoles.Tests.Web.Controllers
             var mensaje = Assert.IsType<string>(_controller.TempData["Mensaje"]);
             Assert.Contains("volvió a estar activo", mensaje);
         }
+
+        private ViajesController CrearController(
+            Func<HttpRequestMessage, HttpResponseMessage> responder)
+            => CrearController(new StubHttpMessageHandler(responder));
+
+        // Arma el controller con un HttpClient que no sale a la red: usa el handler
+        // falso que devuelve la respuesta preparada por cada test.
+        private ViajesController CrearController(HttpMessageHandler handler)
+        {
+            HttpClient cliente = new(handler)
+            {
+                BaseAddress = new Uri("http://localhost:5069/")
+            };
+
+            _httpClientFactoryMock
+                .Setup(f => f.CreateClient("ViajesApi"))
+                .Returns(cliente);
+
+            return new ViajesController(
+                _servicioMock.Object,
+                _sesionMock.Object,
+                _mapper,
+                _httpClientFactoryMock.Object)
+            {
+                ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
+                TempData = new TempDataDictionary(
+                    new DefaultHttpContext(),
+                    Mock.Of<ITempDataProvider>())
+            };
+        }
+
+        private static HttpResponseMessage RespuestaJson<T>(T contenido) =>
+            new(HttpStatusCode.OK)
+            {
+                Content = JsonContent.Create(contenido)
+            };
 
         private static ViajeListadoDTO CrearListadoDto(int id, EstadoActividadViaje estado)
         {

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +26,11 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddMaps(typeof(PerfilDeMapeoWeb).Assembly);
 });
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpClient("ViajesApi", cliente =>
+{
+    cliente.BaseAddress = new Uri(
+        builder.Configuration["Api:BaseUrl"]!);
+});
 builder.Services.AddDbContext<ViajesDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<IUsuarioServicio, UsuarioServicio>();
@@ -39,10 +45,20 @@ builder.Services.AddScoped<IEnvioServicio, EnvioServicio>();
 builder.Services.AddScoped<IEnvioRepositorio, EnvioRepositorio>();
 builder.Services.AddScoped<ISeedDeDesarrollo, SeedDeDesarrollo>();
 
+string carpetaClaves = Path.GetFullPath(
+    Path.Combine(builder.Environment.ContentRootPath, "..", "shared-keys"));
+
+builder.Services
+    .AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(carpetaClaves))
+    .SetApplicationName("TpMiercoles");
+
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.LoginPath = "/Usuario/Login";
+        options.Cookie.Name = ".TpMiercoles.Auth";
+        options.Cookie.Path = "/";
         options.Cookie.HttpOnly = true;  //Js no puede leer la cookie
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always; //La Cookie solo se envia por HTTPS
         options.Cookie.SameSite = SameSiteMode.Lax; //Permite peticiones GET en otro navegador, no POST

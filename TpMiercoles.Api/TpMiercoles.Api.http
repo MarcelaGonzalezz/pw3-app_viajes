@@ -1,0 +1,4 @@
+@TpMiercoles.Api_HostAddress = https://localhost:7192
+
+GET {{TpMiercoles.Api_HostAddress}}/api/viajes
+Accept: application/json
