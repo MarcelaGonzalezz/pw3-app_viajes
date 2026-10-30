@@ -17,6 +17,8 @@ builder.Services.AddDbContext<ViajesDbContext>(options =>
 builder.Services.AddScoped<IViajeServicio, ViajeServicio>();
 builder.Services.AddScoped<IViajeRepositorio, ViajeRepositorio>();
 
+builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(PerfilDeMapeo).Assembly));
+
 string carpetaClaves = Path.GetFullPath(
     Path.Combine(builder.Environment.ContentRootPath, "..", "shared-keys"));
 
