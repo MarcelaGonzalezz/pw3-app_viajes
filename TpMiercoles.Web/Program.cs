@@ -44,6 +44,9 @@ builder.Services.AddScoped<ISesionWeb, SesionWeb>();
 builder.Services.AddScoped<IEnvioServicio, EnvioServicio>();
 builder.Services.AddScoped<IEnvioRepositorio, EnvioRepositorio>();
 builder.Services.AddScoped<ISeedDeDesarrollo, SeedDeDesarrollo>();
+builder.Services.AddScoped<IHistorialRepositorio, HistorialRepositorio>();
+builder.Services.AddScoped<IHistorialServicio, HistorialServicio>();
+builder.Services.AddScoped<ISeedDeHistorial, SeedDeHistorial>();
 
 string carpetaClaves = Path.GetFullPath(
     Path.Combine(builder.Environment.ContentRootPath, "..", "shared-keys"));
@@ -106,6 +109,7 @@ if (app.Environment.IsDevelopment())
     // Datos de ejemplo para poder probar las pantallas. No corre en produccion.
     using IServiceScope ambitoDeSeed = app.Services.CreateScope();
     await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeDesarrollo>().SembrarAsync();
+    await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeHistorial>().SembrarAsync();
 }
 
 if (!app.Environment.IsDevelopment())

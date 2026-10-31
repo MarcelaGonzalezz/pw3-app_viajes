@@ -16,6 +16,8 @@ builder.Services.AddDbContext<ViajesDbContext>(options =>
 
 builder.Services.AddScoped<IViajeServicio, ViajeServicio>();
 builder.Services.AddScoped<IViajeRepositorio, ViajeRepositorio>();
+builder.Services.AddScoped<IHistorialServicio, HistorialServicio>();
+builder.Services.AddScoped<IHistorialRepositorio, HistorialRepositorio>();
 
 builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(PerfilDeMapeo).Assembly));
 
