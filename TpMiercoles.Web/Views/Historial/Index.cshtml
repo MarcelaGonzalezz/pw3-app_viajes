@@ -1,0 +1,144 @@
+@using TpMiercoles.Servicios.DTOs.Historial
+@model HistorialViewModel
+@{
+    ViewData["Title"] = "Historial";
+    string? desdeTxt = Model.Desde?.ToString("yyyy-MM-dd");
+    string? hastaTxt = Model.Hasta?.ToString("yyyy-MM-dd");
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/viajes/detalle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/viajes/viajes.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/historial/historial.css" asp-append-version="true" />
+}
+
+<div class="vd">
+
+    <header class="vd-header">
+        <div class="vd-header-main">
+            <p class="vd-eyebrow">Mi actividad</p>
+            <h1 class="vd-title">Historial</h1>
+            <p class="hs-subtitulo">Operaciones anteriores.</p>
+        </div>
+    </header>
+
+    @if (Model.Error is not null)
+    {
+        <div class="vl-aviso vl-aviso--error" role="alert">@Model.Error</div>
+    }
+
+    <section class="hs-resumen" aria-label="Resumen">
+        <div class="vd-dato">
+            <span class="vd-dato-label">Viajes realizados</span>
+            <span class="hs-numero">@Model.ViajesRealizados</span>
+        </div>
+        <div class="vd-dato">
+            <span class="vd-dato-label">Envíos transportados</span>
+            <span class="hs-numero">@Model.EnviosTransportados</span>
+        </div>
+        <div class="vd-dato hs-dato--ganancia">
+            <span class="vd-dato-label">Ganancia efectiva</span>
+            <span class="hs-numero">@Model.GananciaTexto</span>
+            <span class="vd-dato-extra">
+                Solo paquetes entregados
+                @if (Model.ViajesRealizados > 0)
+                {
+                    <text> · @Model.PromedioTexto por viaje</text>
+                }
+            </span>
+        </div>
+    </section>
+
+    <section class="vd-card hs-filtros-card">
+        <nav class="vl-filtros" aria-label="Filtrar por tipo">
+            <a class="vl-filtro @(Model.Filtro is null ? "vl-filtro--on" : "")"
+               asp-action="Index" asp-route-desde="@desdeTxt" asp-route-hasta="@hastaTxt">
+                Todos <span class="vl-filtro-n">@Model.TotalOperaciones</span>
+            </a>
+            <a class="vl-filtro @(Model.Filtro == TipoOperacionHistorial.ViajeRealizado ? "vl-filtro--on" : "")"
+               asp-action="Index" asp-route-tipo="@TipoOperacionHistorial.ViajeRealizado"
+               asp-route-desde="@desdeTxt" asp-route-hasta="@hastaTxt">
+                Viajes realizados <span class="vl-filtro-n">@Model.ViajesRealizados</span>
+            </a>
+            <a class="vl-filtro @(Model.Filtro == TipoOperacionHistorial.EnvioEntregado ? "vl-filtro--on" : "")"
+               asp-action="Index" asp-route-tipo="@TipoOperacionHistorial.EnvioEntregado"
+               asp-route-desde="@desdeTxt" asp-route-hasta="@hastaTxt">
+                Envíos entregados <span class="vl-filtro-n">@Model.TotalEnviosEntregados</span>
+            </a>
+            <a class="vl-filtro @(Model.Filtro == TipoOperacionHistorial.EnvioCancelado ? "vl-filtro--on" : "")"
+               asp-action="Index" asp-route-tipo="@TipoOperacionHistorial.EnvioCancelado"
+               asp-route-desde="@desdeTxt" asp-route-hasta="@hastaTxt">
+                Envíos cancelados <span class="vl-filtro-n">@Model.TotalEnviosCancelados</span>
+            </a>
+        </nav>
+
+        <form method="get" asp-action="Index" class="hs-fechas">
+            @if (Model.Filtro is not null)
+            {
+                <input type="hidden" name="tipo" value="@Model.Filtro" />
+            }
+            <div class="vf-campo">
+                <label for="desde">Desde</label>
+                <input type="date" id="desde" name="desde" value="@desdeTxt" />
+            </div>
+            <div class="vf-campo">
+                <label for="hasta">Hasta</label>
+                <input type="date" id="hasta" name="hasta" value="@hastaTxt" />
+            </div>
+            <div class="hs-fechas-acciones">
+                <button type="submit" class="vl-btn vl-btn--principal">Filtrar</button>
+                @if (Model.HayFiltroDeFechas)
+                {
+                    <a class="vl-btn" asp-action="Index" asp-route-tipo="@Model.Filtro">Limpiar fechas</a>
+                }
+            </div>
+        </form>
+    </section>
+
+    @if (Model.Items.Count == 0)
+    {
+        <section class="vd-card">
+            <p class="vd-vacio">
+                @(Model.Filtro is null && !Model.HayFiltroDeFechas
+                    ? "Todavía no tenés operaciones finalizadas."
+                    : "No hay operaciones que coincidan con los filtros elegidos.")
+            </p>
+        </section>
+    }
+    else
+    {
+        <section class="vd-card hs-lista-card">
+            <ul class="hs-lista">
+                @foreach (var item in Model.Items)
+                {
+                    <li class="hs-fila">
+                        <div class="hs-fila-info">
+                            <p class="hs-fila-ruta">
+                                @item.Origen
+                                <span class="vd-flecha" aria-hidden="true">&rarr;</span>
+                                @item.Destino
+                            </p>
+                            <p class="hs-fila-sub">
+                                <span class="vd-chip @item.ChipClase">@item.TipoTexto</span>
+                                @item.Subtitulo
+                            </p>
+                        </div>
+
+                        <div class="hs-fila-der">
+                            <span class="hs-monto @(item.EsViaje ? "hs-monto--ganancia" : "")">@item.MontoTexto</span>
+
+                            @if (item.EsViaje)
+                            {
+                                <a class="vl-btn" asp-controller="Viajes" asp-action="Detalle" asp-route-id="@item.Id">Ver detalle</a>
+                            }
+                            else
+                            {
+                                <a class="vl-btn" asp-controller="Envio" asp-action="Detalle" asp-route-id="@item.Id">Ver detalle</a>
+                            }
+                        </div>
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+</div>

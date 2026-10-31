@@ -2,6 +2,7 @@ using AutoMapper;
 using TpMiercoles.Entidades;
 using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Servicios.DTOs.Direccion;
+using TpMiercoles.Servicios.DTOs.Historial;
 using TpMiercoles.Servicios.DTOs.Ruta;
 using TpMiercoles.Web.Models;
 
@@ -37,6 +38,8 @@ namespace TpMiercoles.Web.Mapeos
             CreateMap<RutaViewModel, RutaDTO>();
             CreateMap<RutaDTO, RutaViewModel>();
             CreateMap<CrearRutaViewModel, CrearRutaDTO>();
+
+            CreateMap<HistorialItemDTO, HistorialItemViewModel>();
 
             CreateMap<RutaDiaDTO, DayOfWeek>().ConvertUsing(r => r.DiaSemana);
         }

@@ -1,0 +1,135 @@
+/* Pantalla Historial (GET /historial).
+   Reutiliza vd- (tarjetas, chips) y vl- (filtros, botones) de detalle.css y viajes.css,
+   que se cargan antes. Las clases propias van con prefijo .hs- */
+
+.hs-subtitulo {
+    margin: .25rem 0 0;
+    color: var(--app-muted);
+    font-size: .9375rem;
+}
+
+/* ---------- Resumen ---------- */
+
+.hs-resumen {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .75rem;
+}
+
+@media (max-width: 800px) {
+    .hs-resumen {
+        grid-template-columns: 1fr;
+    }
+}
+
+.hs-numero {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--app-title);
+}
+
+.hs-dato--ganancia {
+    background-color: #e4f6ec;
+    border-color: #a9ddbf;
+}
+
+    .hs-dato--ganancia .vd-dato-label,
+    .hs-dato--ganancia .vd-dato-extra {
+        color: #1d6b40;
+    }
+
+    .hs-dato--ganancia .hs-numero {
+        color: #1d6b40;
+    }
+
+/* ---------- Filtros ---------- */
+
+.hs-filtros-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.hs-fechas {
+    display: flex;
+    align-items: flex-end;
+    gap: .75rem;
+    flex-wrap: wrap;
+}
+
+    .hs-fechas .vf-campo {
+        min-width: 160px;
+    }
+
+.hs-fechas-acciones {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+
+/* ---------- Lista ---------- */
+
+.hs-lista-card {
+    padding: .25rem 1.25rem;
+}
+
+.hs-lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.hs-fila {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--app-light-blue);
+}
+
+    .hs-fila:last-child {
+        border-bottom: none;
+    }
+
+.hs-fila-info {
+    min-width: 0;
+    flex: 1 1 280px;
+}
+
+.hs-fila-ruta {
+    margin: 0 0 .3rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    color: var(--app-title);
+}
+
+.hs-fila-sub {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+    color: var(--app-muted);
+    font-size: .875rem;
+    text-transform: capitalize;
+}
+
+.hs-fila-der {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.hs-monto {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--app-text);
+    white-space: nowrap;
+}
+
+.hs-monto--ganancia {
+    color: #1d6b40;
+}
