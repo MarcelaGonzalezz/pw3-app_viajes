@@ -9,6 +9,8 @@ using TpMiercoles.Repositorios;
 using TpMiercoles.Servicios;
 using TpMiercoles.Web.Infraestructura;
 using TpMiercoles.Web.Mapeos;
+using TpMiercoles.Servicios.Rutas;
+using TpMiercoles.Servicios.Rutas.OpenRouteService;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -92,6 +94,13 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 builder.Services.AddAuthorization(); //Hace funcionar [Authorize]
+
+var rutasOpts = builder.Configuration.GetSection(RutasOptions.Seccion).Get<RutasOptions>() ?? new();
+builder.Services.AddSingleton(rutasOpts);
+builder.Services.AddHttpClient<IServicioRutas, OpenRouteServiceRutas>(c =>
+    c.BaseAddress = new Uri(rutasOpts.OrsBaseUrl));
+
+builder.Services.AddScoped<IRecorridoServicio, RecorridoServicio>();
 
 var app = builder.Build();
 var invariante = CultureInfo.InvariantCulture;
