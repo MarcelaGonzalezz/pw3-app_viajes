@@ -1,0 +1,155 @@
+@using System.Globalization
+@using TpMiercoles.Entidades
+@model ObtenerRutasViewModel
+@*
+    Vista: Views/Ruta/Obtener.cshtml
+    Ajustá los namespaces (ViewModels y EstadoRuta) o agregalos en _ViewImports.cshtml.
+    Los estados se definen en TpMiercoles.Entidades.EstadoRuta.
+*@
+@{
+    ViewData["Title"] = "Mis rutas";
+
+    var es = new CultureInfo("es-AR");   // formato argentino solo para mostrar números
+
+    var dias = new[]
+    {
+        (DayOfWeek.Monday, "Lun"), (DayOfWeek.Tuesday, "Mar"), (DayOfWeek.Wednesday, "Mié"),
+        (DayOfWeek.Thursday, "Jue"), (DayOfWeek.Friday, "Vie"), (DayOfWeek.Saturday, "Sáb"),
+        (DayOfWeek.Sunday, "Dom")
+    };
+
+    int total = Model.Rutas.Count;
+    int activas = Model.Rutas.Count(r => r.Estado == TpMiercoles.Entidades.EstadoRuta.ACTIVA);
+    int inactivas = Model.Rutas.Count(r => r.Estado != TpMiercoles.Entidades.EstadoRuta.ACTIVA);
+
+    var subtitulo = string.IsNullOrWhiteSpace(Model.NombreUsuario)
+        ? "Tus recorridos habituales."
+        : $"Recorridos habituales de {Model.NombreUsuario}.";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/ruta/mis-rutas.css" asp-append-version="true" />
+}
+
+<div class="rutas-page">
+
+    <header class="rutas-cabecera">
+        <div>
+            <h1 class="rutas-titulo">Mis rutas</h1>
+            <p class="rutas-subtitulo">@subtitulo</p>
+        </div>
+        <a class="btn-ruta btn-ruta--primario" asp-controller="Ruta" asp-action="Crear">+ Nueva ruta</a>
+    </header>
+
+    @* ---------- Filtro por estado (se aplica en el navegador) ---------- *@
+    <div class="filtros" role="radiogroup" aria-label="Filtrar rutas por estado">
+        <label class="filtro">
+            <input type="radio" name="filtroEstado" value="Activo" checked />
+            <span>Activas <small class="filtro__cuenta">@activas</small></span>
+        </label>
+        <label class="filtro">
+            <input type="radio" name="filtroEstado" value="Inactivo" />
+            <span>Inactivas <small class="filtro__cuenta">@inactivas</small></span>
+        </label>
+        <label class="filtro">
+            <input type="radio" name="filtroEstado" value="Todas" />
+            <span>Todas <small class="filtro__cuenta">@total</small></span>
+        </label>
+    </div>
+
+    @* ---------- Tarjetas ---------- *@
+    <div class="rutas-grid" id="listaRutas">
+        @foreach (var ruta in Model.Rutas)
+        {
+            var activa = ruta.Estado == TpMiercoles.Entidades.EstadoRuta.ACTIVA;
+            var paradas = ruta.Paradas.OrderBy(p => p.Orden).ToList();
+
+            @* Las inactivas arrancan ocultas: por defecto solo se ven las activas *@
+            <article class="ruta-card @(activa ? "ruta-card--activa" : "ruta-card--inactiva")"
+         data-estado="@(activa ? "Activo" : "Inactivo")" @(activa ? "" : "hidden")>
+
+                <div class="ruta-card__cabecera">
+                    <span class="estado-tag @(activa ? "estado-tag--activo" : "estado-tag--inactivo")">
+                        @(activa ? "Activa" : "Inactiva")
+                    </span>
+                    <span class="ruta-card__vigencia">
+                        Desde @ruta.FechaInicio.ToString("dd/MM/yyyy")
+                        · @(ruta.FechaFin is null ? "sin fecha de fin" : "hasta " + ruta.FechaFin.Value.ToString("dd/MM/yyyy"))
+                    </span>
+                </div>
+
+                <div class="recorrido">
+                    <div class="recorrido__punto recorrido__punto--origen">
+                        <span class="recorrido__rotulo">Origen</span>
+                        <span class="recorrido__texto" title="@ruta.DireccionOrigen.Texto">@ruta.DireccionOrigen.Texto</span>
+                    </div>
+                    <div class="recorrido__punto recorrido__punto--destino">
+                        <span class="recorrido__rotulo">Destino</span>
+                        <span class="recorrido__texto" title="@ruta.DireccionDestino.Texto">@ruta.DireccionDestino.Texto</span>
+                    </div>
+                </div>
+
+                <dl class="datos">
+                    <dt>Días</dt>
+                    <dd>
+                        <div class="dias-mini">
+                            @foreach (var (valor, etiqueta) in dias)
+                            {
+                                <span class="dia-mini @(ruta.RutaDias.Contains(valor) ? "dia-mini--activo" : "")">@etiqueta</span>
+                            }
+                        </div>
+                    </dd>
+
+                    <dt>Horario</dt>
+                    <dd>@ruta.HoraSalida.ToString("HH:mm") → @ruta.HoraLlegada.ToString("HH:mm")</dd>
+
+                    <dt>Capacidad</dt>
+                    <dd>
+                        @ruta.CapacidadMaxPaquetes @(ruta.CapacidadMaxPaquetes == 1 ? "paquete" : "paquetes")
+                        · @ruta.PesoMax.ToString("0.##", es) kg
+                    </dd>
+                </dl>
+
+                @if (paradas.Count > 0)
+                {
+                    <details class="paradas-det">
+                        <summary>@paradas.Count @(paradas.Count == 1 ? "parada intermedia" : "paradas intermedias")</summary>
+                        <ol>
+                            @foreach (var parada in paradas)
+                            {
+                                <li title="@parada.Direccion.Texto">@parada.Direccion.Texto</li>
+                            }
+                        </ol>
+                    </details>
+                }
+                else
+                {
+                    <p class="sin-paradas">Sin paradas intermedias</p>
+                }
+
+                <div class="ruta-card__acciones">
+                    <a class="btn-ruta btn-ruta--primario" asp-controller="Ruta" asp-action="Detalle" asp-route-id="@ruta.Id">Ver detalle</a>
+                    <a class="btn-ruta btn-ruta--secundario" asp-controller="Ruta" asp-action="Editar" asp-route-id="@ruta.Id">Editar</a>
+
+                    @if (activa)
+                    {
+                        <form asp-controller="Ruta" asp-action="Desactivar" asp-route-id="@ruta.Id" method="post"
+                              data-confirmar="¿Desactivar esta ruta? Dejará de buscar oportunidades.">
+                            <button type="submit" class="btn-ruta btn-ruta--peligro">Desactivar</button>
+                        </form>
+                    }
+                </div>
+            </article>
+        }
+    </div>
+
+    @* ---------- Estado vacío (lo muestra el JS cuando el filtro no tiene resultados) ---------- *@
+    <div class="rutas-vacio" id="rutasVacio" hidden>
+        <p id="rutasVacioTexto"></p>
+        <a class="btn-ruta btn-ruta--secundario" asp-controller="Ruta" asp-action="Crear">Crear una ruta</a>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/ruta/mis-rutas.js" asp-append-version="true"></script>
+}

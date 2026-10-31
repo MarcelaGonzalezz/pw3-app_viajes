@@ -1,53 +1,116 @@
-﻿@model NuevoEnvioViewModel
+@model NuevoEnvioViewModel
+@using System.Globalization
 @using TpMiercoles.Entidades
 @{
     ViewData["Title"] = "Nuevo envío";
-}
-<h1 class="h3 mb-0">Nuevo envío</h1>
-<small class="text-muted">Publicá un paquete que necesita ser transportado.</small>
 
-<form asp-action="Nuevo" method="post" class="card card-body mt-3">
-    <div class="row g-3">
-        <div class="col-md-6">
-            <label asp-for="Origen" class="form-label">Origen</label>
-            <input asp-for="Origen" class="form-control" placeholder="¿Dónde lo retiran?" />
-            <span asp-validation-for="Origen" class="text-danger"></span>
+    var inv = CultureInfo.InvariantCulture;
+
+    // Las coordenadas vacías (0) se renderizan en blanco para obligar a elegir una dirección de la lista
+    string Coord(decimal? v) => (v is null || v == 0) ? "" : v.Value.ToString(inv);
+
+    void CampoDireccion(string prefijo, DireccionViewModel? d, string placeholder)
+    {
+        var hayErrorTexto = ViewData.ModelState[prefijo + ".Texto"]?.Errors.FirstOrDefault()?.ErrorMessage;
+        var hayErrorCoord = ViewData.ModelState[prefijo + ".Latitud"]?.Errors.Any() == true
+                         || ViewData.ModelState[prefijo + ".Longitud"]?.Errors.Any() == true;
+        var mensaje = hayErrorTexto ?? (hayErrorCoord ? "Elegí una dirección de la lista." : null);
+
+        <div class="direccion-field @(mensaje is null ? "" : "direccion-field--error")" data-direccion>
+            <input type="text" class="input-plain" data-buscador autocomplete="off"
+                   placeholder="@placeholder" value="@d?.Texto" />
+            <ul class="resultados" data-lista></ul>
+
+            <input type="hidden" name="@(prefijo + ".Texto")" value="@d?.Texto" data-campo="texto" />
+            <input type="hidden" name="@(prefijo + ".Latitud")" value="@Coord(d?.Latitud)" data-campo="lat" />
+            <input type="hidden" name="@(prefijo + ".Longitud")" value="@Coord(d?.Longitud)" data-campo="lng" />
+
+            <span class="error" data-error>@mensaje</span>
         </div>
-        <div class="col-md-6">
-            <label asp-for="Destino" class="form-label">Destino</label>
-            <input asp-for="Destino" class="form-control" placeholder="¿A dónde llega?" />
-            <span asp-validation-for="Destino" class="text-danger"></span>
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/envio/envio-crear.css" asp-append-version="true" />
+}
+
+<div class="envio-page">
+    <form class="envio-form" asp-action="Nuevo" method="post" id="formRuta">
+
+        <h1 class="envio-titulo">Nuevo envío</h1>
+        <p class="envio-subtitulo">Publicá un paquete que necesita ser transportado.</p>
+
+        <div asp-validation-summary="ModelOnly" class="error error--resumen"></div>
+
+        @* ---------- 1. Recorrido ---------- *@
+        <section class="envio-seccion">
+            <h2 class="envio-seccion__titulo"><span class="paso">1</span> Recorrido</h2>
+
+            <div class="campo">
+                <label>Origen</label>
+                @{ CampoDireccion("Origen", Model.Origen, "Buscá la dirección de origen"); }
+            </div>
+
+            <div class="campo">
+                <label>Destino</label>
+                @{ CampoDireccion("Destino", Model.Destino, "Buscá la dirección de destino"); }
+            </div>
+        </section>
+
+        @* ---------- 2. Paquete ---------- *@
+        <section class="envio-seccion">
+            <h2 class="envio-seccion__titulo"><span class="paso">2</span> Paquete</h2>
+
+            <div class="campo">
+                <label asp-for="Paquete.Descripcion">Descripción</label>
+                <input asp-for="Paquete.Descripcion" type="text" class="input-plain" placeholder="Ej: zapatillas, documentos" />
+                <span asp-validation-for="Paquete.Descripcion" class="error"></span>
+            </div>
+
+            <div class="grid-2">
+                <div class="campo">
+                    <label asp-for="Paquete.Tamanio">Tamaño</label>
+                    <select asp-for="Paquete.Tamanio" asp-items="Html.GetEnumSelectList<TamanioEnvio>()">
+                        <option value="">Seleccioná...</option>
+                    </select>
+                    <span asp-validation-for="Paquete.Tamanio" class="error"></span>
+                </div>
+
+                <div class="campo">
+                    <label asp-for="Paquete.PesoKg">Peso (kg)</label>
+                    <input asp-for="Paquete.PesoKg" type="number" min="0.01" step="0.01" class="input-plain" />
+                    <span asp-validation-for="Paquete.PesoKg" class="error"></span>
+                </div>
+            </div>
+        </section>
+
+        @* ---------- 3. Entrega y pago ---------- *@
+        <section class="envio-seccion">
+            <h2 class="envio-seccion__titulo"><span class="paso">3</span> Entrega y pago</h2>
+
+            <div class="grid-2">
+                <div class="campo">
+                    <label asp-for="FechaHasta">Fecha límite de entrega</label>
+                    <input asp-for="FechaHasta" class="input-plain" />
+                    <span asp-validation-for="FechaHasta" class="error"></span>
+                </div>
+
+                <div class="campo">
+                    <label asp-for="Monto">Monto ofrecido ($)</label>
+                    <input asp-for="Monto" type="number" min="0.01" step="0.01" class="input-plain" />
+                    <span asp-validation-for="Monto" class="error"></span>
+                </div>
+            </div>
+        </section>
+
+        <div class="acciones">
+            <a class="btn-cancelar" asp-controller="Home" asp-action="Index">Cancelar</a>
+            <button type="submit" class="btn-guardar">Publicar envío</button>
         </div>
-        <div class="col-md-4">
-            <label asp-for="Fecha" class="form-label">Fecha</label>
-            <input asp-for="Fecha" class="form-control" />
-            <span asp-validation-for="Fecha" class="text-danger"></span>
-        </div>
-        <div class="col-md-4">
-            <label asp-for="PesoKg" class="form-label">Peso (kg)</label>
-            <input asp-for="PesoKg" class="form-control" />
-            <span asp-validation-for="PesoKg" class="text-danger"></span>
-        </div>
-        <div class="col-md-4">
-            <label asp-for="Monto" class="form-label">Monto ofrecido ($)</label>
-            <input asp-for="Monto" class="form-control" />
-            <span asp-validation-for="Monto" class="text-danger"></span>
-        </div>
-        <div class="col-md-4">
-            <label asp-for="Tamanio" class="form-label">Tamaño</label>
-            <select asp-for="Tamanio" asp-items="Html.GetEnumSelectList<TamanioEnvio>()" class="form-select">
-                <option value="">Seleccioná...</option>
-            </select>
-            <span asp-validation-for="Tamanio" class="text-danger"></span>
-        </div>
-        <div class="col-md-8">
-            <label asp-for="Descripcion" class="form-label">Descripción</label>
-            <input asp-for="Descripcion" class="form-control" placeholder="Ej: zapatillas, documentos" />
-            <span asp-validation-for="Descripcion" class="text-danger"></span>
-        </div>
-    </div>
-    <div class="d-flex justify-content-end gap-2 mt-3">
-        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
-        <button type="submit" class="btn btn-dark">Publicar envío</button>
-    </div>
-</form>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script type="module" src="~/js/ruta/direccion.js" asp-append-version="true"></script>
+}

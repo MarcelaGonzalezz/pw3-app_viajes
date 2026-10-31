@@ -7,10 +7,12 @@ namespace TpMiercoles.Web.Models
             [Required(ErrorMessage = "Seleccioná una dirección.")]
             public string Texto { get; set; } = null!;
 
-            [Range(-90, 90)]
-            public decimal Latitud { get; set; }
+        [Required(ErrorMessage = "Seleccioná una dirección de la lista.")]
+        [Range(-90, 90)]
+        public decimal? Latitud { get; set; }
 
-            [Range(-180, 180)]
-            public decimal Longitud { get; set; }
-        }
+        [Required(ErrorMessage = "Seleccioná una dirección de la lista.")]
+        [Range(-180, 180)]
+        public decimal? Longitud { get; set; }
+    }
 }

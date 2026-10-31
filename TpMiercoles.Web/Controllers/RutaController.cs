@@ -42,7 +42,7 @@ namespace TpMiercoles.Web.Controllers
             CrearRutaDTO rutaDTO = _mapper.Map<CrearRutaDTO>(ruta);
             try
             {
-                await _rutaServicio.CrearRutaAsync(idUsuario,rutaDTO);
+                await _rutaServicio.CrearRutaAsync(idUsuario, rutaDTO);
                 return RedirectToAction("Index", "Home");
             }
             catch (ValidacionRutaException e)
@@ -51,6 +51,17 @@ namespace TpMiercoles.Web.Controllers
                 return View(ruta);
             }
 
+
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Obtener()
+        {
+            int usuarioId = _sesionWeb.UsuarioIdRequerido;
+            string nombreUsuario = User.Identity?.Name;
+            var rutasDTO = await _rutaServicio.ObtenerRutasActivasDeUnUsuarioAsync(usuarioId);
+            var rutasVm = _mapper.Map<List<RutaViewModel>>(rutasDTO);
+            return View(new ObtenerRutasViewModel { Rutas = rutasVm, NombreUsuario = nombreUsuario });
 
         }
     }

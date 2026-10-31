@@ -121,11 +121,22 @@ namespace TpMiercoles.Web.Controllers
             if (!ModelState.IsValid)
                 return View(modelo);
 
-            int usuarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            await _servicio.CrearAsync(_mapper.Map<EnvioDTO>(modelo), usuarioId);
+            int? usuarioId = _sesionWeb.UsuarioId;
+            if (usuarioId is null)
+            {
+                return Challenge();
+            }
+
+            ResultadoOperacionEnvio resultado = await _servicio.CrearAsync(_mapper.Map<EnvioDTO>(modelo), usuarioId.Value);
+
+            if (!resultado.EsExitoso)
+            {
+                ModelState.AddModelError(string.Empty, resultado.Error!);
+                return View(modelo);
+            }
 
             TempData["Mensaje"] = "Envío publicado correctamente";
-            return RedirectToAction("Index");
+            return RedirectToAction(nameof(Index));
         }
     }
 }

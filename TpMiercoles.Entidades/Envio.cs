@@ -13,7 +13,7 @@ namespace TpMiercoles.Entidades
         public int DireccionEntregaId { get; set; }
         public Direccion DireccionRetiro { get; set; } = null!;
         public Direccion DireccionEntrega { get; set; } = null!;
-        public DateTime FechaDesde { get; set; }
+        public DateTime FechaDesde { get; set; } = DateTime.Today;
         public DateTime FechaHasta { get; set; }
         public List<Asignacion> Asignaciones { get; set; } = [];
 

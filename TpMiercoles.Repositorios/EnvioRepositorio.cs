@@ -25,7 +25,8 @@ namespace TpMiercoles.Repositorios {
             await _viajesDbContext.SaveChangesAsync();
         }
 
-        public async Task<List<Envio>> ListarPorUsuarioAsync(int usuarioId, EstadoEnvio? estado) {
+        public async Task<List<Envio>> ListarPorUsuarioAsync(int usuarioId, EstadoEnvio? estado)
+        {
             IQueryable<Envio> consulta = _viajesDbContext.Envios
                 .AsNoTracking()
                 .Include(e => e.DireccionRetiro)
@@ -41,9 +42,11 @@ namespace TpMiercoles.Repositorios {
                 .ToListAsync();
         }
 
-        public async Task<Envio?> ObtenerDetalleAsync(int envioId) {
+        public async Task<Envio?> ObtenerDetalleAsync(int envioId)
+        {
             return await _viajesDbContext.Envios
                 .AsNoTracking()
+                .AsSplitQuery()
                 .Include(e => e.DireccionRetiro)
                 .Include(e => e.DireccionEntrega)
                 .Include(e => e.Asignaciones)

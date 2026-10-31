@@ -8,6 +8,7 @@ namespace TpMiercoles.Servicios.DTOs.Ruta
 {
     public class RutaDTO
     {
+        public int Id { get; set; }
         public UsuarioDTO Usuario { get; set; } = null!;
         public DireccionDTO DireccionOrigen { get; set; } = null!;
         public DireccionDTO DireccionDestino { get; set; } = null!;

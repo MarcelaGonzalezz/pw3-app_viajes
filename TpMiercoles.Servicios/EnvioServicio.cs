@@ -1,3 +1,5 @@
+using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,86 +9,79 @@ using TpMiercoles.Repositorios;
 using TpMiercoles.Servicios.DTOs;
 
 namespace TpMiercoles.Servicios {
-    public interface IEnvioServicio {
-        Task CrearAsync(EnvioDTO envio, int usuarioId);
+    public interface IEnvioServicio
+    {
+        Task<ResultadoOperacionEnvio> CrearAsync(EnvioDTO envio, int usuarioId);
         Task<List<EnvioListadoDTO>> ListarAsync(int usuarioId, EstadoEnvio? estado);
         Task<EnvioDetalleDTO?> ObtenerDetalleAsync(int envioId, int usuarioId);
         Task<ResultadoOperacionEnvio> CancelarAsync(int envioId, int usuarioId);
     }
 
-    public class EnvioServicio : IEnvioServicio {
-        private readonly IEnvioRepositorio _repositorio;
+    public class EnvioServicio : IEnvioServicio
+    {
+        private static readonly TimeZoneInfo ZonaArgentina =
+            TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
 
-        public EnvioServicio(IEnvioRepositorio repositorio) {
+        private readonly IEnvioRepositorio _repositorio;
+        private readonly IMapper _mapper;
+        private readonly TimeProvider _reloj;
+
+        public EnvioServicio(IEnvioRepositorio repositorio, IMapper mapper, TimeProvider reloj)
+        {
             _repositorio = repositorio;
+            _mapper = mapper;
+            _reloj = reloj;
         }
 
-        public async Task CrearAsync(EnvioDTO dto, int usuarioId) {
-            var envio = new Envio {
-                UsuarioId = usuarioId,
-                DireccionRetiro = new Direccion { Texto = dto.Origen.Trim() },
-                DireccionEntrega = new Direccion { Texto = dto.Destino.Trim() },
-                FechaDesde = DateTime.Today,
-                FechaHasta = dto.Fecha,
-                Paquete = new Paquete {
-                    PesoKg = dto.PesoKg,
-                    Tamanio = dto.Tamanio,
-                    Descripcion = dto.Descripcion.Trim()
-                },
-                Monto = dto.Monto,
-                Estado = EstadoEnvio.BuscandoConductor
-            };
+        // Fecha "de hoy" en Argentina, sin depender de la zona horaria del servidor
+        private DateTime Hoy() =>
+            TimeZoneInfo.ConvertTime(_reloj.GetUtcNow(), ZonaArgentina).Date;
+
+        public async Task<ResultadoOperacionEnvio> CrearAsync(EnvioDTO dto, int usuarioId)
+        {
+            if (dto.FechaHasta.Date < Hoy())
+                return ResultadoOperacionEnvio.Invalido("La fecha no puede ser anterior a hoy.");
+
+            var envio = _mapper.Map<Envio>(dto);
+            envio.UsuarioId = usuarioId;
+            envio.FechaDesde = Hoy();
+            envio.Estado = EstadoEnvio.BuscandoConductor;
 
             await _repositorio.CrearAsync(envio);
+            return ResultadoOperacionEnvio.Exitoso();
         }
 
-        public async Task<List<EnvioListadoDTO>> ListarAsync(int usuarioId, EstadoEnvio? estado) {
+        public async Task<List<EnvioListadoDTO>> ListarAsync(int usuarioId, EstadoEnvio? estado)
+        {
             List<Envio> envios = await _repositorio.ListarPorUsuarioAsync(usuarioId, estado);
-
-            return envios.Select(e => new EnvioListadoDTO {
-                Id = e.Id,
-                Origen = e.DireccionRetiro?.Texto ?? string.Empty,
-                Destino = e.DireccionEntrega?.Texto ?? string.Empty,
-                FechaDesde = e.FechaDesde,
-                FechaHasta = e.FechaHasta,
-                PesoKg = e.Paquete != null ? e.Paquete.PesoKg : 0,
-                Tamanio = e.Paquete != null ? e.Paquete.Tamanio : default,
-                Descripcion = e.Paquete?.Descripcion ?? string.Empty,
-                Monto = e.Monto,
-                Estado = e.Estado
-            }).ToList();
+            return _mapper.Map<List<EnvioListadoDTO>>(envios);
         }
 
-        public async Task<EnvioDetalleDTO?> ObtenerDetalleAsync(int envioId, int usuarioId) {
+        public async Task<EnvioDetalleDTO?> ObtenerDetalleAsync(int envioId, int usuarioId)
+        {
             Envio? envio = await _repositorio.ObtenerDetalleAsync(envioId);
 
-            if (envio == null || envio.UsuarioId != usuarioId) {
+            if (envio is null || envio.UsuarioId != usuarioId)
+            {
                 return null;
             }
 
-            var dto = new EnvioDetalleDTO {
-                Id = envio.Id,
-                Origen = envio.DireccionRetiro?.Texto ?? string.Empty,
-                Destino = envio.DireccionEntrega?.Texto ?? string.Empty,
-                FechaDesde = envio.FechaDesde,
-                FechaHasta = envio.FechaHasta,
-                PesoKg = envio.Paquete != null ? envio.Paquete.PesoKg : 0,
-                Tamanio = envio.Paquete != null ? envio.Paquete.Tamanio : default,
-                Descripcion = envio.Paquete?.Descripcion ?? string.Empty,
-                Monto = envio.Monto,
-                Estado = envio.Estado
-            };
+            var dto = _mapper.Map<EnvioDetalleDTO>(envio);
 
-            var asignacion = envio.Asignaciones?
-                .FirstOrDefault(a => a.Estado != EstadoViaje.CANCELADO && a.Viaje != null)
-                ?? envio.Asignaciones?.FirstOrDefault(a => a.Viaje != null);
+            // Solo se muestra un conductor si hay una asignación activa (la más reciente)
+            var asignacion = envio.Asignaciones
+                .Where(a => a.Viaje != null && a.Estado != EstadoViaje.CANCELADO)
+                .OrderByDescending(a => a.Id)
+                .FirstOrDefault();
 
-            if (asignacion != null && asignacion.Viaje != null) {
-                dto.TieneConductorAsignado = asignacion.Estado != EstadoViaje.CANCELADO;
+            if (asignacion?.Viaje is not null)
+            {
+                dto.TieneConductorAsignado = true;
                 dto.ViajeId = asignacion.ViajeId;
 
                 var conductor = asignacion.Viaje.Ruta?.Usuario;
-                if (conductor != null) {
+                if (conductor is not null)
+                {
                     var nombreCompleto = $"{conductor.Nombre} {conductor.Apellido}".Trim();
                     dto.ConductorNombre = string.IsNullOrWhiteSpace(nombreCompleto) ? null : nombreCompleto;
                     dto.ConductorEmail = conductor.Email;
@@ -101,21 +96,34 @@ namespace TpMiercoles.Servicios {
             return dto;
         }
 
-        public async Task<ResultadoOperacionEnvio> CancelarAsync(int envioId, int usuarioId) {
+        public async Task<ResultadoOperacionEnvio> CancelarAsync(int envioId, int usuarioId)
+        {
+            // Debe devolver la entidad con tracking e incluir Asignaciones
             Envio? envio = await _repositorio.ObtenerParaModificarAsync(envioId);
 
-            if (envio is null || envio.UsuarioId != usuarioId) {
+            if (envio is null || envio.UsuarioId != usuarioId)
+            {
                 return ResultadoOperacionEnvio.NoExiste();
             }
 
-            if (envio.Estado != EstadoEnvio.BuscandoConductor) {
-                return ResultadoOperacionEnvio.Invalido("Solo se pueden cancelar envíos que se encuentren en búsqueda de conductor.");
+            if (envio.Estado != EstadoEnvio.BuscandoConductor)
+            {
+                return ResultadoOperacionEnvio.Invalido(
+                    "Solo se pueden cancelar envíos que se encuentren en búsqueda de conductor.");
             }
 
             envio.Estado = EstadoEnvio.Cancelado;
-            await _repositorio.GuardarCambiosAsync();
+
+            // Cancelar asignaciones pendientes para que el conductor no las siga viendo
+            foreach (var asignacion in envio.Asignaciones.Where(a => a.Estado != EstadoViaje.CANCELADO))
+            {
+                asignacion.Estado = EstadoViaje.CANCELADO;
+            }
+
+                await _repositorio.GuardarCambiosAsync();
 
             return ResultadoOperacionEnvio.Exitoso();
         }
     }
+
 }

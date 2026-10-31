@@ -1,0 +1,433 @@
+/* =====================================================================
+   Pantalla "Mis rutas" — mismo estilo que el formulario "Nuevo viaje"
+   Fondo y padding los pone .app-content del layout.
+   ===================================================================== */
+
+.rutas-page {
+    --dark-blue: var(--app-dark-blue, #217093);
+    --med-blue: var(--app-med-blue, #4eb8dd);
+    --light-blue: var(--app-light-blue, #ddf1fa);
+    --input-bg: var(--app-input-bg, #f3fafd);
+    --texto: var(--app-title, #3a5e77);
+    --muted: var(--app-muted, #617e92);
+    --error: #d93025;
+
+    max-width: 1100px;
+    margin: 0 auto;
+    padding-bottom: 2rem;
+    font-family: var(--app-font, "Source Sans 3", "Source Sans Pro", sans-serif);
+}
+
+.rutas-page *,
+.rutas-page *::before,
+.rutas-page *::after {
+    box-sizing: border-box;
+}
+
+/* ---------- Cabecera ---------- */
+
+.rutas-cabecera {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.rutas-titulo {
+    margin: 0 0 0.25rem;
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.rutas-subtitulo {
+    margin: 0;
+    color: var(--muted);
+}
+
+/* ---------- Filtro por estado ---------- */
+
+.filtros {
+    display: inline-flex;
+    gap: 0.25rem;
+    margin-bottom: 1.5rem;
+    padding: 0.25rem;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+}
+
+.rutas-page label.filtro {
+    position: relative;
+    display: inline-block;
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+}
+
+.filtro input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+
+.filtro > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 1.1rem;
+    border-radius: 999px;
+    font-weight: 700;
+    color: var(--dark-blue);
+    transition: background-color 0.2s ease-out, color 0.2s ease-out;
+}
+
+.filtro:hover > span {
+    background: var(--light-blue);
+}
+
+.filtro input:checked + span {
+    background: var(--dark-blue);
+    color: #fff;
+}
+
+.filtro input:focus-visible + span {
+    outline: 3px solid var(--med-blue);
+    outline-offset: 2px;
+}
+
+.filtro__cuenta {
+    min-width: 1.5rem;
+    padding: 0.05rem 0.5rem;
+    border-radius: 999px;
+    background: var(--light-blue);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--dark-blue);
+}
+
+.filtro input:checked + span .filtro__cuenta {
+    background: rgb(255 255 255 / 25%);
+    color: #fff;
+}
+
+/* ---------- Grilla de tarjetas ---------- */
+
+.rutas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    gap: 1.25rem;
+}
+
+.ruta-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-top: 4px solid var(--med-blue);
+    border-radius: 0.5em;
+    min-width: 0;
+}
+
+.ruta-card[hidden] {
+    display: none;
+}
+
+.ruta-card--inactiva {
+    border-top-color: #b8c4cc;
+}
+
+.ruta-card--inactiva .recorrido__texto,
+.ruta-card--inactiva .datos dd {
+    color: var(--muted);
+}
+
+.ruta-card__cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.ruta-card__vigencia {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.estado-tag {
+    padding: 0.2rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.estado-tag--activo {
+    background: #e3f6ec;
+    color: #1f7a50;
+}
+
+.estado-tag--inactivo {
+    background: #eceff1;
+    color: var(--muted);
+}
+
+/* ---------- Recorrido origen → destino ---------- */
+
+.recorrido {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding-left: 1.5rem;
+}
+
+.recorrido::before {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: 14px;
+    bottom: 14px;
+    border-left: 2px dashed var(--med-blue);
+}
+
+.recorrido__punto {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.recorrido__punto::before {
+    content: "";
+    position: absolute;
+    left: -1.5rem;
+    top: 0.3rem;
+    width: 12px;
+    height: 12px;
+    border: 3px solid var(--dark-blue);
+    background: #fff;
+    border-radius: 50%;
+}
+
+.recorrido__punto--destino::before {
+    background: var(--dark-blue);
+    border-radius: 3px;
+}
+
+.recorrido__rotulo {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.recorrido__texto {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-weight: 600;
+    color: #353538;
+}
+
+/* ---------- Datos ---------- */
+
+.datos {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.6rem 1rem;
+    align-items: center;
+    margin: 0;
+}
+
+.datos dt {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--dark-blue);
+}
+
+.datos dd {
+    margin: 0;
+    color: #353538;
+}
+
+.dias-mini {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.dia-mini {
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    background: #eef3f5;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #9bb0bd;
+}
+
+.dia-mini--activo {
+    background: var(--dark-blue);
+    color: #fff;
+}
+
+/* ---------- Paradas ---------- */
+
+.paradas-det {
+    font-size: 0.95rem;
+    color: var(--texto);
+}
+
+.paradas-det summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--dark-blue);
+}
+
+.paradas-det ol {
+    margin: 0.5rem 0 0;
+    padding-left: 1.25rem;
+}
+
+.paradas-det li {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #353538;
+}
+
+.sin-paradas {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+/* ---------- Botones y acciones ---------- */
+
+.ruta-card__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--light-blue);
+}
+
+.ruta-card__acciones form {
+    margin: 0 0 0 auto;
+}
+
+.btn-ruta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    padding: 0 1rem;
+    border: solid 2px transparent;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease-out, color 0.2s ease-out;
+}
+
+.btn-ruta--primario {
+    background: var(--med-blue);
+    color: #fff;
+}
+
+.btn-ruta--primario:hover,
+.btn-ruta--primario:focus-visible {
+    background: var(--dark-blue);
+    color: #fff;
+}
+
+.btn-ruta--secundario {
+    background: #fff;
+    border-color: var(--dark-blue);
+    color: var(--dark-blue);
+}
+
+.btn-ruta--secundario:hover,
+.btn-ruta--secundario:focus-visible {
+    background: var(--light-blue);
+    color: var(--dark-blue);
+}
+
+.btn-ruta--peligro {
+    background: #fff;
+    border-color: var(--error);
+    color: var(--error);
+}
+
+.btn-ruta--peligro:hover,
+.btn-ruta--peligro:focus-visible {
+    background: #fdecea;
+    color: var(--error);
+}
+
+/* ---------- Estado vacío ---------- */
+
+.rutas-vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 3rem 1rem;
+    background: #fff;
+    border: 2px dashed #b7d3e0;
+    border-radius: 0.5em;
+    color: var(--muted);
+    text-align: center;
+}
+
+.rutas-vacio[hidden] {
+    display: none;
+}
+
+.rutas-vacio p {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 560px) {
+    .rutas-cabecera {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .rutas-cabecera .btn-ruta {
+        width: 100%;
+    }
+
+    .rutas-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .filtros {
+        display: flex;
+        width: 100%;
+    }
+
+    .filtros .filtro {
+        flex: 1;
+    }
+
+    .filtro > span {
+        justify-content: center;
+        width: 100%;
+        padding: 0.5rem 0.4rem;
+    }
+}

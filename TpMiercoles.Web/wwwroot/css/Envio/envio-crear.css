@@ -1,0 +1,321 @@
+/* El fondo y el padding los pone .app-content del layout */
+.envio-page {
+    display: flex;
+    justify-content: center;
+    padding-bottom: 2rem;
+}
+
+.envio-form {
+    --dark-blue: var(--app-dark-blue, #217093);
+    --med-blue: var(--app-med-blue, #4eb8dd);
+    --light-blue: var(--app-light-blue, #ddf1fa);
+    --input-bg: var(--app-input-bg, #f3fafd);
+    --texto: var(--app-title, #3a5e77);
+    --error: #d93025;
+    --ok: #2e9e6b;
+
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 720px;
+    padding: 2.25em;
+    background-color: #fff;
+    border: solid 1px #ddd;
+    border-radius: 0.5em;
+    font-family: "Source Sans 3", "Source Sans Pro", sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+}
+
+.envio-form *,
+.envio-form *::before,
+.envio-form *::after {
+    box-sizing: border-box;
+}
+
+/* ---------- Títulos ---------- */
+
+.envio-titulo {
+    margin: 0 0 0.25rem;
+    text-align: center;
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.envio-subtitulo {
+    margin: 0 0 2rem;
+    text-align: center;
+    font-size: 1rem;
+    color: #617E92;
+}
+
+.envio-seccion {
+    margin-bottom: 2.25rem;
+}
+
+.envio-seccion__titulo {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0 0 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--light-blue);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--texto);
+}
+
+.envio-seccion__titulo .paso {
+    display: inline-grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--med-blue);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+/* ---------- Grupos y etiquetas ---------- */
+
+.envio-form .campo {
+    position: relative;
+    margin: 0 0 1.25rem;
+    min-width: 0;
+}
+
+.envio-form .campo:last-child {
+    margin-bottom: 0;
+}
+
+.envio-form label {
+    display: block;
+    margin: 0 0 8px;
+    font-size: 1.1em;
+    font-weight: 700;
+    color: var(--dark-blue);
+}
+
+.envio-form .opcional {
+    font-size: 0.85em;
+    font-weight: 400;
+    color: #617E92;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 1rem;
+}
+
+/* ---------- Inputs y select ---------- */
+
+.envio-form input[type="text"],
+.envio-form input[type="number"],
+.envio-form input[type="date"],
+.envio-form input[type="datetime-local"],
+.envio-form select {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    height: 52px;
+    margin: 0;
+    padding: 0.4em 1em;
+    background-color: var(--input-bg);
+    border: solid 2px var(--dark-blue);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #353538;
+    transition: box-shadow 0.2s linear, border-color 0.25s ease-out;
+}
+
+.envio-form input::placeholder {
+    font-weight: 400;
+    color: #7a97a8;
+}
+
+.envio-form input:focus,
+.envio-form select:focus {
+    outline: none;
+    border-color: var(--med-blue);
+    box-shadow: 0 2px 10px rgb(0 0 0 / 10%);
+}
+
+/* Flecha propia para el select */
+.envio-form select {
+    padding-right: 2.75em;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1.5l6 6 6-6' fill='none' stroke='%23217093' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1em center;
+}
+
+/* Un select sin elección (valor vacío) se ve como placeholder */
+.envio-form select:has(option[value=""]:checked) {
+    font-weight: 400;
+    color: #7a97a8;
+}
+
+/* Clase que agrega jQuery Validate / tag helpers cuando el campo es inválido */
+.envio-form .input-validation-error {
+    border-color: var(--error);
+}
+
+/* ---------- Errores ---------- */
+
+.envio-form .error {
+    display: block;
+    margin-top: 0.35em;
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--error);
+}
+
+.envio-form .error:empty {
+    display: none;
+}
+
+.envio-form .error--resumen {
+    margin-bottom: 1.5rem;
+    padding: 0.75rem 1rem;
+    background: #fdecea;
+    border-radius: 4px;
+}
+
+.envio-form .error--resumen ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* ---------- Campo de dirección (buscador Nominatim) ---------- */
+
+.direccion-field {
+    position: relative;
+}
+
+.direccion-field--ok input[data-buscador] {
+    border-color: var(--ok);
+}
+
+.direccion-field--error input[data-buscador] {
+    border-color: var(--error);
+}
+
+.resultados {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    max-height: 240px;
+    margin: 4px 0 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+    background: #fff;
+    border: 2px solid var(--med-blue);
+    border-radius: 4px;
+    box-shadow: 0 6px 18px rgb(0 0 0 / 12%);
+}
+
+.resultados:empty {
+    display: none;
+}
+
+.resultados li {
+    padding: 0.6em 1em;
+    font-size: 0.95rem;
+    color: var(--texto);
+    cursor: pointer;
+}
+
+.resultados li + li {
+    border-top: 1px solid var(--light-blue);
+}
+
+.resultados li:hover,
+.resultados li:focus-visible {
+    background: var(--light-blue);
+    outline: none;
+}
+
+.resultados li.sin-accion {
+    cursor: default;
+    color: #617E92;
+}
+
+.resultados li.sin-accion:hover {
+    background: transparent;
+}
+
+/* ---------- Botones ---------- */
+
+.acciones {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.envio-form .btn-guardar {
+    flex: 1;
+    height: 56px;
+    padding: 0 1rem;
+    background-color: var(--med-blue);
+    border: none;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.2s ease-out;
+}
+
+.envio-form .btn-guardar:hover,
+.envio-form .btn-guardar:active {
+    background-color: var(--dark-blue);
+}
+
+.envio-form .btn-cancelar {
+    padding: 0 0.5rem;
+    font-weight: 600;
+    color: var(--texto);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.envio-form .btn-cancelar:hover,
+.envio-form .btn-cancelar:focus-visible {
+    color: #2b4658;
+    border-bottom-color: currentColor;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 560px) {
+    .envio-form {
+        padding: 1.5em 1.1em;
+    }
+
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .acciones {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .envio-form .btn-cancelar {
+        text-align: center;
+        border-bottom: none;
+    }
+}
