@@ -5,7 +5,7 @@
     de controller/acción (Ruta / Crear / Index) a los reales de tu proyecto.
 *@
 @{
-    ViewData["Title"] = "Nuevo viaje";
+    ViewData["Title"] = "Nueva ruta";
 
     var inv = CultureInfo.InvariantCulture;
 
@@ -66,7 +66,7 @@
 <div class="ruta-page">
     <form class="ruta-form" asp-controller="Ruta" asp-action="Crear" method="post" id="formRuta">
 
-        <h1 class="ruta-titulo">Nuevo viaje</h1>
+        <h1 class="ruta-titulo">Nueva ruta</h1>
         <p class="ruta-subtitulo">Registrá un recorrido habitual y encontraremos envíos compatibles.</p>
 
         <div asp-validation-summary="ModelOnly" class="error error--resumen"></div>
@@ -186,5 +186,7 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="~/js/ruta/ruta-crear.js" asp-append-version="true"></script>
+    <script type="module" src="~/js/ruta/direccion.js" asp-append-version="true"></script>
+    <script type="module" src="~/js/ruta/parada.js" asp-append-version="true"></script>
+}
 }

@@ -15,6 +15,8 @@ namespace TpMiercoles.Web.Mapeos
                  .ForMember(d => d.ContraseniaPlana, o => o.MapFrom(s => s.Contrasenia));
             CreateMap<LoginUsuarioViewModel, UsuarioLoginDTO>()
                 .ForMember(d => d.ContraseniaPlana, o => o.MapFrom(s => s.Contrasenia));
+
+            CreateMap<NuevoPaqueteViewModel, NuevoPaqueteDTO>();
             CreateMap<NuevoEnvioViewModel, EnvioDTO>();
             CreateMap<EnvioListadoDTO, EnvioListadoViewModel>();
             CreateMap<EnvioDetalleDTO, EnvioDetalleViewModel>();
@@ -28,11 +30,15 @@ namespace TpMiercoles.Web.Mapeos
             CreateMap<ViajeEdicionDTO, ViajeEdicionViewModel>();
             CreateMap<ViajeEdicionViewModel, ViajeEdicionDTO>();
             CreateMap<DireccionDTO, DireccionViewModel>();
-            CreateMap<DireccionViewModel, DireccionDTO>();        
-            CreateMap<ParadaViewModel, ParadaDTO>();             
-            CreateMap<DayOfWeek, RutaDiaDTO>()                    
+            CreateMap<DireccionViewModel, DireccionDTO>();
+            CreateMap<ParadaViewModel, ParadaDTO>();
+            CreateMap<DayOfWeek, RutaDiaDTO>()
                 .ConvertUsing(d => new RutaDiaDTO { DiaSemana = d });
+            CreateMap<RutaViewModel, RutaDTO>();
+            CreateMap<RutaDTO, RutaViewModel>();
             CreateMap<CrearRutaViewModel, CrearRutaDTO>();
+
+            CreateMap<RutaDiaDTO, DayOfWeek>().ConvertUsing(r => r.DiaSemana);
         }
     }
 }

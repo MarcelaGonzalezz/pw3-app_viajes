@@ -1,6 +1,6 @@
 ﻿
-using TpMiercoles.Entidades;
 using Microsoft.EntityFrameworkCore;
+using TpMiercoles.Entidades;
 
 namespace TpMiercoles.Repositorios
 {
@@ -29,6 +29,11 @@ namespace TpMiercoles.Repositorios
         public async Task<List<Ruta>> ObtenerRutasActivasDeUnUsuarioAsync(int usuarioId)
         {
             return await _viajesDbContext.Rutas
+    .Include(r => r.DireccionOrigen)
+    .Include(r => r.DireccionDestino)
+    .Include(r => r.RutaDias)
+    .Include(r => r.Paradas)
+        .ThenInclude(p => p.Direccion)
                 .Where(r => r.UsuarioId == usuarioId && r.Estado == EstadoRuta.ACTIVA)
                 .ToListAsync();
         }

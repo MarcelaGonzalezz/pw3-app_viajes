@@ -44,6 +44,7 @@ builder.Services.AddScoped<ISesionWeb, SesionWeb>();
 builder.Services.AddScoped<IEnvioServicio, EnvioServicio>();
 builder.Services.AddScoped<IEnvioRepositorio, EnvioRepositorio>();
 builder.Services.AddScoped<ISeedDeDesarrollo, SeedDeDesarrollo>();
+builder.Services.AddSingleton(TimeProvider.System);
 
 string carpetaClaves = Path.GetFullPath(
     Path.Combine(builder.Environment.ContentRootPath, "..", "shared-keys"));
