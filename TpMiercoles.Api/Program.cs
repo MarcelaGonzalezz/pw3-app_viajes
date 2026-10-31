@@ -18,6 +18,9 @@ builder.Services.AddScoped<IViajeServicio, ViajeServicio>();
 builder.Services.AddScoped<IViajeRepositorio, ViajeRepositorio>();
 builder.Services.AddScoped<IHistorialServicio, HistorialServicio>();
 builder.Services.AddScoped<IHistorialRepositorio, HistorialRepositorio>();
+builder.Services.AddScoped<ITransporteServicio, TransporteServicio>();
+builder.Services.AddScoped<ITransporteRepositorio, TransporteRepositorio>();
+builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(PerfilDeMapeo).Assembly));
 
