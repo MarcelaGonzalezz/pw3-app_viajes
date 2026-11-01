@@ -6,6 +6,7 @@ using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Servicios.DTOs.Direccion;
 using TpMiercoles.Servicios.DTOs.Ruta;
+using TpMiercoles.Servicios.Rutas;
 using TpMiercoles.Tests.Helpers;
 
 namespace TpMiercoles.Tests.Servicios
@@ -17,15 +18,21 @@ namespace TpMiercoles.Tests.Servicios
         private readonly Mock<IRutaRepositorio> _rutaRepositorioMock;
         private readonly Mock<IUsuarioRepositorio> _usuarioRepositorioMock;
         private readonly RutaServicio _servicio;
+        private readonly Mock<IRecorridoServicio> _recorridoServicioMock;
 
-        public RutaServicioTests()
-        {
+        public RutaServicioTests() {
             _rutaRepositorioMock = new Mock<IRutaRepositorio>();
             _usuarioRepositorioMock = new Mock<IUsuarioRepositorio>();
+            _recorridoServicioMock = new Mock<IRecorridoServicio>();
+            _recorridoServicioMock
+                .Setup(r => r.CalcularAsync(It.IsAny<RecorridoDTO>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ResultadoRuta(15000, 1200));
+
             _servicio = new RutaServicio(
                 _rutaRepositorioMock.Object,
                 _usuarioRepositorioMock.Object,
-                MapperFactory.Crear());
+                MapperFactory.Crear(),
+                _recorridoServicioMock.Object);
         }
 
         #region Caso feliz

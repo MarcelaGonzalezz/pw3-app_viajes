@@ -3,48 +3,49 @@
 using TpMiercoles.Entidades;
 using TpMiercoles.Entidades.Excepciones;
 using TpMiercoles.Repositorios;
+using TpMiercoles.Servicios.Excepciones;
+using TpMiercoles.Servicios.Rutas;
 using TpMiercoles.Servicios.DTOs.Direccion;
 using TpMiercoles.Servicios.DTOs.Ruta;
 
-namespace TpMiercoles.Servicios
-{
-    public interface IRutaServicio
-    {
+namespace TpMiercoles.Servicios {
+    public interface IRutaServicio {
         Task CrearRutaAsync(int usuarioId, CrearRutaDTO rutaDTO);
         Task<List<RutaDTO>> ObtenerRutasActivasDeUnUsuarioAsync(int usuarioId);
     }
 
-    public class RutaServicio : IRutaServicio
-    {
+    public class RutaServicio : IRutaServicio {
         private readonly IRutaRepositorio _rutaRepositorio;
         private readonly IUsuarioRepositorio _usuarioRepositorio;
         private readonly IMapper _mapper;
-        public RutaServicio(IRutaRepositorio rutaRepositorio, IUsuarioRepositorio usuarioRepositorio, IMapper mapper)
-        {
+        private readonly IRecorridoServicio _recorridoServicio;
+
+        public RutaServicio(IRutaRepositorio rutaRepositorio, IUsuarioRepositorio usuarioRepositorio,
+              IMapper mapper, IRecorridoServicio recorridoServicio) {
             _rutaRepositorio = rutaRepositorio;
             _usuarioRepositorio = usuarioRepositorio;
             _mapper = mapper;
+            _recorridoServicio = recorridoServicio;
         }
-        public async Task CrearRutaAsync(int usuarioId, CrearRutaDTO rutaDTO)
-        {
+        public async Task CrearRutaAsync(int usuarioId, CrearRutaDTO rutaDTO) {
             ValidarRuta(rutaDTO);
             Usuario usuario = await _usuarioRepositorio.BuscarPorIdAsync(usuarioId);
 
-           
-
             Ruta ruta = _mapper.Map<Ruta>(rutaDTO);
             ruta.Usuario = usuario;
+
+            await CalcularRecorridoAsync(ruta, rutaDTO);
+
             await _rutaRepositorio.CrearRutaAsync(ruta);
         }
 
-        public async Task<List<RutaDTO>> ObtenerRutasActivasDeUnUsuarioAsync(int usuarioId)
-        {
+
+        public async Task<List<RutaDTO>> ObtenerRutasActivasDeUnUsuarioAsync(int usuarioId) {
             List<Ruta> rutas = await _rutaRepositorio.ObtenerRutasActivasDeUnUsuarioAsync(usuarioId);
             return _mapper.Map<List<RutaDTO>>(rutas);
         }
 
-        private void ValidarRuta(CrearRutaDTO rutaDTO)
-        {
+        private void ValidarRuta(CrearRutaDTO rutaDTO) {
 
             var origen = Clave(rutaDTO.DireccionOrigen);
             var destino = Clave(rutaDTO.DireccionDestino);
@@ -65,13 +66,12 @@ namespace TpMiercoles.Servicios
 
             var paradasVistas = new HashSet<(decimal, decimal)>();
 
-            foreach (var p in rutaDTO.Paradas)
-            {
+            foreach (var p in rutaDTO.Paradas) {
                 var clave = Clave(p.Direccion);
                 if (clave == origen || clave == destino)
                     throw new ValidacionRutaException("La parada no puede ser igual a la direccion de origen o destino");
 
-                if (!paradasVistas.Add(clave))   
+                if (!paradasVistas.Add(clave))
                     throw new ValidacionRutaException("No se pueden repetir paradas.");
             }
             var ordenes = rutaDTO.Paradas.Select(p => p.Orden).OrderBy(o => o).ToList();
@@ -81,5 +81,21 @@ namespace TpMiercoles.Servicios
         }
         private (decimal Lat, decimal Lng) Clave(DireccionDTO d)
     => (Math.Round(d.Latitud, 5), Math.Round(d.Longitud, 5));
+
+
+        private async Task CalcularRecorridoAsync(Ruta ruta, CrearRutaDTO rutaDTO) {
+            try {
+                ResultadoRuta resultado = await _recorridoServicio.CalcularAsync(new RecorridoDTO {
+                    Origen = rutaDTO.DireccionOrigen,
+                    Destino = rutaDTO.DireccionDestino,
+                    Paradas = rutaDTO.Paradas
+                });
+
+                ruta.DistanciaMetros = resultado.DistanciaMetros;
+                ruta.DuracionSegundos = resultado.DuracionSegundos;
+            } catch (RutaNoEncontradaException) {
+                // Si el servicio de rutas falla, la ruta se guarda igual sin distancia.
+            }
+        }
     }
 }

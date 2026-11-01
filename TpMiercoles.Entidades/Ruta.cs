@@ -23,5 +23,7 @@ namespace TpMiercoles.Entidades
         public TimeOnly HoraSalida { get; set; }
         public TimeOnly HoraLlegada { get; set; }
         public EstadoRuta Estado { get; set; }
+        public double? DistanciaMetros { get; set; }
+        public double? DuracionSegundos { get; set; }
     }
 }

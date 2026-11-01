@@ -61,6 +61,8 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/ruta/ruta-crear.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/ruta/recorrido.css" asp-append-version="true" />
+
 }
 
 <div class="ruta-page">
@@ -98,6 +100,13 @@
                 <p class="paradas-vacio" id="paradasVacio">Sin paradas. El recorrido va directo de origen a destino.</p>
 
                 <button type="button" class="btn-secundario" id="btnAgregarParada">+ Agregar parada</button>
+               
+                <div class="recorrido-total" id="recorridoTotal" role="status" aria-live="polite">
+                    <h3 class="recorrido-total__titulo">Total del recorrido</h3>
+                    <div class="recorrido-total__contenido" id="recorridoContenido">
+                        <p class="recorrido-total__aviso">Elegí el origen y el destino para ver el total del recorrido.</p>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -188,5 +197,6 @@
     <partial name="_ValidationScriptsPartial" />
     <script type="module" src="~/js/ruta/direccion.js" asp-append-version="true"></script>
     <script type="module" src="~/js/ruta/parada.js" asp-append-version="true"></script>
+    <script type="module" src="~/js/ruta/recorrido.js" asp-append-version="true"></script>
 }
 }
