@@ -182,6 +182,12 @@ namespace TpMiercoles.Entidades.Migrations
                     b.Property<int>("DireccionOrigenId")
                         .HasColumnType("int");
 
+                    b.Property<double?>("DistanciaMetros")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("DuracionSegundos")
+                        .HasColumnType("float");
+
                     b.Property<int>("Estado")
                         .HasColumnType("int");
 
