@@ -11,11 +11,13 @@ namespace TpMiercoles.Tests.Helpers
         public Mock<DbSet<Usuario>> Usuarios { get; }
         public Mock<DbSet<Viaje>> Viajes { get; }
         public Mock<DbSet<Envio>> Envios { get; }
+        public Mock<DbSet<Asignacion>> Asignaciones { get; }
 
         public DbContextMockFactory(
             IEnumerable<Usuario>? usuariosIniciales = null,
             IEnumerable<Viaje>? viajesIniciales = null,
-             IEnumerable<Envio>? enviosIniciales = null)
+             IEnumerable<Envio>? enviosIniciales = null,
+             IEnumerable<Asignacion>? asignacionesIniciales = null)
         {
             var usuarios = usuariosIniciales?.ToList() ?? [];
             Usuarios = usuarios.BuildMockDbSet();
@@ -25,11 +27,19 @@ namespace TpMiercoles.Tests.Helpers
 
             var envios = enviosIniciales?.ToList() ?? [];
             Envios = envios.BuildMockDbSet();
+
+            var asignaciones = asignacionesIniciales?.ToList() ?? [];
+            Asignaciones = asignaciones.BuildMockDbSet();
+
             Contexto = new Mock<ViajesDbContext>(
                 new DbContextOptionsBuilder<ViajesDbContext>().Options);
             Contexto.Object.Usuarios = Usuarios.Object;
             Contexto.Object.Viajes = Viajes.Object;
             Contexto.Object.Envios = Envios.Object;
+
+            // Asignacion no tiene DbSet propio en el contexto, se llega por Set<T>().
+            Contexto.Setup(c => c.Set<Asignacion>()).Returns(Asignaciones.Object);
+
             Contexto
                 .Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(1);

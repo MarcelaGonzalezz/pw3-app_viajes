@@ -104,13 +104,24 @@ namespace TpMiercoles.Servicios
                 Estado = EstadoActividadViaje.ACTIVO
             };
 
+            // Los tres envios quedan en un paso distinto del transporte, para poder
+            // probar la pantalla de Mis transportes con todos los estados y con
+            // los filtros.
             Envio envioDeLibros = new()
             {
                 Usuario = cliente,
                 DireccionRetiro = liniers,
                 DireccionEntrega = once,
                 FechaDesde = hoy,
-                FechaHasta = hoy.AddDays(3)
+                FechaHasta = hoy.AddDays(3),
+                Monto = 4500m,
+                Estado = EstadoEnvio.ConductorAsignado,
+                Paquete = new Paquete
+                {
+                    Descripcion = "Caja de libros",
+                    PesoKg = 3.5,
+                    Tamanio = TamanioEnvio.Mediano
+                }
             };
 
             Envio envioDeRopa = new()
@@ -119,7 +130,32 @@ namespace TpMiercoles.Servicios
                 DireccionRetiro = ciudadela,
                 DireccionEntrega = centro,
                 FechaDesde = hoy.AddDays(1),
-                FechaHasta = hoy.AddDays(5)
+                FechaHasta = hoy.AddDays(5),
+                Monto = 2800m,
+                Estado = EstadoEnvio.Retirado,
+                Paquete = new Paquete
+                {
+                    Descripcion = "Bolso de ropa",
+                    PesoKg = 1.2,
+                    Tamanio = TamanioEnvio.Pequenio
+                }
+            };
+
+            Envio envioDeHerramientas = new()
+            {
+                Usuario = cliente,
+                DireccionRetiro = ciudadela,
+                DireccionEntrega = once,
+                FechaDesde = hoy.AddDays(-2),
+                FechaHasta = hoy.AddDays(2),
+                Monto = 7200m,
+                Estado = EstadoEnvio.Entregado,
+                Paquete = new Paquete
+                {
+                    Descripcion = "Caja de herramientas",
+                    PesoKg = 11,
+                    Tamanio = TamanioEnvio.Grande
+                }
             };
 
             viajeConPaquetes.Asignaciones.Add(new Asignacion
@@ -133,7 +169,17 @@ namespace TpMiercoles.Servicios
             {
                 Envio = envioDeRopa,
                 Estado = EstadoViaje.PENDIENTE,
-                FechaAceptacion = DateTime.Now
+                FechaAceptacion = DateTime.Now,
+                FechaRetiro = DateTime.Now
+            });
+
+            viajeConPaquetes.Asignaciones.Add(new Asignacion
+            {
+                Envio = envioDeHerramientas,
+                Estado = EstadoViaje.CONFIRMADO,
+                FechaAceptacion = DateTime.Now.AddDays(-2),
+                FechaRetiro = DateTime.Now.AddDays(-1),
+                FechaEntrega = DateTime.Now.AddHours(-3)
             });
 
             // Viaje INACTIVO y sin paquetes: sirve para el estado vacio de la pantalla

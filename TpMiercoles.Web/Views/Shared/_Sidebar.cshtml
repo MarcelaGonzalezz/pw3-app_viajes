@@ -1,6 +1,7 @@
 @using System.Security.Claims
 @{
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
 }
 
 <!-- solo mobile -->
@@ -22,15 +23,16 @@
     </div>
 
     <nav class="sidebar-nav">
-        <a asp-controller="Home" asp-action="Index" class="sidebar-link">Inicio</a>
-        <a asp-controller="Ruta" asp-action="Crear" class="sidebar-link">Crear nueva ruta</a>
-        <a asp-controller="Ruta" asp-action="Obtener" class="sidebar-link">Mis rutas</a>
-        <a asp-controller="Viajes" asp-action="Index" class="sidebar-link">Mis viajes</a>
-        <a asp-controller="Envio" asp-action="Index" class="sidebar-link">Mis envíos</a>
+        <a asp-controller="Home" asp-action="Index" class="sidebar-link @(currentController == "Home" ? "active" : "")">Inicio</a>
+        <a asp-controller="Ruta" asp-action="Crear" class="sidebar-link @(currentController == "Ruta" && currentAction == "Crear" ? "active" : "")">Crear nueva ruta</a>
+        <a asp-controller="Ruta" asp-action="Obtener" class="sidebar-link @(currentController == "Ruta" && currentAction == "Obtener" ? "active" : "")">Mis rutas</a>
+        <a asp-controller="Viajes" asp-action="Index" class="sidebar-link @(currentController == "Viajes" ? "active" : "")">Mis viajes</a>
+        <a asp-controller="Envio" asp-action="Index" class="sidebar-link @(currentController == "Envio" ? "active" : "")">Mis envíos</a>
         <a href="#" class="sidebar-link">Oportunidades</a>
         <a href="#" class="sidebar-link">Optimizador</a>
         <a href="#" class="sidebar-link">Mis transportes</a>
-        <a href="#" class="sidebar-link">Historial</a>
+        <a asp-controller="Historial" asp-action="Index"
+           class="sidebar-link @(currentController == "Historial" ? "active" : "")">Historial</a>
     </nav>
 
     <div class="sidebar-footer">
