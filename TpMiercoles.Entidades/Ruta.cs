@@ -25,5 +25,6 @@ namespace TpMiercoles.Entidades
         public EstadoRuta Estado { get; set; }
         public double? DistanciaMetros { get; set; }
         public double? DuracionSegundos { get; set; }
+        public string? GeometriaJson { get; set; } 
     }
 }

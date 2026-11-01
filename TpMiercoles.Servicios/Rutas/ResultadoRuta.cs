@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace TpMiercoles.Servicios.Rutas {
-    public record ResultadoRuta(double DistanciaMetros, double DuracionSegundos) {
+    public record ResultadoRuta(double DistanciaMetros, double DuracionSegundos, string? GeometriaJson = null) {
         public double DistanciaKm => DistanciaMetros / 1000.0;
         public double DuracionMinutos => DuracionSegundos / 60.0;
     }

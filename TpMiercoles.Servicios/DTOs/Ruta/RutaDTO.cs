@@ -21,5 +21,9 @@ namespace TpMiercoles.Servicios.DTOs.Ruta
         public TimeOnly HoraSalida { get; set; }
         public TimeOnly HoraLlegada { get; set; }
         public EstadoRuta Estado { get; set; } = EstadoRuta.ACTIVA;
+
+        public double? DistanciaMetros { get; set; }
+        public int? DuracionSegundos { get; set; }
+        public string? GeometriaJson { get; set; } 
     }
 }

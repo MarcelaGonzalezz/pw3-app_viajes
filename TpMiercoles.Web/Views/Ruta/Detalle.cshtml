@@ -1,0 +1,107 @@
+﻿@model TpMiercoles.Servicios.DTOs.Ruta.RutaDTO
+
+@{
+    ViewData["Title"] = "Detalle de la ruta";
+
+    // Función auxiliar para traducir los días al español
+    string TraducirDia(DayOfWeek dia) => dia switch {
+        DayOfWeek.Monday => "Lun",
+        DayOfWeek.Tuesday => "Mar",
+        DayOfWeek.Wednesday => "Mié",
+        DayOfWeek.Thursday => "Jue",
+        DayOfWeek.Friday => "Vie",
+        DayOfWeek.Saturday => "Sáb",
+        DayOfWeek.Sunday => "Dom",
+        _ => dia.ToString()
+    };
+
+    // Función para acortar direcciones largas (ej: tomar solo los primeros segmentos antes de la coma)
+    string AcortarDireccion(string textoCompleto) {
+        if (string.IsNullOrEmpty(textoCompleto)) return "";
+        var partes = textoCompleto.Split(',');
+        return partes.Length >= 2 ? $"{partes[0].Trim()}, {partes[1].Trim()}" : partes[0];
+    }
+}
+
+<div class="container my-4">
+    <!-- Cabecera y Botones de Acción (Limpiamos el texto largo de arriba) -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>Detalle de la ruta</h2>
+            <p class="text-muted mb-0">Visualización del recorrido habitual</p>
+        </div>
+        <div>
+            <a asp-action="Obtener" class="btn btn-outline-secondary">Volver</a>
+            <a asp-action="Editar" asp-route-id="@Model.Id" class="btn btn-outline-primary">Editar</a>
+            <form asp-action="Desactivar" asp-route-id="@Model.Id" method="post" class="d-inline">
+                <button type="submit" class="btn btn-outline-danger" onclick="return confirm('¿Estás seguro de desactivar esta ruta?');">Desactivar</button>
+            </form>
+            <a asp-controller="Oportunidades" asp-action="Index" asp-route-rutaId="@Model.Id" class="btn btn-dark">Ver oportunidades</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Tarjeta de Recorrido con Origen y Destino limpios -->
+        <div class="col-md-12 mb-4">
+            <div class="card shadow-sm p-4">
+                <h4>Información del Recorrido</h4>
+                <hr />
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-2"><strong>Origen:</strong> @AcortarDireccion(Model.DireccionOrigen.Texto)</p>
+                        <p class="mb-2"><strong>Destino:</strong> @AcortarDireccion(Model.DireccionDestino.Texto)</p>
+                        <p class="mb-2"><strong>Días:</strong> @string.Join(", ", Model.RutaDias.Select(d => TraducirDia(d.DiaSemana)))</p>
+                        <p class="mb-2"><strong>Distancia total:</strong> @(Model.DistanciaMetros.HasValue ? $"{Model.DistanciaMetros.Value / 1000:N2} km" : "No calculada")</p>
+                        <p class="mb-2"><strong>Duración estimada:</strong> @(Model.DuracionSegundos.HasValue ? $"{Model.DuracionSegundos.Value / 60:N0} min" : "No calculada")</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-2"><strong>Estado:</strong> <span class="badge bg-success">@Model.Estado</span></p>
+                        <p class="mb-2"><strong>Horario:</strong> @Model.HoraSalida → @Model.HoraLlegada</p>
+                        <p class="mb-2"><strong>Capacidad máxima:</strong> @Model.CapacidadMaxPaquetes paquetes | <strong>Peso:</strong> @Model.PesoMax kg</p>
+                    </div>
+                </div>
+
+                @if (Model.Paradas != null && Model.Paradas.Any()) {
+                    <h5 class="mt-4">Paradas intermedias:</h5>
+                    <ul class="list-group">
+                        @foreach (var parada in Model.Paradas.OrderBy(p => p.Orden)) {
+                            <li class="list-group-item">
+                                <strong>Orden @parada.Orden:</strong> @AcortarDireccion(parada.Direccion.Texto)
+                            </li>
+                        }
+                    </ul>
+                } else {
+                    <p class="text-muted mt-3 mb-0">Sin paradas intermedias</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Mapa Leaflet con Línea de Conexión -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm p-4">
+                <h4>Mapa del Recorrido</h4>
+                <div id="map"
+                     style="height: 450px; width: 100%; border-radius: 8px;"
+                     class="mt-3"
+                     data-origen-lat="@Model.DireccionOrigen.Latitud.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                     data-origen-lng="@Model.DireccionOrigen.Longitud.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                     data-origen-texto="@AcortarDireccion(Model.DireccionOrigen.Texto)"
+                     data-destino-lat="@Model.DireccionDestino.Latitud.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                     data-destino-lng="@Model.DireccionDestino.Longitud.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                     data-destino-texto="@AcortarDireccion(Model.DireccionDestino.Texto)"
+                     data-geometria="@Model.GeometriaJson">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Leaflet CSS y JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Script externo -->
+    <script src="~/js/Ruta/detalle.js"></script>
+}

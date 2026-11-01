@@ -5,6 +5,7 @@ using TpMiercoles.Entidades;
 using TpMiercoles.Entidades.Excepciones;
 using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.DTOs.Ruta;
+using TpMiercoles.Servicios.Excepciones;
 using TpMiercoles.Web.Infraestructura;
 using TpMiercoles.Web.Models;
 
@@ -63,6 +64,19 @@ namespace TpMiercoles.Web.Controllers
             var rutasVm = _mapper.Map<List<RutaViewModel>>(rutasDTO);
             return View(new ObtenerRutasViewModel { Rutas = rutasVm, NombreUsuario = nombreUsuario });
 
+        }
+        [HttpGet]
+        public async Task<IActionResult> Detalle(int id) {
+            int usuarioId = _sesionWeb.UsuarioIdRequerido;
+
+            try {
+                var rutaDto = await _rutaServicio.ObtenerDetalleAsync(id, usuarioId);
+                return View(rutaDto);
+            } catch (RutaNoEncontradaException) {
+                return NotFound();
+            } catch (UnauthorizedAccessException) {
+                return Forbid();
+            }
         }
     }
 }

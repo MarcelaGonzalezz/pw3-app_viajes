@@ -26,9 +26,11 @@ namespace TpMiercoles.Servicios.Rutas.OpenRouteService {
             //armado de puntos
 
             //cuerpo del pedido con instrucciones en falso para que ORS no mande los pasos ni el trazado
-            var cuerpo = new { coordinates = puntos, instructions = false, geometry = false };
-
-            using var pedido = new HttpRequestMessage(HttpMethod.Post, "v2/directions/driving-car") {
+            var cuerpo = new { coordinates = puntos, instructions = false,
+                geometry = true
+            };
+            //Apuntamos al endpoint que soporta geojson nativo para leer las features
+            using var pedido = new HttpRequestMessage(HttpMethod.Post, "v2/directions/driving-car/geojson") {
                 Content = JsonContent.Create(cuerpo)
             };
 
@@ -44,14 +46,19 @@ namespace TpMiercoles.Servicios.Rutas.OpenRouteService {
                 await using var stream = await respuesta.Content.ReadAsStreamAsync(ct);
                 using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
 
-                var rutas = doc.RootElement.GetProperty("routes");
-                if (rutas.GetArrayLength() == 0)
+                // 3. Al usar /geojson, la respuesta viene en un arreglo "features"
+                var features = doc.RootElement.GetProperty("features");
+                if (features.GetArrayLength() == 0)
                     throw new RutaNoEncontradaException("OpenRouteService no devolvió ninguna ruta.");
 
-                var resumen = rutas[0].GetProperty("summary");
+                var primeraFeature = features[0];
+                var resumen = primeraFeature.GetProperty("properties").GetProperty("summary");
+                // Capturamos la geometría como texto JSON (GeoJSON LineString)
+                string geometriaJson = primeraFeature.GetProperty("geometry").GetRawText();
+
                 return new ResultadoRuta(
                     resumen.GetProperty("distance").GetDouble(),
-                    resumen.GetProperty("duration").GetDouble());
+                    resumen.GetProperty("duration").GetDouble(), geometriaJson); 
             } catch (HttpRequestException ex) {
                 throw new RutaNoEncontradaException("No se pudo conectar con OpenRouteService.", ex);
             }

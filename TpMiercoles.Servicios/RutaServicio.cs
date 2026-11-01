@@ -12,6 +12,7 @@ namespace TpMiercoles.Servicios {
     public interface IRutaServicio {
         Task CrearRutaAsync(int usuarioId, CrearRutaDTO rutaDTO);
         Task<List<RutaDTO>> ObtenerRutasActivasDeUnUsuarioAsync(int usuarioId);
+        Task<RutaDTO> ObtenerDetalleAsync(int rutaId, int usuarioId);
     }
 
     public class RutaServicio : IRutaServicio {
@@ -26,6 +27,17 @@ namespace TpMiercoles.Servicios {
             _usuarioRepositorio = usuarioRepositorio;
             _mapper = mapper;
             _recorridoServicio = recorridoServicio;
+        }
+        public async Task<RutaDTO> ObtenerDetalleAsync(int rutaId, int usuarioId) {
+            Ruta ruta = await _rutaRepositorio.ObtenerPorIdAsync(rutaId);
+
+            if (ruta == null)
+                throw new RutaNoEncontradaException("La ruta no fue encontrada.");
+
+            if (ruta.UsuarioId != usuarioId)
+                throw new UnauthorizedAccessException("No tienes permisos para ver esta ruta.");
+
+            return _mapper.Map<RutaDTO>(ruta);
         }
         public async Task CrearRutaAsync(int usuarioId, CrearRutaDTO rutaDTO) {
             ValidarRuta(rutaDTO);
@@ -93,6 +105,7 @@ namespace TpMiercoles.Servicios {
 
                 ruta.DistanciaMetros = resultado.DistanciaMetros;
                 ruta.DuracionSegundos = resultado.DuracionSegundos;
+                ruta.GeometriaJson = resultado.GeometriaJson; 
             } catch (RutaNoEncontradaException) {
                 // Si el servicio de rutas falla, la ruta se guarda igual sin distancia.
             }

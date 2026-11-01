@@ -197,6 +197,9 @@ namespace TpMiercoles.Entidades.Migrations
                     b.Property<DateTime>("FechaInicio")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("GeometriaJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<TimeOnly>("HoraLlegada")
                         .HasColumnType("time");
 
