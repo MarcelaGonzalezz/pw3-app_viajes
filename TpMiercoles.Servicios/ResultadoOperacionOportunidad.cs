@@ -18,6 +18,6 @@ namespace TpMiercoles.Servicios
 
         public static ResultadoOperacionOportunidad EnConflicto(string motivo) => new() { Conflicto = motivo };
 
-        public static ResultadoOperacionOportunidad Exitoso(int asignacionId) => new() { AsignacionId = asignacionId };)
+        public static ResultadoOperacionOportunidad Exitoso(int asignacionId) => new() { AsignacionId = asignacionId };
     }
 }

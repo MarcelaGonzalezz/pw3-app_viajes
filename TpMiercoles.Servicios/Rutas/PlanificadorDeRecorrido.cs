@@ -11,7 +11,7 @@ namespace TpMiercoles.Servicios.Rutas
     {
         // recorrido = origen, paradas en orden, destino.
         // Devuelve el mismo recorrido con retiro y entrega insertados donde menos lo alargan
-        publci static List<Coordenada> InsertarEnvio(IReadOnlyList<Coordenada> recorrido, Coordenada retiro, Coordenada entrega)
+        public static List<Coordenada> InsertarEnvio(IReadOnlyList<Coordenada> recorrido, Coordenada retiro, Coordenada entrega)
         {
             List<Coordenada?> mejor = null;
             double mejorDistanciaKm = double.MaxValue;
@@ -20,7 +20,7 @@ namespace TpMiercoles.Servicios.Rutas
             {
                 for (int j = 1; j < recorrido.Count; j++)
                 {
-                    List<Coordenada> candidato = [... recorrido]; // copia los puntos del recorrido original
+                    List<Coordenada> candidato = [.. recorrido]; // copia los puntos del recorrido original
                     candidato.Insert(j, entrega); // primero la entrega para no correr el indice i
                     candidato.Insert(i, retiro);
 
