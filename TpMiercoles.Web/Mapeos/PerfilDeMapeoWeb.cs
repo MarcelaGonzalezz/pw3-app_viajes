@@ -4,6 +4,7 @@ using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Servicios.DTOs.Direccion;
 using TpMiercoles.Servicios.DTOs.Historial;
 using TpMiercoles.Servicios.DTOs.Ruta;
+using TpMiercoles.Servicios.DTOs.Oportunidades;
 using TpMiercoles.Web.Models;
 
 namespace TpMiercoles.Web.Mapeos
@@ -42,6 +43,10 @@ namespace TpMiercoles.Web.Mapeos
             CreateMap<HistorialItemDTO, HistorialItemViewModel>();
 
             CreateMap<RutaDiaDTO, DayOfWeek>().ConvertUsing(r => r.DiaSemana);
+
+            CreateMap<OportunidadDTO, OportunidadViewModel>();
+            CreateMap<OportunidadDetalleDTO, OportunidadDetalleViewModel>();
+            CreateMap<OportunidadesDelViajeDTO, OportunidadesDelViajeViewModel>();
         }
     }
 }
