@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Runtime.CompilerServices;
 using TpMiercoles.Entidades;
 
 namespace TpMiercoles.Repositorios
@@ -16,6 +17,10 @@ namespace TpMiercoles.Repositorios
         // Igual que ObtenerDetalle pero con seguimiento de cambios, para poder modificarlo.
         // Incluye la ruta (para saber de quien es) y las asignaciones (para validar capacidad).
         Task<Viaje?> ObtenerParaModificarAsync(int viajeId);
+
+        // con seguimiento, para aceptar un envio: la ruta dice de quien es el viaje y las
+        // asignaciones con su envio sirven para validar capacidad y peso
+        Task<Viaje?> ObtenerParaAsignarAsync(int viajeId);
 
         Task GuardarCambiosAsync();
 
@@ -75,6 +80,14 @@ namespace TpMiercoles.Repositorios
                 .Include(v => v.DireccionDestino)
                 .Include(v => v.Ruta)
                 .Include(v => v.Asignaciones)
+                .FirstOrDefaultAsync(v => v.Id == viajeId);
+        }
+
+        public async Task<Viaje?> ObtenerParaAsignarAsync(int viajeId)
+        {
+            return await _viajesDbContext.Viajes
+                .Include(v => v.Ruta)
+                .Include(v => v.Asignaciones).ThenInclude(a => a.Envio)
                 .FirstOrDefaultAsync(v => v.Id == viajeId);
         }
 

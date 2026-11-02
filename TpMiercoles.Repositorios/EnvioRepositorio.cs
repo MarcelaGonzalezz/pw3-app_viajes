@@ -12,6 +12,13 @@ namespace TpMiercoles.Repositorios {
         Task<Envio?> ObtenerDetalleAsync(int envioId);
         Task<Envio?> ObtenerParaModificarAsync(int envioId);
         Task GuardarCambiosAsync();
+
+        // envios que todavia buscan conductor, sin asignacion vigente, cuya ventana de
+        // fechas incluye el dia indicado (excluye los envios del propio usuario, ya que no puede llevar su propio paquete)
+        Task<List<Envio>> ListarDisponiblesAsync(DateTime fecha, int usuarioExcluidoId);
+
+        // se usa para el detalle de oportunidad y para aceptarla
+        Task<Envio?> ObtenerParaOportunidadAsync(int envioId);
     }
     public class EnvioRepositorio : IEnvioRepositorio {
         private readonly ViajesDbContext _viajesDbContext;
@@ -58,6 +65,34 @@ namespace TpMiercoles.Repositorios {
 
         public async Task<Envio?> ObtenerParaModificarAsync(int envioId) {
             return await _viajesDbContext.Envios
+                .Include(e => e.DireccionRetiro)
+                .Include(e => e.DireccionEntrega)
+                .Include(e => e.Asignaciones)
+                .FirstOrDefaultAsync(e => e.Id == envioId);
+        }
+
+        public async Task<List<Envio>> ListarDisponiblesAsync(DateTime fecha, int usuarioExcluidoId)
+        {
+            DateTime dia = fecha.Date;
+
+            return await _viajesDbContext.Envios
+                .AsNoTracking()
+                .Include(e => e.Usuario)
+                .Include(e => e.DireccionRetiro)
+                .Include(e => e.DireccionEntrega)
+                .Where(e => e.Estado == EstadoEnvio.BuscandoConductor
+                    && e.UsuarioId != usuarioExcluidoId
+                    && e.FechaDesde.Date <= dia
+                    && e.FechaHasta.Date >= dia
+                    && !e.Asignaciones.Any(a => a.Estado != EstadoViaje.CANCELADO))
+                .OrderBy(e => e.Id)
+                .ToListAsync();
+        }
+
+        public async Task<Envio?> ObtenerParaOportunidadAsync(int envioId)
+        {
+            return await _viajesDbContext.Envios
+                .Include(e => e.Usuario)
                 .Include(e => e.DireccionRetiro)
                 .Include(e => e.DireccionEntrega)
                 .Include(e => e.Asignaciones)
