@@ -4,7 +4,7 @@ using System.Text;
 
 namespace TpMiercoles.Servicios.DTOs.Oportunidades
 {
-    public class OportunidadDetalleDTO
+    public class OportunidadDetalleDTO : OportunidadDTO
     {
         public int ViajeId { get; set; }
         public string ViajeOrigen { get; set; } = string.Empty;
