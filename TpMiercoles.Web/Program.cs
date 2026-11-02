@@ -100,8 +100,16 @@ builder.Services.AddAuthorization(); //Hace funcionar [Authorize]
 
 var rutasOpts = builder.Configuration.GetSection(RutasOptions.Seccion).Get<RutasOptions>() ?? new();
 builder.Services.AddSingleton(rutasOpts);
-builder.Services.AddHttpClient<IServicioRutas, OpenRouteServiceRutas>(c =>
-    c.BaseAddress = new Uri(rutasOpts.OrsBaseUrl));
+
+if (rutasOpts.UsarOpenRouteService)
+{
+    builder.Services.AddHttpClient<IServicioRutas, OpenRouteServiceRutas>(c =>
+        c.BaseAddress = new Uri(rutasOpts.OrsBaseUrl));
+} else
+{
+    // en modo mock, sin API key, para poder probar la app sin gastar llamadas a ORS
+    builder.Services.AddSingleton<IServicioRutas, MockServicioRutas>();
+}
 
 builder.Services.AddScoped<IRecorridoServicio, RecorridoServicio>();
 
