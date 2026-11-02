@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using TpMiercoles.Entidades;
 using TpMiercoles.Repositorios;
 using TpMiercoles.Servicios;
+using TpMiercoles.Servicios.Rutas;
+using TpMiercoles.Servicios.Rutas.OpenRouteService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +22,25 @@ builder.Services.AddScoped<IHistorialServicio, HistorialServicio>();
 builder.Services.AddScoped<IHistorialRepositorio, HistorialRepositorio>();
 builder.Services.AddScoped<ITransporteServicio, TransporteServicio>();
 builder.Services.AddScoped<ITransporteRepositorio, TransporteRepositorio>();
+builder.Services.AddScoped<IEnvioRepositorio, EnvioRepositorio>();
+builder.Services.AddScoped<IOportunidadServicio, OportunidadServicio>();
+
+// con API key usa OpenRouteService, sin key usa el mock
+var rutasOpts = builder.Configuration.GetSection(RutasOptions.Seccion).Get<RutasOptions>() ?? new();
+builder.Services.AddSingleton(rutasOpts);
+
+if (rutasOpts.UsarOpenRouteService)
+{
+    builder.Services.AddHttpClient<IServicioRutas, OpenRouteServiceRutas>(c =>
+        c.BaseAddress = new Uri(rutasOpts.OrsBaseUrl));
+
+}
+else
+{
+    // en modo mock, sin API key, para poder probar la app sin gastar llamadas a ORS
+    builder.Services.AddSingleton<IServicioRutas, MockServicioRutas>();
+}
+
 builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(PerfilDeMapeo).Assembly));

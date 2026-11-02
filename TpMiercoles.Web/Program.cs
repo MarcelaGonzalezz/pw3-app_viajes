@@ -112,6 +112,7 @@ if (rutasOpts.UsarOpenRouteService)
 }
 
 builder.Services.AddScoped<IRecorridoServicio, RecorridoServicio>();
+builder.Services.AddScoped<IOportunidadServicio, OportunidadServicio>();
 
 var app = builder.Build();
 var invariante = CultureInfo.InvariantCulture;
