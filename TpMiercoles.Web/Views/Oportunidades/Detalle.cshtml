@@ -1,0 +1,87 @@
+﻿@model OportunidadDetalleViewModel
+@using System.Globalization
+@{
+    ViewData["Title"] = $"Oportunidad · Envío #{Model.EnvioId}";
+    var pesos = new CultureInfo("es-AR");
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/viajes/detalle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/viajes/viajes.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/oportunidades/oportunidades.css" asp-append-version="true" />
+}
+
+<div class="vd">
+    <header class="vd-header">
+        <div class="vd-header-main">
+            <p class="vd-eyebrow">Viaje #@Model.ViajeId · @Model.ViajeOrigen → @Model.ViajeDestino · @Model.FechaSalida.ToString("dd/MM/yyyy HH:mm")</p>
+            <h1 class="vd-title">
+                <span>@Model.Retiro</span>
+                <span class="vd-flecha" aria-hidden="true">&rarr;</span>
+                <span>@Model.Entrega</span>
+            </h1>
+        </div>
+        <span class="vd-estado @(Model.EsAceptable ? "vd-estado--activo" : "vd-estado--inactivo")">
+            @(Model.EsAceptable ? "Compatible" : "No disponible")
+        </span>
+    </header>
+
+    @if (TempData["Error"] is string error)
+    {
+        <div class="vl-aviso vl-aviso--error" role="alert">@error</div>
+    }
+
+    <div class="vd-cols">
+        <section class="vd-card" aria-label="Comparación de rutas">
+            <h2 class="vd-card-titulo">Ruta habitual vs. con el envío</h2>
+            <table class="op-comparacion">
+                <tr><th>Distancia habitual</th><td class="op-num">@Model.DistanciaHabitualKm km</td></tr>
+                <tr><th>Distancia con el envío</th><td class="op-num">@Model.DistanciaConEnvioKm km</td></tr>
+                <tr><th>Desvío</th><td class="op-num">@Model.DesvioKm km</td></tr>
+                <tr><th>Tiempo habitual</th><td class="op-num">@Model.TiempoHabitualMin min</td></tr>
+                <tr><th>Tiempo con el envío</th><td class="op-num">@Model.TiempoConEnvioMin min</td></tr>
+                <tr><th>Tiempo adicional</th><td class="op-num">@Model.TiempoAdicionalMin min</td></tr>
+            </table>
+        </section>
+
+        <section class="vd-card" aria-label="El envío">
+            <h2 class="vd-card-titulo">@Model.Descripcion</h2>
+            <table class="op-comparacion">
+                <tr><th>Pago</th><td class="op-num">@Model.Pago.ToString("C0", pesos)</td></tr>
+                <tr><th>Peso</th><td class="op-num">@Model.PesoKg.ToString("0.##") kg</td></tr>
+                <tr><th>Capacidad restante</th><td class="op-num">@Model.CapacidadRestante paquete(s) · @Model.PesoRestanteKg.ToString("0.##") kg</td></tr>
+                <tr><th>Ganancia por km adicional</th><td class="op-num">@(Model.GananciaPorKmAdicional?.ToString("C0", pesos) ?? "Sin desvío")</td></tr>
+                <tr><th>Compatibilidad</th><td class="op-num">@Model.Compatibilidad%</td></tr>
+                <tr><th>Ventana</th><td class="op-num">@Model.FechaDesde.ToString("dd/MM") – @Model.FechaHasta.ToString("dd/MM")</td></tr>
+                <tr><th>Remitente</th><td class="op-num">@Model.RemitenteNombre</td></tr>
+            </table>
+        </section>
+    </div>
+
+    @if (!Model.EsAceptable)
+    {
+        <div class="vl-aviso vl-aviso--error" role="status">
+            No se puede aceptar:
+            <ul class="op-motivos">
+                @foreach (var motivo in Model.Motivos)
+                {
+                    <li>@motivo</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <div class="vl-acciones">
+        <a class="vl-btn" asp-action="Index" asp-route-viajeId="@Model.ViajeId">Volver</a>
+        @if (Model.EsAceptable)
+        {
+            <form asp-action="Aceptar" asp-route-viajeId="@Model.ViajeId" asp-route-envioId="@Model.EnvioId" method="post" class="vl-form-inline">
+                <button type="submit" class="vl-btn vl-btn--principal">Aceptar envío</button>
+            </form>
+        }
+        else
+        {
+            <span class="vl-btn vl-btn--inhabilitado">Aceptar envío</span>
+        }
+    </div>
+</div>

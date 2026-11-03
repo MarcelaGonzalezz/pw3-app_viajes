@@ -36,7 +36,7 @@
             <form asp-action="Desactivar" asp-route-id="@Model.Id" method="post" class="d-inline">
                 <button type="submit" class="btn btn-outline-danger" onclick="return confirm('¿Estás seguro de desactivar esta ruta?');">Desactivar</button>
             </form>
-            <a asp-controller="Oportunidades" asp-action="Index" asp-route-rutaId="@Model.Id" class="btn btn-dark">Ver oportunidades</a>
+            <a asp-controller="Oportunidades" asp-action="Index" class="btn btn-dark">Ver oportunidades</a>
         </div>
     </div>
 

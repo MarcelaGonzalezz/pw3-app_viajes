@@ -38,7 +38,7 @@ namespace TpMiercoles.Web.Controllers
             double? desvioMaximoKm = null,
             CancellationToken ct = default)
         {
-            int? usuario = _sesionWeb.UsuarioId;
+            int? usuarioId = _sesionWeb.UsuarioId;
             if (usuarioId is null)
             {
                 return Challenge();
@@ -53,7 +53,7 @@ namespace TpMiercoles.Web.Controllers
 
             OportunidadesViewModel modelo = new()
             {
-                Viajes = viajes.Select(_mapper.Map<ViajeListadoViewModel>.ToList()),
+                Viajes = viajes.Select(_mapper.Map<ViajeListadoViewModel>).ToList(),
                 ViajeId = viajeId,
                 Orden = orden,
                 DesvioMaximoKm = desvioMaximoKm

@@ -1,0 +1,116 @@
+﻿@model OportunidadesViewModel
+@using System.Globalization
+@using TpMiercoles.Servicios.DTOs.Oportunidades
+@{
+    ViewData["Title"] = "Oportunidades";
+    var pesos = new CultureInfo("es-AR");
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/viajes/detalle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/viajes/viajes.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/oportunidades/oportunidades.css" asp-append-version="true" />
+}
+
+<div class="vd">
+    <header class="vd-header">
+        <div class="vd-header-main">
+            <p class="vd-eyebrow">Envíos compatibles con tus viajes</p>
+            <h1 class="vd-title">Oportunidades</h1>
+        </div>
+    </header>
+
+    @if (TempData["Error"] is string error)
+    {
+        <div class="vl-aviso vl-aviso--error" role="alert">@error</div>
+    }
+    @if (Model.Error is not null)
+    {
+        <div class="vl-aviso vl-aviso--error" role="alert">@Model.Error</div>
+    }
+    <div asp-validation-summary="All" class="vl-aviso vl-aviso--error" style="@(ViewData.ModelState.IsValid ? "display:none" : "")"></div>
+
+    @if (Model.Viajes.Count == 0)
+    {
+        <p class="vd-vacio">No tenés viajes activos próximos. Creá una ruta o activá un viaje para buscar oportunidades.</p>
+    }
+    else
+    {
+        <form method="get" asp-action="Index" class="op-buscador">
+            <label>
+                Viaje
+                <select name="viajeId" required>
+                    <option value="">Elegí un viaje</option>
+                    @foreach (var viaje in Model.Viajes)
+                    {
+                        <option value="@viaje.Id" selected="@(viaje.Id == Model.ViajeId)">
+                            #@viaje.Id · @viaje.FechaSalida.ToString("dd/MM HH:mm") · @viaje.DireccionOrigen → @viaje.DireccionDestino
+                        </option>
+                    }
+                </select>
+            </label>
+            <label>
+                Ordenar por
+                <select name="orden">
+                    <option value="@CriterioOrdenOportunidad.Ganancia" selected="@(Model.Orden == CriterioOrdenOportunidad.Ganancia)">Mayor ganancia</option>
+                    <option value="@CriterioOrdenOportunidad.Desvio" selected="@(Model.Orden == CriterioOrdenOportunidad.Desvio)">Menor desvío</option>
+                    <option value="@CriterioOrdenOportunidad.Compatibilidad" selected="@(Model.Orden == CriterioOrdenOportunidad.Compatibilidad)">Mayor compatibilidad</option>
+                </select>
+            </label>
+            <label>
+                Desvío máximo (km)
+                <input type="number" name="desvioMaximoKm" min="0" step="0.5"
+                       value="@Model.DesvioMaximoKm?.ToString(CultureInfo.InvariantCulture)" placeholder="Sin límite" />
+            </label>
+            <button type="submit" class="vl-btn vl-btn--principal">Buscar</button>
+        </form>
+    }
+
+    @if (Model.Resultado is { } r)
+    {
+        <p class="op-resumen">
+            Viaje #@r.ViajeId · @r.ViajeOrigen → @r.ViajeDestino · sale @r.FechaSalida.ToString("dd/MM/yyyy HH:mm") ·
+            quedan @r.CapacidadRestante lugar(es) y @r.PesoRestanteKg.ToString("0.##") kg
+            @if (r.DistanciaHabitualKm > 0)
+            {
+                <span>· recorrido habitual @r.DistanciaHabitualKm km / @r.TiempoHabitualMin min</span>
+            }
+        </p>
+
+        @foreach (var aviso in r.AvisosDelViaje)
+        {
+            <div class="vl-aviso vl-aviso--error" role="status">@aviso</div>
+        }
+
+        @if (r.AvisosDelViaje.Count == 0 && r.Oportunidades.Count == 0)
+        {
+            <p class="vd-vacio">No hay envíos compatibles con este viaje@(Model.DesvioMaximoKm is null ? "" : " con ese desvío máximo").</p>
+        }
+
+        <ul class="vd-paquetes">
+            @foreach (var o in r.Oportunidades)
+            {
+                <li class="vd-paquete">
+                    <div class="vd-paquete-top">
+                        <span class="vd-paquete-id">Envío #@o.EnvioId · @o.Descripcion</span>
+                        <span class="vd-chip vd-chip--confirmado">@o.Compatibilidad% compatible</span>
+                    </div>
+                    <p class="vd-paquete-remitente">@o.Retiro → @o.Entrega</p>
+                    <dl class="op-metricas">
+                        <div class="op-metrica op-metrica--destacada"><dt>Pago</dt><dd>@o.Pago.ToString("C0", pesos)</dd></div>
+                        <div class="op-metrica"><dt>Desvío</dt><dd>@o.DesvioKm km</dd></div>
+                        <div class="op-metrica"><dt>Tiempo extra</dt><dd>@o.TiempoAdicionalMin min</dd></div>
+                        <div class="op-metrica"><dt>Peso</dt><dd>@o.PesoKg.ToString("0.##") kg</dd></div>
+                        <div class="op-metrica"><dt>$ por km extra</dt><dd>@(o.GananciaPorKmAdicional?.ToString("C0", pesos) ?? "Sin desvío")</dd></div>
+                    </dl>
+                    <div class="vl-acciones">
+                        <a class="vl-btn" asp-action="Detalle" asp-route-viajeId="@r.ViajeId" asp-route-envioId="@o.EnvioId">Ver detalle</a>
+                        <form asp-action="Aceptar" asp-route-viajeId="@r.ViajeId" asp-route-envioId="@o.EnvioId" method="post" class="vl-form-inline">
+                            <button type="submit" class="vl-btn vl-btn--principal">Aceptar</button>
+                        </form>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</div>

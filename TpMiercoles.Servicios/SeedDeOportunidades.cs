@@ -54,8 +54,9 @@ namespace TpMiercoles.Servicios
 
                 DateTime hoy = DateTime.Today;
 
+                // Carla tiene vigente alguno de los envios que crea este seed.
                 List<Envio> publicados = await _envios.ListarPorUsuarioAsync(carla.Id, EstadoEnvio.BuscandoConductor);
-                if (publicados.Any(e => e.FechaHasta.Date >= hoy))
+                if (publicados.Any(e => e.FechaHasta.Date >= hoy && e.Paquete.Descripcion == "Caja de libros"))
                 {
                     return;
                 }

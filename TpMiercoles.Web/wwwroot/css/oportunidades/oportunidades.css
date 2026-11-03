@@ -1,0 +1,76 @@
+﻿.op-buscador {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+    align-items: flex-end;
+    margin-bottom: 1.25rem;
+}
+
+    .op-buscador label {
+        display: flex;
+        flex-direction: column;
+        font-size: .8125rem;
+        color: #555;
+        gap: .25rem;
+    }
+
+    .op-buscador select, .op-buscador input {
+        padding: .45rem .6rem;
+        border: 1px solid #d0d5dd;
+        border-radius: 8px;
+        min-width: 10rem;
+    }
+
+.op-resumen {
+    color: #555;
+    margin: .5rem 0 1rem;
+    font-size: .9375rem;
+}
+
+.op-metricas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+    gap: .5rem;
+    margin: .75rem 0;
+}
+
+.op-metrica {
+    background: #f6f7f9;
+    border-radius: 8px;
+    padding: .5rem .65rem;
+}
+
+    .op-metrica dt {
+        font-size: .75rem;
+        color: #666;
+    }
+
+    .op-metrica dd {
+        margin: 0;
+        font-weight: 600;
+    }
+
+.op-metrica--destacada {
+    background: #e4f6ec;
+}
+
+.op-comparacion {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .op-comparacion th, .op-comparacion td {
+        padding: .55rem .5rem;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+    }
+
+        .op-comparacion td.op-num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+.op-motivos {
+    margin: .5rem 0 0;
+    padding-left: 1.1rem;
+}

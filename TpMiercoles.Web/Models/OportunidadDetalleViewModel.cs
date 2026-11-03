@@ -1,6 +1,6 @@
 ﻿namespace TpMiercoles.Web.Models
 {
-    public class OportunidadDetalleViewModel
+    public class OportunidadDetalleViewModel : OportunidadViewModel
     {
         public int ViajeId { get; set; }
         public string ViajeOrigen { get; set; } = string.Empty;
