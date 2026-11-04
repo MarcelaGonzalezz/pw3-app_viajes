@@ -56,6 +56,26 @@ namespace TpMiercoles.Entidades
                 .HasForeignKey(a => a.ViajeId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<Parada>(parada =>
+            {
+                parada.HasOne(p => p.Ruta)
+                    .WithMany(r => r.Paradas)
+                    .HasForeignKey(p => p.RutaId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(false);
+
+                parada.HasOne(p => p.Viaje)
+                    .WithMany(v => v.Paradas)
+                    .HasForeignKey(p => p.ViajeId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(false);
+
+                // Una parada pertenece a una ruta o a un viaje, nunca a ambos ni a ninguno.
+                parada.ToTable(t => t.HasCheckConstraint(
+                    "CK_Parada_UnDuenio",
+                    "([RutaId] IS NOT NULL AND [ViajeId] IS NULL) OR ([RutaId] IS NULL AND [ViajeId] IS NOT NULL)"));
+            });
+
             modelBuilder.Entity<Envio>()
                 .Property(e => e.Monto)
                 .HasPrecision(18, 2);

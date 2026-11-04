@@ -18,6 +18,7 @@ namespace TpMiercoles.Entidades
         public DateTime FechaSalida { get; set; }
         public DateTime? FechaLlegada { get; set; }
         public EstadoActividadViaje Estado { get; set; } = EstadoActividadViaje.ACTIVO;
+        public List<Parada> Paradas { get; set; } = [];
         public List<Asignacion> Asignaciones { get; set; } = [];
 
     }
