@@ -6,6 +6,7 @@ namespace TpMiercoles.Repositorios
     public interface IRutaRepositorio
     {
         Task CrearRutaAsync(Ruta ruta);
+        Task<List<Ruta>> ObtenerRutasActivasAsync();
         Task<List<Ruta>> ObtenerRutasActivasDeUnUsuarioAsync(int usuarioId);
         Task<List<Ruta>> ObtenerRutasDeUnUsuarioAsync(int usuarioId);
         Task<Ruta?> ObtenerPorIdAsync(int id);
@@ -26,6 +27,18 @@ namespace TpMiercoles.Repositorios
         {
             _viajesDbContext.Add(ruta);
             await _viajesDbContext.SaveChangesAsync();
+        }
+
+        public async Task<List<Ruta>> ObtenerRutasActivasAsync()
+        {
+            return await _viajesDbContext.Rutas
+                .Include(r => r.DireccionOrigen)
+                .Include(r => r.DireccionDestino)
+                .Include(r => r.RutaDias)
+                .Include(r => r.Paradas)
+                    .ThenInclude(p => p.Direccion)
+                .Where(r => r.Estado == EstadoRuta.ACTIVA)
+                .ToListAsync();
         }
 
         public async Task<List<Ruta>> ObtenerRutasActivasDeUnUsuarioAsync(int usuarioId)

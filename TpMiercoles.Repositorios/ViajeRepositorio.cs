@@ -7,7 +7,7 @@ namespace TpMiercoles.Repositorios
     public interface IViajeRepositorio
     {
         // Trae un viaje con todo lo que necesita la pantalla de detalle:
-        // origen y destino, su ruta (con paradas y dias), y los envios asignados.
+        // origen y destino, su ruta (con dias), sus paradas (snapshot) y los envios asignados.
         // Devuelve null si el viaje no existe.
         Task<Viaje?> ObtenerDetalleAsync(int viajeId);
 
@@ -21,6 +21,16 @@ namespace TpMiercoles.Repositorios
         // con seguimiento, para aceptar un envio: la ruta dice de quien es el viaje y las
         // asignaciones con su envio sirven para validar capacidad y peso
         Task<Viaje?> ObtenerParaAsignarAsync(int viajeId);
+
+        // Viaje materializado para una salida concreta. null si todavia no se acepto ningun envio.
+        Task<Viaje?> ObtenerPorRutaYFechaAsync(int rutaId, DateTime fechaSalida);
+
+        // Igual, pero con seguimiento de cambios y lo necesario para aceptar un envio.
+        Task<Viaje?> ObtenerParaAsignarPorRutaYFechaAsync(int rutaId, DateTime fechaSalida);
+
+        // Agrega el viaje al contexto sin guardar. El guardado lo hace el servicio junto con
+        // la asignacion y el estado del envio.
+        Task AgregarSinGuardarAsync(Viaje viaje);
 
         Task GuardarCambiosAsync();
 
@@ -45,7 +55,7 @@ namespace TpMiercoles.Repositorios
                 .Include(v => v.DireccionOrigen)
                 .Include(v => v.DireccionDestino)
                 .Include(v => v.Ruta)
-                .Include(v => v.Ruta).ThenInclude(r => r.Paradas).ThenInclude(p => p.Direccion)
+                .Include(v => v.Paradas).ThenInclude(p => p.Direccion)
                 .Include(v => v.Ruta).ThenInclude(r => r.RutaDias)
                 .Include(v => v.Asignaciones).ThenInclude(a => a.Envio).ThenInclude(e => e.Usuario)
                 .Include(v => v.Asignaciones).ThenInclude(a => a.Envio).ThenInclude(e => e.DireccionRetiro)
@@ -89,6 +99,34 @@ namespace TpMiercoles.Repositorios
                 .Include(v => v.Ruta)
                 .Include(v => v.Asignaciones).ThenInclude(a => a.Envio)
                 .FirstOrDefaultAsync(v => v.Id == viajeId);
+        }
+
+        public async Task<Viaje?> ObtenerPorRutaYFechaAsync(int rutaId, DateTime fechaSalida)
+        {
+            return await _viajesDbContext.Viajes
+                .AsNoTracking()
+                .Include(v => v.DireccionOrigen)
+                .Include(v => v.DireccionDestino)
+                .Include(v => v.Ruta)
+                .Include(v => v.Paradas).ThenInclude(p => p.Direccion)
+                .Include(v => v.Asignaciones).ThenInclude(a => a.Envio)
+                .FirstOrDefaultAsync(v => v.RutaId == rutaId && v.FechaSalida == fechaSalida);
+        }
+
+        public async Task<Viaje?> ObtenerParaAsignarPorRutaYFechaAsync(int rutaId, DateTime fechaSalida)
+        {
+            return await _viajesDbContext.Viajes
+                .Include(v => v.DireccionOrigen)
+                .Include(v => v.DireccionDestino)
+                .Include(v => v.Ruta)
+                .Include(v => v.Paradas).ThenInclude(p => p.Direccion)
+                .Include(v => v.Asignaciones).ThenInclude(a => a.Envio)
+                .FirstOrDefaultAsync(v => v.RutaId == rutaId && v.FechaSalida == fechaSalida);
+        }
+
+        public async Task AgregarSinGuardarAsync(Viaje viaje)
+        {
+            await _viajesDbContext.Viajes.AddAsync(viaje);
         }
 
         public Task GuardarCambiosAsync() => _viajesDbContext.SaveChangesAsync();
