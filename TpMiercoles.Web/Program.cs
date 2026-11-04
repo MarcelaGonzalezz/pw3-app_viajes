@@ -49,6 +49,7 @@ builder.Services.AddScoped<ISeedDeDesarrollo, SeedDeDesarrollo>();
 builder.Services.AddScoped<IHistorialRepositorio, HistorialRepositorio>();
 builder.Services.AddScoped<IHistorialServicio, HistorialServicio>();
 builder.Services.AddScoped<ISeedDeHistorial, SeedDeHistorial>();
+builder.Services.AddScoped<ISeedDeOportunidades, SeedDeOportunidades>();
 builder.Services.AddSingleton(TimeProvider.System);
 
 string carpetaClaves = Path.GetFullPath(
@@ -100,10 +101,19 @@ builder.Services.AddAuthorization(); //Hace funcionar [Authorize]
 
 var rutasOpts = builder.Configuration.GetSection(RutasOptions.Seccion).Get<RutasOptions>() ?? new();
 builder.Services.AddSingleton(rutasOpts);
-builder.Services.AddHttpClient<IServicioRutas, OpenRouteServiceRutas>(c =>
-    c.BaseAddress = new Uri(rutasOpts.OrsBaseUrl));
+
+if (rutasOpts.UsarOpenRouteService)
+{
+    builder.Services.AddHttpClient<IServicioRutas, OpenRouteServiceRutas>(c =>
+        c.BaseAddress = new Uri(rutasOpts.OrsBaseUrl));
+} else
+{
+    // en modo mock, sin API key, para poder probar la app sin gastar llamadas a ORS
+    builder.Services.AddSingleton<IServicioRutas, MockServicioRutas>();
+}
 
 builder.Services.AddScoped<IRecorridoServicio, RecorridoServicio>();
+builder.Services.AddScoped<IOportunidadServicio, OportunidadServicio>();
 
 var app = builder.Build();
 var invariante = CultureInfo.InvariantCulture;
@@ -120,6 +130,7 @@ if (app.Environment.IsDevelopment())
     using IServiceScope ambitoDeSeed = app.Services.CreateScope();
     await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeDesarrollo>().SembrarAsync();
     await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeHistorial>().SembrarAsync();
+    await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeOportunidades>().SembrarAsync();
 }
 
 if (!app.Environment.IsDevelopment())

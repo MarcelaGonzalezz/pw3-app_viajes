@@ -48,7 +48,7 @@
             </form>
         }
 
-        <span class="vl-btn vl-btn--inhabilitado" title="Pantalla todavía no implementada">Ver oportunidades</span>
+        <a class="vl-btn" asp-controller="Oportunidades" asp-action="Index" asp-route-viajeId="@Model.Id">Ver oportunidades</a>
     </div>
 
     <section class="vd-datos" aria-label="Datos del viaje">
