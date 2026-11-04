@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using TpMiercoles.Entidades;
 using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Servicios.DTOs.Direccion;
@@ -20,6 +20,8 @@ namespace TpMiercoles.Servicios
             CreateMap<RutaDia, RutaDiaDTO>();
             CreateMap<Parada, ParadaDTO>();
             CreateMap<Ruta, RutaDTO>();
+            CreateMap<Ruta, EditarRutaDTO>();
+            CreateMap<EditarRutaDTO, Ruta>();
             CreateMap<Envio, EnvioDTO>()
                 .ForMember(d => d.Origen, o => o.MapFrom(s => s.DireccionRetiro))
                 .ForMember(d => d.Destino, o => o.MapFrom(s => s.DireccionEntrega));

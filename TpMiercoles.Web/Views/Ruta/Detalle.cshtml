@@ -47,6 +47,7 @@
                     <input type="hidden" name="volverADetalle" value="true" />
                     <button type="submit" class="btn btn-outline-danger" onclick="return confirm('¿Estás seguro de desactivar esta ruta?');">Desactivar</button>
                 </form>
+                <a asp-controller="Oportunidades" asp-action="Index" class="btn btn-dark">Ver oportunidades</a>
             }
             else
             {
@@ -55,7 +56,6 @@
                     <button type="submit" class="btn btn-outline-success">Activar</button>
                 </form>
             }
-            <a asp-controller="Oportunidades" asp-action="Index" class="btn btn-dark">Ver oportunidades</a>
         </div>
     </div>
 

@@ -39,6 +39,8 @@ namespace TpMiercoles.Web.Mapeos
             CreateMap<RutaViewModel, RutaDTO>();
             CreateMap<RutaDTO, RutaViewModel>();
             CreateMap<CrearRutaViewModel, CrearRutaDTO>();
+            CreateMap<EditarRutaDTO, EditarRutaViewModel>();
+            CreateMap<EditarRutaViewModel, EditarRutaDTO>();
 
             CreateMap<HistorialItemDTO, HistorialItemViewModel>();
 
