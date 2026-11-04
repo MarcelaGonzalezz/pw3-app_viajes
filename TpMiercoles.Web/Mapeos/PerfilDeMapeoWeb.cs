@@ -44,9 +44,13 @@ namespace TpMiercoles.Web.Mapeos
 
             CreateMap<RutaDiaDTO, DayOfWeek>().ConvertUsing(r => r.DiaSemana);
 
-            CreateMap<OportunidadDTO, OportunidadViewModel>();
-            CreateMap<OportunidadDetalleDTO, OportunidadDetalleViewModel>();
-            CreateMap<OportunidadesDelViajeDTO, OportunidadesDelViajeViewModel>();
+            CreateMap<OportunidadDTO, OportunidadViewModel>()
+                .ForMember(d => d.Retiro, o => o.MapFrom(s => s.RetiroDireccion))
+                .ForMember(d => d.Entrega, o => o.MapFrom(s => s.EntregaDireccion));
+            CreateMap<OportunidadDetalleDTO, OportunidadDetalleViewModel>()
+                .IncludeBase<OportunidadDTO, OportunidadViewModel>();
+            CreateMap<SalidaDeRutaDTO, SalidaDeRutaViewModel>();
+            CreateMap<OportunidadesDeRutaDTO, OportunidadesDeRutaViewModel>();
         }
     }
 }

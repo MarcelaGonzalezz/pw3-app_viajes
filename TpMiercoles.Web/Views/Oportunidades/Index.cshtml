@@ -1,4 +1,4 @@
-﻿@model OportunidadesViewModel
+@model OportunidadesViewModel
 @using System.Globalization
 @using TpMiercoles.Servicios.DTOs.Oportunidades
 @{
@@ -15,11 +15,15 @@
 <div class="vd">
     <header class="vd-header">
         <div class="vd-header-main">
-            <p class="vd-eyebrow">Envíos compatibles con tus viajes</p>
+            <p class="vd-eyebrow">Envíos compatibles con tus rutas</p>
             <h1 class="vd-title">Oportunidades</h1>
         </div>
     </header>
 
+    @if (TempData["Mensaje"] is string mensaje)
+    {
+        <div class="vl-aviso" role="status">@mensaje</div>
+    }
     @if (TempData["Error"] is string error)
     {
         <div class="vl-aviso vl-aviso--error" role="alert">@error</div>
@@ -30,21 +34,21 @@
     }
     <div asp-validation-summary="All" class="vl-aviso vl-aviso--error" style="@(ViewData.ModelState.IsValid ? "display:none" : "")"></div>
 
-    @if (Model.Viajes.Count == 0)
+    @if (Model.Rutas.Count == 0)
     {
-        <p class="vd-vacio">No tenés viajes activos próximos. Creá una ruta o activá un viaje para buscar oportunidades.</p>
+        <p class="vd-vacio">No tenés rutas activas con salidas próximas. Creá una ruta o activá una para buscar oportunidades.</p>
     }
     else
     {
         <form method="get" asp-action="Index" class="op-buscador">
             <label>
-                Viaje
-                <select name="viajeId" required>
-                    <option value="">Elegí un viaje</option>
-                    @foreach (var viaje in Model.Viajes)
+                Ruta
+                <select name="rutaId" required>
+                    <option value="">Elegí una ruta</option>
+                    @foreach (var salida in Model.Rutas)
                     {
-                        <option value="@viaje.Id" selected="@(viaje.Id == Model.ViajeId)">
-                            #@viaje.Id · @viaje.FechaSalida.ToString("dd/MM HH:mm") · @viaje.DireccionOrigen → @viaje.DireccionDestino
+                        <option value="@salida.RutaId" selected="@(salida.RutaId == Model.RutaId)">
+                            Ruta #@salida.RutaId · @salida.FechaSalida.ToString("dd/MM HH:mm") · @salida.Origen → @salida.Destino
                         </option>
                     }
                 </select>
@@ -69,7 +73,9 @@
     @if (Model.Resultado is { } r)
     {
         <p class="op-resumen">
-            Viaje #@r.ViajeId · @r.ViajeOrigen → @r.ViajeDestino · sale @r.FechaSalida.ToString("dd/MM/yyyy HH:mm") ·
+            Ruta #@r.RutaId
+            @(r.ViajeId is null ? "· viaje aún sin crear" : $"· viaje #{r.ViajeId}")
+            · @r.RutaOrigen → @r.RutaDestino · sale @r.FechaSalida.ToString("dd/MM/yyyy HH:mm") ·
             quedan @r.CapacidadRestante lugar(es) y @r.PesoRestanteKg.ToString("0.##") kg
             @if (r.DistanciaHabitualKm > 0)
             {
@@ -77,14 +83,14 @@
             }
         </p>
 
-        @foreach (var aviso in r.AvisosDelViaje)
+        @foreach (var aviso in r.AvisosDeLaSalida)
         {
             <div class="vl-aviso vl-aviso--error" role="status">@aviso</div>
         }
 
-        @if (r.AvisosDelViaje.Count == 0 && r.Oportunidades.Count == 0)
+        @if (r.AvisosDeLaSalida.Count == 0 && r.Oportunidades.Count == 0)
         {
-            <p class="vd-vacio">No hay envíos compatibles con este viaje@(Model.DesvioMaximoKm is null ? "" : " con ese desvío máximo").</p>
+            <p class="vd-vacio">No hay envíos compatibles con esta salida@(Model.DesvioMaximoKm is null ? "" : " con ese desvío máximo").</p>
         }
 
         <ul class="vd-paquetes">
@@ -104,8 +110,15 @@
                         <div class="op-metrica"><dt>$ por km extra</dt><dd>@(o.GananciaPorKmAdicional?.ToString("C0", pesos) ?? "Sin desvío")</dd></div>
                     </dl>
                     <div class="vl-acciones">
-                        <a class="vl-btn" asp-action="Detalle" asp-route-viajeId="@r.ViajeId" asp-route-envioId="@o.EnvioId">Ver detalle</a>
-                        <form asp-action="Aceptar" asp-route-viajeId="@r.ViajeId" asp-route-envioId="@o.EnvioId" method="post" class="vl-form-inline">
+                        <a class="vl-btn" asp-action="Detalle"
+                           asp-route-rutaId="@r.RutaId"
+                           asp-route-envioId="@o.EnvioId"
+                           asp-route-fecha="@r.FechaSalida.ToString("yyyy-MM-dd")">Ver detalle</a>
+                        <form asp-action="Aceptar"
+                              asp-route-rutaId="@r.RutaId"
+                              asp-route-envioId="@o.EnvioId"
+                              asp-route-fecha="@r.FechaSalida.ToString("yyyy-MM-dd")"
+                              method="post" class="vl-form-inline">
                             <button type="submit" class="vl-btn vl-btn--principal">Aceptar</button>
                         </form>
                     </div>

@@ -1,9 +1,8 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TpMiercoles.Entidades;
 using TpMiercoles.Servicios;
-using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Servicios.DTOs.Oportunidades;
 using TpMiercoles.Servicios.Excepciones;
 using TpMiercoles.Web.Infraestructura;
@@ -17,23 +16,22 @@ namespace TpMiercoles.Web.Controllers
         private const string ERROR_DE_RUTA = "No pudimos calcular la ruta en este momento. Por favor, intente nuevamente más tarde.";
 
         private readonly IOportunidadServicio _oportunidadServicio;
-        private readonly IViajeServicio _viajeServicio;
         private readonly ISesionWeb _sesionWeb;
         private readonly IMapper _mapper;
 
-        public OportunidadesController(IOportunidadServicio oportunidadServicio, IViajeServicio viajeServicio, ISesionWeb sesionWeb, IMapper mapper)
+        public OportunidadesController(IOportunidadServicio oportunidadServicio, ISesionWeb sesionWeb, IMapper mapper)
         {
             _oportunidadServicio = oportunidadServicio;
-            _viajeServicio = viajeServicio;
             _sesionWeb = sesionWeb;
             _mapper = mapper;
         }
 
         // GET /oportunidades
-        // GET /oportunidades?viajeId=3&orden=Desvio&desvioMaximoKm=5
+        // GET /oportunidades?rutaId=3&fecha=2026-11-09&orden=Desvio&desvioMaximoKm=5
         [HttpGet("/oportunidades")]
         public async Task<IActionResult> Index(
-            int? viajeId,
+            int? rutaId,
+            DateTime? fecha,
             CriterioOrdenOportunidad orden = CriterioOrdenOportunidad.Ganancia,
             double? desvioMaximoKm = null,
             CancellationToken ct = default)
@@ -44,23 +42,20 @@ namespace TpMiercoles.Web.Controllers
                 return Challenge();
             }
 
-            // solo viajes activos que todavia no salieron, los mas proximos primero
-            DateTime ahora = DateTime.Now;
-            List<ViajeListadoDTO> viajes = (await _viajeServicio.ListarAsync(usuarioId.Value, EstadoActividadViaje.ACTIVO))
-                .Where(v => v.FechaSalida >= ahora)
-                .OrderBy(v => v.FechaSalida)
-                .ToList();
+            List<SalidaDeRutaDTO> salidas =
+                await _oportunidadServicio.ListarSalidasAsync(usuarioId.Value, ct);
 
             OportunidadesViewModel modelo = new()
             {
-                Viajes = viajes.Select(_mapper.Map<ViajeListadoViewModel>).ToList(),
-                ViajeId = viajeId,
+                Rutas = salidas.Select(_mapper.Map<SalidaDeRutaViewModel>).ToList(),
+                RutaId = rutaId,
+                Fecha = fecha,
                 Orden = orden,
                 DesvioMaximoKm = desvioMaximoKm
             };
-            
-            // si entro desde el sidebar (todavia no se eligio un viaje, no se calcula nada)
-            if (viajeId is null)
+
+            // si entro desde el sidebar (todavia no se eligio una ruta, no se calcula nada)
+            if (rutaId is null)
             {
                 return View(modelo);
             }
@@ -73,15 +68,16 @@ namespace TpMiercoles.Web.Controllers
 
             try
             {
-                OportunidadesDelViajeDTO? resultado = await _oportunidadServicio.ListarAsync(viajeId.Value, usuarioId.Value, orden, desvioMaximoKm, ct);
-                
-                // NULL si el viaje no existe o no es del usuario (da 404 en ambos casos)
+                OportunidadesDeRutaDTO? resultado =
+                    await _oportunidadServicio.ListarAsync(rutaId.Value, usuarioId.Value, fecha, orden, desvioMaximoKm, ct);
+
+                // NULL si la ruta no existe, no es del usuario o no tiene una salida valida
                 if (resultado is null)
                 {
                     return NotFound();
                 }
 
-                modelo.Resultado = _mapper.Map<OportunidadesDelViajeViewModel>(resultado);
+                modelo.Resultado = _mapper.Map<OportunidadesDeRutaViewModel>(resultado);
             }
             catch (RutaNoEncontradaException)
             {
@@ -91,9 +87,9 @@ namespace TpMiercoles.Web.Controllers
             return View(modelo);
         }
 
-        // GET /oportunidades/{viajeId}/envios/{envioId}
-        [HttpGet("/oportunidades/{viajeId:int}/envios/{envioId:int}")]
-        public async Task<IActionResult> Detalle(int viajeId, int envioId, CancellationToken ct)
+        // GET /oportunidades/{rutaId}/envios/{envioId}?fecha=2026-11-09
+        [HttpGet("/oportunidades/{rutaId:int}/envios/{envioId:int}")]
+        public async Task<IActionResult> Detalle(int rutaId, int envioId, DateTime? fecha, CancellationToken ct)
         {
             int? usuarioId = _sesionWeb.UsuarioId;
             if (usuarioId is null)
@@ -104,12 +100,12 @@ namespace TpMiercoles.Web.Controllers
             OportunidadDetalleDTO? detalle;
             try
             {
-                detalle = await _oportunidadServicio.ObtenerDetalleAsync(viajeId, envioId, usuarioId.Value, ct);
+                detalle = await _oportunidadServicio.ObtenerDetalleAsync(rutaId, envioId, usuarioId.Value, fecha, ct);
             }
             catch (RutaNoEncontradaException)
             {
                 TempData["Error"] = "Ruta no encontrada.";
-                return RedirectToAction(nameof(Index), new { viajeId });
+                return RedirectToAction(nameof(Index), new { rutaId, fecha });
             }
 
             if (detalle is null)
@@ -120,10 +116,10 @@ namespace TpMiercoles.Web.Controllers
             return View(_mapper.Map<OportunidadDetalleViewModel>(detalle));
         }
 
-        // POST /oportunidades/{viajeId}/envios/{envioId}/aceptar
-        [HttpPost("/oportunidades/{viajeId:int}/envios/{envioId:int}/aceptar")]
+        // POST /oportunidades/{rutaId}/envios/{envioId}/aceptar?fecha=2026-11-09
+        [HttpPost("/oportunidades/{rutaId:int}/envios/{envioId:int}/aceptar")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Aceptar(int viajeId, int envioId)
+        public async Task<IActionResult> Aceptar(int rutaId, int envioId, DateTime? fecha)
         {
             int? usuarioId = _sesionWeb.UsuarioId;
             if (usuarioId is null)
@@ -132,7 +128,7 @@ namespace TpMiercoles.Web.Controllers
             }
 
             ResultadoOperacionOportunidad resultado =
-                await _oportunidadServicio.AceptarAsync(viajeId, envioId, usuarioId.Value);
+                await _oportunidadServicio.AceptarAsync(rutaId, envioId, usuarioId.Value, fecha);
 
             if (resultado.NoEncontrado)
             {
@@ -143,11 +139,13 @@ namespace TpMiercoles.Web.Controllers
             {
                 // volvemos al detalle: se recalcula y muestra por que ya no se puede aceptar (por ejemplo, porque otro conductor ya lo acepto)
                 TempData["Error"] = resultado.Conflicto;
-                return RedirectToAction(nameof(Detalle), new { viajeId, envioId });
+                return RedirectToAction(nameof(Detalle), new { rutaId, envioId, fecha });
             }
 
-            TempData["Mensaje"] = $"Aceptaste el envío #{envioId}. Ya figura en los paquetes del viaje #{viajeId}.";
-            return RedirectToAction(nameof(Index), new { id = viajeId });
+            TempData["Mensaje"] =
+                $"Aceptaste el envío #{envioId}. Quedó asignado al viaje #{resultado.ViajeId}.";
+
+            return RedirectToAction(nameof(Index), new { rutaId, fecha });
         }
     }
 }

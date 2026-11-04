@@ -1,4 +1,4 @@
-﻿@model OportunidadDetalleViewModel
+@model OportunidadDetalleViewModel
 @using System.Globalization
 @{
     ViewData["Title"] = $"Oportunidad · Envío #{Model.EnvioId}";
@@ -14,7 +14,11 @@
 <div class="vd">
     <header class="vd-header">
         <div class="vd-header-main">
-            <p class="vd-eyebrow">Viaje #@Model.ViajeId · @Model.ViajeOrigen → @Model.ViajeDestino · @Model.FechaSalida.ToString("dd/MM/yyyy HH:mm")</p>
+            <p class="vd-eyebrow">
+                Ruta #@Model.RutaId
+                @(Model.ViajeId is null ? "· viaje aún sin crear" : $"· viaje #{Model.ViajeId}")
+                · @Model.RutaOrigen → @Model.RutaDestino · @Model.FechaSalida.ToString("dd/MM/yyyy HH:mm")
+            </p>
             <h1 class="vd-title">
                 <span>@Model.Retiro</span>
                 <span class="vd-flecha" aria-hidden="true">&rarr;</span>
@@ -29,6 +33,11 @@
     @if (TempData["Error"] is string error)
     {
         <div class="vl-aviso vl-aviso--error" role="alert">@error</div>
+    }
+
+    @if (Model.ViajeId is null)
+    {
+        <div class="vl-aviso" role="status">Al aceptar el envío se creará el viaje para esta salida.</div>
     }
 
     <div class="vd-cols">
@@ -72,10 +81,17 @@
     }
 
     <div class="vl-acciones">
-        <a class="vl-btn" asp-action="Index" asp-route-viajeId="@Model.ViajeId">Volver</a>
+        <a class="vl-btn"
+           asp-action="Index"
+           asp-route-rutaId="@Model.RutaId"
+           asp-route-fecha="@Model.FechaSalida.ToString("yyyy-MM-dd")">Volver</a>
         @if (Model.EsAceptable)
         {
-            <form asp-action="Aceptar" asp-route-viajeId="@Model.ViajeId" asp-route-envioId="@Model.EnvioId" method="post" class="vl-form-inline">
+            <form asp-action="Aceptar"
+                  asp-route-rutaId="@Model.RutaId"
+                  asp-route-envioId="@Model.EnvioId"
+                  asp-route-fecha="@Model.FechaSalida.ToString("yyyy-MM-dd")"
+                  method="post" class="vl-form-inline">
                 <button type="submit" class="vl-btn vl-btn--principal">Aceptar envío</button>
             </form>
         }

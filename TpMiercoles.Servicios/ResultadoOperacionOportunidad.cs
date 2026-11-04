@@ -11,6 +11,7 @@ namespace TpMiercoles.Servicios
         public bool NoEncontrado { get; private init; }
         public string? Conflicto { get; private init; }
         public int? AsignacionId { get; private init; }
+        public int? ViajeId { get; private init; }
 
         public bool EsExitoso => !NoEncontrado && Conflicto is null;
 
@@ -18,6 +19,7 @@ namespace TpMiercoles.Servicios
 
         public static ResultadoOperacionOportunidad EnConflicto(string motivo) => new() { Conflicto = motivo };
 
-        public static ResultadoOperacionOportunidad Exitoso(int asignacionId) => new() { AsignacionId = asignacionId };
+        public static ResultadoOperacionOportunidad Exitoso(int asignacionId, int viajeId)
+            => new() { AsignacionId = asignacionId, ViajeId = viajeId };
     }
 }
