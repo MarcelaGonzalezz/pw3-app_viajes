@@ -114,6 +114,8 @@ if (rutasOpts.UsarOpenRouteService)
 
 builder.Services.AddScoped<IRecorridoServicio, RecorridoServicio>();
 builder.Services.AddScoped<IOportunidadServicio, OportunidadServicio>();
+builder.Services.AddScoped<IMaterializadorDeViajes, MaterializadorDeViajes>();
+builder.Services.AddHostedService<MaterializacionDeViajesHostedService>();
 
 var app = builder.Build();
 var invariante = CultureInfo.InvariantCulture;
