@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using TpMiercoles.Entidades;
@@ -203,11 +203,6 @@ namespace TpMiercoles.Servicios
         {
             List<string> motivos = [];
 
-            if (viaje.Ruta != null && viaje.Ruta.Estado != EstadoRuta.ACTIVA)
-            {
-                motivos.Add("La ruta está inactiva: reactivala para buscar oportunidades.");
-            }
-
             if (viaje.Estado != EstadoActividadViaje.ACTIVO)
             {
                 motivos.Add("El viaje está inactivo: activalo para comenzar a buscar oportunidades.");
@@ -280,7 +275,7 @@ namespace TpMiercoles.Servicios
 
             List<Coordenada> conEnvio = PlanificadorDeRecorrido.InsertarEnvio(recorrido, ACoordenada(envio.DireccionRetiro), ACoordenada(envio.DireccionEntrega));
 
-            // el primero y el ultimo siguen idendo origen y destino. lo del medio son paradas
+            // el primero y el ultimo siguen siendo origen y destino. lo del medio son paradas
             return _servicioRutas.CalcularRutaAsync(conEnvio[0], conEnvio[^1], conEnvio.GetRange(1, conEnvio.Count - 2), ct);
         }
 

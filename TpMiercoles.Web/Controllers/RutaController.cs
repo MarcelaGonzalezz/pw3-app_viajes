@@ -83,60 +83,6 @@ namespace TpMiercoles.Web.Controllers
             }
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Editar(int id)
-        {
-            int usuarioId = _sesionWeb.UsuarioIdRequerido;
-
-            try
-            {
-                EditarRutaDTO dto = await _rutaServicio.ObtenerParaEditarAsync(id, usuarioId);
-                var modelo = _mapper.Map<EditarRutaViewModel>(dto);
-                return View(modelo);
-            }
-            catch (RutaNoEncontradaException)
-            {
-                return NotFound();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Editar(int id, EditarRutaViewModel ruta)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View(ruta);
-            }
-
-            int usuarioId = _sesionWeb.UsuarioIdRequerido;
-            EditarRutaDTO dto = _mapper.Map<EditarRutaDTO>(ruta);
-
-            try
-            {
-                await _rutaServicio.EditarRutaAsync(usuarioId, id, dto);
-                TempData["Mensaje"] = "La ruta fue modificada exitosamente.";
-                return RedirectToAction(nameof(Detalle), new { id });
-            }
-            catch (RutaNoEncontradaException)
-            {
-                return NotFound();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (ValidacionRutaException ex)
-            {
-                ModelState.AddModelError(string.Empty, ex.Message);
-                return View(ruta);
-            }
-        }
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Desactivar(int id, bool volverADetalle = false)

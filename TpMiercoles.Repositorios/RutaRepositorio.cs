@@ -72,10 +72,6 @@ namespace TpMiercoles.Repositorios
                 .Include(r => r.RutaDias)
                 .Include(r => r.Paradas)
                     .ThenInclude(p => p.Direccion)
-                .Include(r => r.Viajes)
-                    .ThenInclude(v => v.Asignaciones)
-                        .ThenInclude(a => a.Envio)
-                            .ThenInclude(e => e.Paquete)
                 .FirstOrDefaultAsync(r => r.Id == id);
         }
 
