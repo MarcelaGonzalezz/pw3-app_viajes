@@ -14,27 +14,24 @@ namespace TpMiercoles.Servicios
     }
 
     // datos para probar oportunidades:
-    // un viaje futuro de Ana sobre su ruta Ramos -> Centro y envios de Carla, algunos compatibles
-    // y otros que se tienen que descartar (muy pesado, fuera de fecha). Si carla ya tiene envios
-    // vigentes buscando conductor, no hace nada.
+    // envios de Carla para la proxima salida de la ruta Ramos -> Centro de Ana, algunos
+    // compatibles y otros que se tienen que descartar (muy pesado, fuera de fecha). Si
+    // carla ya tiene envios vigentes buscando conductor, no hace nada.
     public class SeedDeOportunidades : ISeedDeOportunidades
     {
         private readonly IUsuarioRepositorio _usuarios;
         private readonly IRutaRepositorio _rutas;
-        private readonly IViajeRepositorio _viajes;
         private readonly IEnvioRepositorio _envios;
         private readonly ILogger<SeedDeOportunidades> _logger;
 
         public SeedDeOportunidades(
             IUsuarioRepositorio usuarios,
             IRutaRepositorio rutas,
-            IViajeRepositorio viajes,
             IEnvioRepositorio envios,
             ILogger<SeedDeOportunidades> logger)
         {
             _usuarios = usuarios;
             _rutas = rutas;
-            _viajes = viajes;
             _envios = envios;
             _logger = logger;
         }
@@ -71,24 +68,8 @@ namespace TpMiercoles.Servicios
                     return;
                 }
 
-                // proximo lunes, miercoles o viernes (los dias de la ruta del seed)
-                DateTime dia = hoy.AddDays(1);
-                while (dia.DayOfWeek is not (DayOfWeek.Monday or DayOfWeek.Wednesday or DayOfWeek.Friday))
-                {
-                    dia = dia.AddDays(1);
-                }
-
-                await _viajes.AgregarAsync([new Viaje
-                {
-                    RutaId = ruta.Id,
-                    DireccionOrigenId = ruta.DireccionOrigenId,
-                    DireccionDestinoId = ruta.DireccionDestinoId,
-                    PesoMax = ruta.PesoMax,
-                    CapacidadMaxPaquetes = ruta.CapacidadMaxPaquetes,
-                    FechaSalida = dia.AddHours(8),
-                    FechaLlegada = dia.AddHours(9).AddMinutes(30),
-                    Estado = EstadoActividadViaje.ACTIVO
-                }]);
+                // Las oportunidades se calculan sobre la proxima salida de la ruta,
+                // no hace falta crear un viaje de antemano.
 
                 DateTime desde = hoy;
                 DateTime hasta = hoy.AddDays(14);
