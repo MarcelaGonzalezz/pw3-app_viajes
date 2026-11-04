@@ -13,12 +13,15 @@ namespace TpMiercoles.Tests.Helpers
         public static RutaDia CrearDia(int id, DayOfWeek dia)
             => new() { Id = id, DiaSemana = dia };
 
-        public static Parada CrearParada(int id, string texto)
+        public static Parada CrearParada(int id, string texto, int orden = 1, int? rutaId = null, int? viajeId = null)
             => new()
             {
                 Id = id,
+                RutaId = rutaId,
+                ViajeId = viajeId,
                 DireccionId = id,
-                Direccion = CrearDireccion(id, texto)
+                Direccion = CrearDireccion(id, texto),
+                Orden = orden
             };
 
         public static Asignacion CrearAsignacion(
@@ -106,6 +109,7 @@ namespace TpMiercoles.Tests.Helpers
                 PesoMax = pesoMax,
                 CapacidadMaxPaquetes = capacidadMaxPaquetes,
                 Estado = estado,
+                Paradas = paradas?.ToList() ?? [],
                 Asignaciones = asignaciones?.ToList() ?? []
             };
         }

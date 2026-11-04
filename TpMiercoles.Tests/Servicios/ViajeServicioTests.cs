@@ -52,8 +52,8 @@ namespace TpMiercoles.Tests.Servicios
                 capacidadMaxPaquetes: 4,
                 paradas:
                 [
-                    ViajeTestData.CrearParada(2, "Liniers"),
-                    ViajeTestData.CrearParada(1, "Ciudadela")
+                    ViajeTestData.CrearParada(2, "Liniers", orden: 2),
+                    ViajeTestData.CrearParada(1, "Ciudadela", orden: 1)
                 ],
                 dias:
                 [
