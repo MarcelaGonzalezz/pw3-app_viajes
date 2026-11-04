@@ -91,7 +91,7 @@
                     <div class="vl-acciones">
                         <a class="vl-btn vl-btn--principal" asp-action="Detalle" asp-route-id="@viaje.Id">Ver detalle</a>
                         <a class="vl-btn" asp-action="Editar" asp-route-id="@viaje.Id">Editar</a>
-                        <a class="vl-btn" asp-controller="Oportunidades" asp-action="Index" asp-route-viajeId="@viaje.Id">Oportunidades</a>
+                        <a class="vl-btn" asp-controller="Oportunidades" asp-action="Index" asp-route-rutaId="@viaje.RutaId">Oportunidades</a>
 
                         @if (viaje.EstaActivo)
                         {

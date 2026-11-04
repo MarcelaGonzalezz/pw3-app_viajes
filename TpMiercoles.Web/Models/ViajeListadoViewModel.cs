@@ -5,6 +5,7 @@ namespace TpMiercoles.Web.Models
     public class ViajeListadoViewModel
     {
         public int Id { get; set; }
+        public int RutaId { get; set; }
         public EstadoActividadViaje Estado { get; set; }
         public string DireccionOrigen { get; set; } = string.Empty;
         public string DireccionDestino { get; set; } = string.Empty;

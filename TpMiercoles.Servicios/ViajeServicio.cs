@@ -55,11 +55,12 @@ namespace TpMiercoles.Servicios
                 return null;
             }
 
-            List<ParadaDTO> paradas = viaje.Ruta.Paradas
-                .OrderBy(p => p.Id)
-                .Select((parada, indice) => new ParadaDTO
+            List<ParadaDTO> paradas = viaje.Paradas
+                .OrderBy(p => p.Orden)
+                .ThenBy(p => p.Id)
+                .Select(parada => new ParadaDTO
                 {
-                    Orden = indice + 1,
+                    Orden = parada.Orden,
                     Direccion = _mapper.Map<DireccionDTO>(parada.Direccion)
                 })
                 .ToList();
@@ -111,6 +112,7 @@ namespace TpMiercoles.Servicios
                 .Select(v => new ViajeListadoDTO
                 {
                     Id = v.Id,
+                    RutaId = v.RutaId,
                     Estado = v.Estado,
                     DireccionOrigen = v.DireccionOrigen.Texto,
                     DireccionDestino = v.DireccionDestino.Texto,

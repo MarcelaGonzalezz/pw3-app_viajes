@@ -5,6 +5,7 @@ namespace TpMiercoles.Servicios.DTOs
     public class ViajeListadoDTO
     {
         public int Id { get; set; }
+        public int RutaId { get; set; }
         public EstadoActividadViaje Estado { get; set; }
         public string DireccionOrigen { get; set; } = string.Empty;
         public string DireccionDestino { get; set; } = string.Empty;
