@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 
 using TpMiercoles.Entidades;
 using TpMiercoles.Entidades.Excepciones;
@@ -12,7 +12,10 @@ namespace TpMiercoles.Servicios {
     public interface IRutaServicio {
         Task CrearRutaAsync(int usuarioId, CrearRutaDTO rutaDTO);
         Task<List<RutaDTO>> ObtenerRutasActivasDeUnUsuarioAsync(int usuarioId);
+        Task<List<RutaDTO>> ObtenerRutasDeUnUsuarioAsync(int usuarioId);
         Task<RutaDTO> ObtenerDetalleAsync(int rutaId, int usuarioId);
+        Task DesactivarRutaAsync(int rutaId, int usuarioId);
+        Task ActivarRutaAsync(int rutaId, int usuarioId);
     }
 
     public class RutaServicio : IRutaServicio {
@@ -28,8 +31,9 @@ namespace TpMiercoles.Servicios {
             _mapper = mapper;
             _recorridoServicio = recorridoServicio;
         }
+
         public async Task<RutaDTO> ObtenerDetalleAsync(int rutaId, int usuarioId) {
-            Ruta ruta = await _rutaRepositorio.ObtenerPorIdAsync(rutaId);
+            Ruta? ruta = await _rutaRepositorio.ObtenerPorIdAsync(rutaId);
 
             if (ruta == null)
                 throw new RutaNoEncontradaException("La ruta no fue encontrada.");
@@ -39,6 +43,7 @@ namespace TpMiercoles.Servicios {
 
             return _mapper.Map<RutaDTO>(ruta);
         }
+
         public async Task CrearRutaAsync(int usuarioId, CrearRutaDTO rutaDTO) {
             ValidarRuta(rutaDTO);
             Usuario usuario = await _usuarioRepositorio.BuscarPorIdAsync(usuarioId);
@@ -51,10 +56,40 @@ namespace TpMiercoles.Servicios {
             await _rutaRepositorio.CrearRutaAsync(ruta);
         }
 
-
         public async Task<List<RutaDTO>> ObtenerRutasActivasDeUnUsuarioAsync(int usuarioId) {
             List<Ruta> rutas = await _rutaRepositorio.ObtenerRutasActivasDeUnUsuarioAsync(usuarioId);
             return _mapper.Map<List<RutaDTO>>(rutas);
+        }
+
+        public async Task<List<RutaDTO>> ObtenerRutasDeUnUsuarioAsync(int usuarioId) {
+            List<Ruta> rutas = await _rutaRepositorio.ObtenerRutasDeUnUsuarioAsync(usuarioId);
+            return _mapper.Map<List<RutaDTO>>(rutas);
+        }
+
+        public async Task DesactivarRutaAsync(int rutaId, int usuarioId) {
+            Ruta? ruta = await _rutaRepositorio.ObtenerPorIdParaModificarAsync(rutaId);
+
+            if (ruta == null)
+                throw new RutaNoEncontradaException("La ruta no fue encontrada.");
+
+            if (ruta.UsuarioId != usuarioId)
+                throw new UnauthorizedAccessException("No tienes permisos para modificar esta ruta.");
+
+            ruta.Estado = EstadoRuta.INACTIVA;
+            await _rutaRepositorio.GuardarCambiosAsync();
+        }
+
+        public async Task ActivarRutaAsync(int rutaId, int usuarioId) {
+            Ruta? ruta = await _rutaRepositorio.ObtenerPorIdParaModificarAsync(rutaId);
+
+            if (ruta == null)
+                throw new RutaNoEncontradaException("La ruta no fue encontrada.");
+
+            if (ruta.UsuarioId != usuarioId)
+                throw new UnauthorizedAccessException("No tienes permisos para modificar esta ruta.");
+
+            ruta.Estado = EstadoRuta.ACTIVA;
+            await _rutaRepositorio.GuardarCambiosAsync();
         }
 
         private void ValidarRuta(CrearRutaDTO rutaDTO) {

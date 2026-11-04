@@ -1,12 +1,14 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Moq;
 using System.Security.Claims;
 using TpMiercoles.Entidades;
 using TpMiercoles.Entidades.Excepciones;
 using TpMiercoles.Servicios;
+using TpMiercoles.Servicios.Excepciones;
 using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Servicios.DTOs.Ruta;
 using TpMiercoles.Servicios.DTOs.Direccion;
@@ -44,12 +46,14 @@ public class RutaControllerTests
             .Setup(s => s.ObtenerRutasActivasDeUnUsuarioAsync(It.IsAny<int>()))
             .ReturnsAsync(new List<RutaDTO>());
 
+        var httpContext = new DefaultHttpContext { User = CrearUsuarioAutenticado() };
         _controller = new RutaController(_mapper, _servicioMock.Object, _sesionMock.Object)
         {
             ControllerContext = new ControllerContext
             {
-                HttpContext = new DefaultHttpContext { User = CrearUsuarioAutenticado() }
-            }
+                HttpContext = httpContext
+            },
+            TempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>())
         };
     }
 
@@ -152,12 +156,12 @@ public class RutaControllerTests
     }
 
     [Fact]
-    public async Task Obtener_DevuelveVistaConLasRutasActivasYElNombreDelUsuario()
+    public async Task Obtener_DevuelveVistaConLasRutasYElNombreDelUsuario()
     {
         var rutasDTO = new List<RutaDTO> { CrearRutaDTOValida() };
 
         _servicioMock
-            .Setup(s => s.ObtenerRutasActivasDeUnUsuarioAsync(UsuarioId))
+            .Setup(s => s.ObtenerRutasDeUnUsuarioAsync(UsuarioId))
             .ReturnsAsync(rutasDTO);
 
         var resultado = await _controller.Obtener();
@@ -186,7 +190,7 @@ public class RutaControllerTests
         Assert.Equal("Parada 1", parada.Direccion.Texto);
 
         _servicioMock.Verify(
-            s => s.ObtenerRutasActivasDeUnUsuarioAsync(UsuarioId),
+            s => s.ObtenerRutasDeUnUsuarioAsync(UsuarioId),
             Times.Once);
     }
 
@@ -199,6 +203,84 @@ public class RutaControllerTests
         var modelo = Assert.IsType<ObtenerRutasViewModel>(vista.Model);
         Assert.Empty(modelo.Rutas);
         Assert.Equal(NombreUsuario, modelo.NombreUsuario);
+    }
+
+    [Fact]
+    public async Task Desactivar_CuandoOperacionExitosa_RedirigeAObtenerConMensaje()
+    {
+        const int rutaId = 10;
+        _servicioMock
+            .Setup(s => s.DesactivarRutaAsync(rutaId, UsuarioId))
+            .Returns(Task.CompletedTask);
+
+        var resultado = await _controller.Desactivar(rutaId);
+
+        var redireccion = Assert.IsType<RedirectToActionResult>(resultado);
+        Assert.Equal(nameof(RutaController.Obtener), redireccion.ActionName);
+        Assert.Equal("La ruta fue desactivada correctamente. Los viajes comprometidos siguen en pie.", _controller.TempData["Mensaje"]);
+        _servicioMock.Verify(s => s.DesactivarRutaAsync(rutaId, UsuarioId), Times.Once);
+    }
+
+    [Fact]
+    public async Task Desactivar_CuandoVolverADetalleEsTrue_RedirigeADetalle()
+    {
+        const int rutaId = 10;
+        _servicioMock
+            .Setup(s => s.DesactivarRutaAsync(rutaId, UsuarioId))
+            .Returns(Task.CompletedTask);
+
+        var resultado = await _controller.Desactivar(rutaId, volverADetalle: true);
+
+        var redireccion = Assert.IsType<RedirectToActionResult>(resultado);
+        Assert.Equal(nameof(RutaController.Detalle), redireccion.ActionName);
+        Assert.NotNull(redireccion.RouteValues);
+        Assert.Equal(rutaId, redireccion.RouteValues["id"]);
+        Assert.Equal("La ruta fue desactivada correctamente. Los viajes comprometidos siguen en pie.", _controller.TempData["Mensaje"]);
+        _servicioMock.Verify(s => s.DesactivarRutaAsync(rutaId, UsuarioId), Times.Once);
+    }
+
+    [Fact]
+    public async Task Desactivar_CuandoRutaNoExiste_DevuelveNotFound()
+    {
+        const int rutaId = 99;
+        _servicioMock
+            .Setup(s => s.DesactivarRutaAsync(rutaId, UsuarioId))
+            .ThrowsAsync(new RutaNoEncontradaException("La ruta no fue encontrada."));
+
+        var resultado = await _controller.Desactivar(rutaId);
+
+        Assert.IsType<NotFoundResult>(resultado);
+        _servicioMock.Verify(s => s.DesactivarRutaAsync(rutaId, UsuarioId), Times.Once);
+    }
+
+    [Fact]
+    public async Task Desactivar_CuandoUsuarioNoTienePermisos_DevuelveForbid()
+    {
+        const int rutaId = 10;
+        _servicioMock
+            .Setup(s => s.DesactivarRutaAsync(rutaId, UsuarioId))
+            .ThrowsAsync(new UnauthorizedAccessException("No tienes permisos para modificar esta ruta."));
+
+        var resultado = await _controller.Desactivar(rutaId);
+
+        Assert.IsType<ForbidResult>(resultado);
+        _servicioMock.Verify(s => s.DesactivarRutaAsync(rutaId, UsuarioId), Times.Once);
+    }
+
+    [Fact]
+    public async Task Activar_CuandoOperacionExitosa_RedirigeAObtenerConMensaje()
+    {
+        const int rutaId = 10;
+        _servicioMock
+            .Setup(s => s.ActivarRutaAsync(rutaId, UsuarioId))
+            .Returns(Task.CompletedTask);
+
+        var resultado = await _controller.Activar(rutaId);
+
+        var redireccion = Assert.IsType<RedirectToActionResult>(resultado);
+        Assert.Equal(nameof(RutaController.Obtener), redireccion.ActionName);
+        Assert.Equal("La ruta fue reactivada correctamente y volverá a buscar oportunidades.", _controller.TempData["Mensaje"]);
+        _servicioMock.Verify(s => s.ActivarRutaAsync(rutaId, UsuarioId), Times.Once);
     }
 
     private static ClaimsPrincipal CrearUsuarioAutenticado()

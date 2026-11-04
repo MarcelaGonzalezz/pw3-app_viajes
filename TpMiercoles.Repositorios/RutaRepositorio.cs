@@ -1,24 +1,27 @@
-﻿
 using Microsoft.EntityFrameworkCore;
 using TpMiercoles.Entidades;
 
 namespace TpMiercoles.Repositorios
 {
-
     public interface IRutaRepositorio
     {
         Task CrearRutaAsync(Ruta ruta);
         Task<List<Ruta>> ObtenerRutasActivasDeUnUsuarioAsync(int usuarioId);
-        Task<Ruta?> ObtenerPorIdAsync(int id); 
+        Task<List<Ruta>> ObtenerRutasDeUnUsuarioAsync(int usuarioId);
+        Task<Ruta?> ObtenerPorIdAsync(int id);
+        Task<Ruta?> ObtenerPorIdParaModificarAsync(int id);
+        Task GuardarCambiosAsync();
     }
-    public class RutaRepositorio : IRutaRepositorio{
+
+    public class RutaRepositorio : IRutaRepositorio
+    {
         private readonly ViajesDbContext _viajesDbContext;
 
         public RutaRepositorio(ViajesDbContext viajesDbContext)
         {
             _viajesDbContext = viajesDbContext;
         }
-       
+
         public async Task CrearRutaAsync(Ruta ruta)
         {
             _viajesDbContext.Add(ruta);
@@ -32,12 +35,26 @@ namespace TpMiercoles.Repositorios
                 .Include(r => r.DireccionDestino)
                 .Include(r => r.RutaDias)
                 .Include(r => r.Paradas)
-                .ThenInclude(p => p.Direccion)
-                    .Where(r => r.UsuarioId == usuarioId && r.Estado == EstadoRuta.ACTIVA)
-                    .ToListAsync();
+                    .ThenInclude(p => p.Direccion)
+                .Where(r => r.UsuarioId == usuarioId && r.Estado == EstadoRuta.ACTIVA)
+                .ToListAsync();
         }
 
-        public async Task<Ruta?> ObtenerPorIdAsync(int id) {
+        public async Task<List<Ruta>> ObtenerRutasDeUnUsuarioAsync(int usuarioId)
+        {
+            return await _viajesDbContext.Rutas
+                .Include(r => r.DireccionOrigen)
+                .Include(r => r.DireccionDestino)
+                .Include(r => r.RutaDias)
+                .Include(r => r.Paradas)
+                    .ThenInclude(p => p.Direccion)
+                .Where(r => r.UsuarioId == usuarioId && r.Estado != EstadoRuta.ELIMINADA)
+                .OrderByDescending(r => r.Id)
+                .ToListAsync();
+        }
+
+        public async Task<Ruta?> ObtenerPorIdAsync(int id)
+        {
             return await _viajesDbContext.Rutas
                 .Include(r => r.DireccionOrigen)
                 .Include(r => r.DireccionDestino)
@@ -46,6 +63,18 @@ namespace TpMiercoles.Repositorios
                     .ThenInclude(p => p.Direccion)
                 .FirstOrDefaultAsync(r => r.Id == id);
         }
-    }
 
+        public async Task<Ruta?> ObtenerPorIdParaModificarAsync(int id)
+        {
+            return await _viajesDbContext.Rutas
+                .Include(r => r.DireccionOrigen)
+                .Include(r => r.DireccionDestino)
+                .Include(r => r.RutaDias)
+                .Include(r => r.Paradas)
+                    .ThenInclude(p => p.Direccion)
+                .FirstOrDefaultAsync(r => r.Id == id);
+        }
+
+        public Task GuardarCambiosAsync() => _viajesDbContext.SaveChangesAsync();
+    }
 }

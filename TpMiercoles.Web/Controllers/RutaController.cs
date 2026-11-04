@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TpMiercoles.Entidades;
@@ -24,6 +24,7 @@ namespace TpMiercoles.Web.Controllers
             _rutaServicio = rutaServicio;
             _sesionWeb = sesionWeb;
         }
+
         [HttpGet]
         public IActionResult Crear()
         {
@@ -33,7 +34,6 @@ namespace TpMiercoles.Web.Controllers
             };
             return View(vm);
         }
-
 
         [HttpPost]
         public async Task<IActionResult> Crear(CrearRutaViewModel ruta)
@@ -51,8 +51,6 @@ namespace TpMiercoles.Web.Controllers
                 ModelState.AddModelError("Error al crear la ruta: ", e.Message);
                 return View(ruta);
             }
-
-
         }
 
         [HttpGet]
@@ -60,23 +58,77 @@ namespace TpMiercoles.Web.Controllers
         {
             int usuarioId = _sesionWeb.UsuarioIdRequerido;
             string nombreUsuario = User.Identity?.Name;
-            var rutasDTO = await _rutaServicio.ObtenerRutasActivasDeUnUsuarioAsync(usuarioId);
+            var rutasDTO = await _rutaServicio.ObtenerRutasDeUnUsuarioAsync(usuarioId);
             var rutasVm = _mapper.Map<List<RutaViewModel>>(rutasDTO);
             return View(new ObtenerRutasViewModel { Rutas = rutasVm, NombreUsuario = nombreUsuario });
-
         }
+
         [HttpGet]
-        public async Task<IActionResult> Detalle(int id) {
+        public async Task<IActionResult> Detalle(int id)
+        {
             int usuarioId = _sesionWeb.UsuarioIdRequerido;
 
-            try {
+            try
+            {
                 var rutaDto = await _rutaServicio.ObtenerDetalleAsync(id, usuarioId);
                 return View(rutaDto);
-            } catch (RutaNoEncontradaException) {
+            }
+            catch (RutaNoEncontradaException)
+            {
                 return NotFound();
-            } catch (UnauthorizedAccessException) {
+            }
+            catch (UnauthorizedAccessException)
+            {
                 return Forbid();
             }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Desactivar(int id, bool volverADetalle = false)
+        {
+            int usuarioId = _sesionWeb.UsuarioIdRequerido;
+            try
+            {
+                await _rutaServicio.DesactivarRutaAsync(id, usuarioId);
+                TempData["Mensaje"] = "La ruta fue desactivada correctamente. Los viajes comprometidos siguen en pie.";
+            }
+            catch (RutaNoEncontradaException)
+            {
+                return NotFound();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+
+            return volverADetalle
+                ? RedirectToAction(nameof(Detalle), new { id })
+                : RedirectToAction(nameof(Obtener));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Activar(int id, bool volverADetalle = false)
+        {
+            int usuarioId = _sesionWeb.UsuarioIdRequerido;
+            try
+            {
+                await _rutaServicio.ActivarRutaAsync(id, usuarioId);
+                TempData["Mensaje"] = "La ruta fue reactivada correctamente y volverá a buscar oportunidades.";
+            }
+            catch (RutaNoEncontradaException)
+            {
+                return NotFound();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+
+            return volverADetalle
+                ? RedirectToAction(nameof(Detalle), new { id })
+                : RedirectToAction(nameof(Obtener));
         }
     }
 }

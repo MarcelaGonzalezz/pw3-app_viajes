@@ -33,6 +33,13 @@
 
 <div class="rutas-page">
 
+    @if (TempData["Mensaje"] is string mensaje)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="status">
+            @mensaje
+        </div>
+    }
+
     <header class="rutas-cabecera">
         <div>
             <h1 class="rutas-titulo">Mis rutas</h1>
@@ -136,6 +143,12 @@
                         <form asp-controller="Ruta" asp-action="Desactivar" asp-route-id="@ruta.Id" method="post"
                               data-confirmar="¿Desactivar esta ruta? Dejará de buscar oportunidades.">
                             <button type="submit" class="btn-ruta btn-ruta--peligro">Desactivar</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-controller="Ruta" asp-action="Activar" asp-route-id="@ruta.Id" method="post">
+                            <button type="submit" class="btn-ruta btn-ruta--secundario">Activar</button>
                         </form>
                     }
                 </div>

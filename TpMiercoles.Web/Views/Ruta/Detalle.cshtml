@@ -1,4 +1,5 @@
-﻿@model TpMiercoles.Servicios.DTOs.Ruta.RutaDTO
+@model TpMiercoles.Servicios.DTOs.Ruta.RutaDTO
+@using TpMiercoles.Entidades
 
 @{
     ViewData["Title"] = "Detalle de la ruta";
@@ -24,6 +25,13 @@
 }
 
 <div class="container my-4">
+    @if (TempData["Mensaje"] is string mensaje)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="status">
+            @mensaje
+        </div>
+    }
+
     <!-- Cabecera y Botones de Acción (Limpiamos el texto largo de arriba) -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -33,9 +41,20 @@
         <div>
             <a asp-action="Obtener" class="btn btn-outline-secondary">Volver</a>
             <a asp-action="Editar" asp-route-id="@Model.Id" class="btn btn-outline-primary">Editar</a>
-            <form asp-action="Desactivar" asp-route-id="@Model.Id" method="post" class="d-inline">
-                <button type="submit" class="btn btn-outline-danger" onclick="return confirm('¿Estás seguro de desactivar esta ruta?');">Desactivar</button>
-            </form>
+            @if (Model.Estado == EstadoRuta.ACTIVA)
+            {
+                <form asp-action="Desactivar" asp-route-id="@Model.Id" method="post" class="d-inline">
+                    <input type="hidden" name="volverADetalle" value="true" />
+                    <button type="submit" class="btn btn-outline-danger" onclick="return confirm('¿Estás seguro de desactivar esta ruta?');">Desactivar</button>
+                </form>
+            }
+            else
+            {
+                <form asp-action="Activar" asp-route-id="@Model.Id" method="post" class="d-inline">
+                    <input type="hidden" name="volverADetalle" value="true" />
+                    <button type="submit" class="btn btn-outline-success">Activar</button>
+                </form>
+            }
             <a asp-controller="Oportunidades" asp-action="Index" asp-route-rutaId="@Model.Id" class="btn btn-dark">Ver oportunidades</a>
         </div>
     </div>
@@ -55,7 +74,7 @@
                         <p class="mb-2"><strong>Duración estimada:</strong> @(Model.DuracionSegundos.HasValue ? $"{Model.DuracionSegundos.Value / 60:N0} min" : "No calculada")</p>
                     </div>
                     <div class="col-md-6">
-                        <p class="mb-2"><strong>Estado:</strong> <span class="badge bg-success">@Model.Estado</span></p>
+                        <p class="mb-2"><strong>Estado:</strong> <span class="badge @(Model.Estado == EstadoRuta.ACTIVA ? "bg-success" : "bg-secondary")">@Model.Estado</span></p>
                         <p class="mb-2"><strong>Horario:</strong> @Model.HoraSalida → @Model.HoraLlegada</p>
                         <p class="mb-2"><strong>Capacidad máxima:</strong> @Model.CapacidadMaxPaquetes paquetes | <strong>Peso:</strong> @Model.PesoMax kg</p>
                     </div>

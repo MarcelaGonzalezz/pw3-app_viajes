@@ -1,4 +1,4 @@
-﻿using Moq;
+using Moq;
 using TpMiercoles.Entidades;
 using TpMiercoles.Entidades.Excepciones;
 using TpMiercoles.Repositorios;
@@ -6,6 +6,7 @@ using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Servicios.DTOs.Direccion;
 using TpMiercoles.Servicios.DTOs.Ruta;
+using TpMiercoles.Servicios.Excepciones;
 using TpMiercoles.Servicios.Rutas;
 using TpMiercoles.Tests.Helpers;
 
@@ -376,6 +377,89 @@ namespace TpMiercoles.Tests.Servicios
 
             _usuarioRepositorioMock.Verify(r => r.BuscarPorIdAsync(It.IsAny<int>()), Times.Never);
             _rutaRepositorioMock.Verify(r => r.CrearRutaAsync(It.IsAny<Ruta>()), Times.Never);
+        }
+
+        #endregion
+
+        #region Desactivar y Activar ruta
+
+        [Fact]
+        public async Task DesactivarRutaAsync_CuandoRutaExisteYEsDelUsuario_CambiaEstadoAInactivaYGuardaCambios()
+        {
+            const int rutaId = 15;
+            var ruta = new Ruta
+            {
+                Id = rutaId,
+                UsuarioId = UsuarioId,
+                Estado = EstadoRuta.ACTIVA
+            };
+
+            _rutaRepositorioMock
+                .Setup(r => r.ObtenerPorIdParaModificarAsync(rutaId))
+                .ReturnsAsync(ruta);
+
+            await _servicio.DesactivarRutaAsync(rutaId, UsuarioId);
+
+            Assert.Equal(EstadoRuta.INACTIVA, ruta.Estado);
+            _rutaRepositorioMock.Verify(r => r.GuardarCambiosAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task DesactivarRutaAsync_CuandoRutaNoExiste_LanzaRutaNoEncontradaException()
+        {
+            const int rutaId = 99;
+            _rutaRepositorioMock
+                .Setup(r => r.ObtenerPorIdParaModificarAsync(rutaId))
+                .ReturnsAsync((Ruta?)null);
+
+            await Assert.ThrowsAsync<RutaNoEncontradaException>(
+                () => _servicio.DesactivarRutaAsync(rutaId, UsuarioId));
+
+            _rutaRepositorioMock.Verify(r => r.GuardarCambiosAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task DesactivarRutaAsync_CuandoRutaNoPerteneceAlUsuario_LanzaUnauthorizedAccessException()
+        {
+            const int rutaId = 15;
+            const int otroUsuarioId = 999;
+            var ruta = new Ruta
+            {
+                Id = rutaId,
+                UsuarioId = otroUsuarioId,
+                Estado = EstadoRuta.ACTIVA
+            };
+
+            _rutaRepositorioMock
+                .Setup(r => r.ObtenerPorIdParaModificarAsync(rutaId))
+                .ReturnsAsync(ruta);
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(
+                () => _servicio.DesactivarRutaAsync(rutaId, UsuarioId));
+
+            Assert.Equal(EstadoRuta.ACTIVA, ruta.Estado);
+            _rutaRepositorioMock.Verify(r => r.GuardarCambiosAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task ActivarRutaAsync_CuandoRutaExisteYEsDelUsuario_CambiaEstadoAActivaYGuardaCambios()
+        {
+            const int rutaId = 15;
+            var ruta = new Ruta
+            {
+                Id = rutaId,
+                UsuarioId = UsuarioId,
+                Estado = EstadoRuta.INACTIVA
+            };
+
+            _rutaRepositorioMock
+                .Setup(r => r.ObtenerPorIdParaModificarAsync(rutaId))
+                .ReturnsAsync(ruta);
+
+            await _servicio.ActivarRutaAsync(rutaId, UsuarioId);
+
+            Assert.Equal(EstadoRuta.ACTIVA, ruta.Estado);
+            _rutaRepositorioMock.Verify(r => r.GuardarCambiosAsync(), Times.Once);
         }
 
         #endregion
