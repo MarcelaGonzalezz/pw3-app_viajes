@@ -73,7 +73,7 @@ namespace TpMiercoles.Tests.Web.Controllers
         }
 
         [Fact]
-        public async Task Index_MuestraTodosLosTransportesIncluidosLosEntregados()
+        public async Task Index_ConFiltroTodos_MuestraEnCursoYEntregados()
         {
             _servicioMock
                 .Setup(s => s.ListarAsync(UsuarioId, null))
@@ -83,13 +83,53 @@ namespace TpMiercoles.Tests.Web.Controllers
                     Transporte(2, EstadoEnvio.Entregado, null)
                 ]);
 
-            var resultado = await _controller.Index();
+            var resultado = await _controller.Index("todos");
 
             var modelo = Assert.IsType<MisTransportesViewModel>(Assert.IsType<ViewResult>(resultado).Model);
             Assert.Equal(2, modelo.Transportes.Count);
             Assert.True(modelo.Transportes[0].TieneAccion);
             Assert.False(modelo.Transportes[1].TieneAccion);
             Assert.Equal("Entregado", modelo.Transportes[1].EstadoTexto);
+        }
+
+        [Fact]
+        public async Task Index_PorDefecto_MuestraSoloLosQueNoEstanEntregados()
+        {
+            _servicioMock
+                .Setup(s => s.ListarAsync(UsuarioId, null))
+                .ReturnsAsync(
+                [
+                    Transporte(1, EstadoEnvio.Entregado, null),
+                    Transporte(2, EstadoEnvio.Retirado, EstadoEnvio.EnCamino),
+                    Transporte(3, EstadoEnvio.ConductorAsignado, EstadoEnvio.Retirado)
+                ]);
+
+            var resultado = await _controller.Index();
+
+            var modelo = Assert.IsType<MisTransportesViewModel>(Assert.IsType<ViewResult>(resultado).Model);
+            Assert.Equal("encurso", modelo.Filtro);
+            Assert.Equal(2, modelo.Transportes.Count);
+            Assert.DoesNotContain(modelo.Transportes, t => t.Estado == EstadoEnvio.Entregado);
+            Assert.Equal(2, modelo.TotalEnCurso);
+            Assert.Equal(1, modelo.TotalEntregados);
+        }
+
+        [Fact]
+        public async Task Index_ConFiltroEntregados_MuestraSoloLosEntregados()
+        {
+            _servicioMock
+                .Setup(s => s.ListarAsync(UsuarioId, null))
+                .ReturnsAsync(
+                [
+                    Transporte(1, EstadoEnvio.Entregado, null),
+                    Transporte(2, EstadoEnvio.Retirado, EstadoEnvio.EnCamino)
+                ]);
+
+            var resultado = await _controller.Index("entregados");
+
+            var modelo = Assert.IsType<MisTransportesViewModel>(Assert.IsType<ViewResult>(resultado).Model);
+            Assert.Single(modelo.Transportes);
+            Assert.Equal(EstadoEnvio.Entregado, modelo.Transportes[0].Estado);
         }
 
         [Fact]

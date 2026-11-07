@@ -30,7 +30,7 @@ namespace TpMiercoles.Web.Controllers
         // Todos los paquetes que el conductor acepto llevar. Un paquete entregado no
         // desaparece: queda en la lista con estado "Entregado" y sin accion siguiente.
         [HttpGet("/transportes")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? filtro = null)
         {
             int? usuarioId = _sesionWeb.UsuarioId;
             if (usuarioId is null)
@@ -40,9 +40,27 @@ namespace TpMiercoles.Web.Controllers
 
             List<TransporteListadoDTO> transportes = await _servicio.ListarAsync(usuarioId.Value, null);
 
+            filtro = filtro?.ToLowerInvariant() is "entregados" or "todos" ? filtro.ToLowerInvariant() : "encurso";
+
+            bool Entregado(TransporteListadoDTO t) => t.Estado == EstadoEnvio.Entregado;
+
+            // En curso: los que salen primero arriba. Entregados: los mas recientes arriba.
+            IEnumerable<TransporteListadoDTO> enCurso = transportes.Where(t => !Entregado(t)).OrderBy(t => t.FechaSalidaViaje);
+            IEnumerable<TransporteListadoDTO> entregados = transportes.Where(Entregado).OrderByDescending(t => t.FechaSalidaViaje);
+
+            IEnumerable<TransporteListadoDTO> visibles = filtro switch
+            {
+                "entregados" => entregados,
+                "todos" => enCurso.Concat(entregados),
+                _ => enCurso
+            };
+
             MisTransportesViewModel modelo = new()
             {
-                Transportes = transportes.Select(_mapper.Map<TransporteListadoViewModel>).ToList()
+                Filtro = filtro,
+                TotalEnCurso = transportes.Count(t => !Entregado(t)),
+                TotalEntregados = transportes.Count(Entregado),
+                Transportes = visibles.Select(_mapper.Map<TransporteListadoViewModel>).ToList()
             };
 
             return View(modelo);

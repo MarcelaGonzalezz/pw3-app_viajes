@@ -29,11 +29,34 @@
         <div class="vl-aviso vl-aviso--error" role="alert">@error</div>
     }
 
+    <nav class="vl-filtros" aria-label="Filtrar transportes">
+        <a class="vl-filtro @(Model.Filtro == "encurso" ? "vl-filtro--on" : "")" asp-action="Index">
+            En curso <span class="vl-filtro-n">@Model.TotalEnCurso</span>
+        </a>
+        <a class="vl-filtro @(Model.Filtro == "entregados" ? "vl-filtro--on" : "")" asp-action="Index" asp-route-filtro="entregados">
+            Entregados <span class="vl-filtro-n">@Model.TotalEntregados</span>
+        </a>
+        <a class="vl-filtro @(Model.Filtro == "todos" ? "vl-filtro--on" : "")" asp-action="Index" asp-route-filtro="todos">
+            Todos <span class="vl-filtro-n">@(Model.TotalEnCurso + Model.TotalEntregados)</span>
+        </a>
+    </nav>
+
     @if (Model.Transportes.Count == 0)
     {
         <section class="vd-card text-center py-5">
-            <p class="vd-vacio mb-3">Todavía no aceptaste envíos.</p>
-            <a asp-controller="Viajes" asp-action="Index" class="vl-btn vl-btn--principal">Buscar oportunidades en mis viajes</a>
+            @if (Model.TotalEnCurso + Model.TotalEntregados == 0)
+            {
+                <p class="vd-vacio mb-3">Todavía no aceptaste envíos.</p>
+                <a asp-controller="Viajes" asp-action="Index" class="vl-btn vl-btn--principal">Buscar oportunidades en mis viajes</a>
+            }
+            else if (Model.Filtro == "entregados")
+            {
+                <p class="vd-vacio mb-0">Todavía no entregaste ningún paquete.</p>
+            }
+            else
+            {
+                <p class="vd-vacio mb-0">No tenés paquetes en curso. Los ya entregados están en la pestaña Entregados.</p>
+            }
         </section>
     }
     else
