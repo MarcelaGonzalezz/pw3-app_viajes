@@ -230,7 +230,8 @@
         color: var(--app-muted);
     }
 
-    .vf-campo input {
+    .vf-campo input,
+    .vf-campo select {
         font-family: inherit;
         font-size: 1rem;
         color: var(--app-text);
@@ -240,7 +241,8 @@
         padding: .55rem .7rem;
     }
 
-        .vf-campo input:focus {
+        .vf-campo input:focus,
+        .vf-campo select:focus {
             outline: none;
             border-color: var(--app-med-blue);
             box-shadow: 0 0 0 3px rgba(78, 184, 221, .25);

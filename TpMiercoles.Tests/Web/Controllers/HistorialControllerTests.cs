@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Moq;
+using TpMiercoles.Entidades;
 using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.DTOs.Historial;
 using TpMiercoles.Tests.Helpers;
@@ -21,7 +22,7 @@ namespace TpMiercoles.Tests.Web.Controllers
         {
             _sesionMock.SetupGet(s => s.UsuarioId).Returns(UsuarioId);
             _servicioMock
-                .Setup(s => s.ObtenerAsync(It.IsAny<int>(), It.IsAny<TipoOperacionHistorial?>(),
+                .Setup(s => s.ObtenerAsync(It.IsAny<int>(), It.IsAny<TipoOperacionHistorial?>(), It.IsAny<EstadoActividadViaje?>(),
                                            It.IsAny<DateTime?>(), It.IsAny<DateTime?>()))
                 .ReturnsAsync(new HistorialDTO());
 
@@ -33,7 +34,7 @@ namespace TpMiercoles.Tests.Web.Controllers
         {
             _sesionMock.SetupGet(s => s.UsuarioId).Returns((int?)null);
 
-            var resultado = await _controller.Index(null, null, null);
+            var resultado = await _controller.Index(null, null, null, null);
 
             Assert.IsType<ChallengeResult>(resultado);
             _servicioMock.VerifyNoOtherCalls();
@@ -42,17 +43,17 @@ namespace TpMiercoles.Tests.Web.Controllers
         [Fact]
         public async Task Index_ConsultaElHistorialDelUsuarioLogueado()
         {
-            await _controller.Index(TipoOperacionHistorial.ViajeRealizado, null, null);
+            await _controller.Index(TipoOperacionHistorial.ViajeRealizado, EstadoActividadViaje.ACTIVO, null, null);
 
             _servicioMock.Verify(s => s.ObtenerAsync(
-                UsuarioId, TipoOperacionHistorial.ViajeRealizado, null, null), Times.Once);
+                UsuarioId, TipoOperacionHistorial.ViajeRealizado, EstadoActividadViaje.ACTIVO, null, null), Times.Once);
         }
 
         [Fact]
         public async Task Index_ArmaElModeloConResumenYFilas()
         {
             _servicioMock
-                .Setup(s => s.ObtenerAsync(UsuarioId, null, null, null))
+                .Setup(s => s.ObtenerAsync(UsuarioId, null, null, null, null))
                 .ReturnsAsync(new HistorialDTO
                 {
                     ViajesRealizados = 2,
@@ -74,7 +75,7 @@ namespace TpMiercoles.Tests.Web.Controllers
                     ]
                 });
 
-            var resultado = await _controller.Index(null, null, null);
+            var resultado = await _controller.Index(null, null, null, null);
 
             var vista = Assert.IsType<ViewResult>(resultado);
             var modelo = Assert.IsType<HistorialViewModel>(vista.Model);
@@ -89,13 +90,13 @@ namespace TpMiercoles.Tests.Web.Controllers
         [Fact]
         public async Task Index_ConFechasInvertidas_MuestraErrorYNoFiltraPorFechas()
         {
-            var resultado = await _controller.Index(null, new DateTime(2026, 9, 30), new DateTime(2026, 9, 1));
+            var resultado = await _controller.Index(null, null, new DateTime(2026, 9, 30), new DateTime(2026, 9, 1));
 
             var modelo = Assert.IsType<HistorialViewModel>(Assert.IsType<ViewResult>(resultado).Model);
             Assert.NotNull(modelo.Error);
             Assert.Null(modelo.Desde);
             Assert.Null(modelo.Hasta);
-            _servicioMock.Verify(s => s.ObtenerAsync(UsuarioId, null, null, null), Times.Once);
+            _servicioMock.Verify(s => s.ObtenerAsync(UsuarioId, null, null, null, null), Times.Once);
         }
     }
 }

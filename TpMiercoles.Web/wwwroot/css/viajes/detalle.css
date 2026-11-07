@@ -334,6 +334,13 @@
     color: #8a5a10;
 }
 
+/* Paquete ya retirado o en camino: en manos del conductor. */
+.vd-chip--encurso {
+    background-color: var(--app-light-blue);
+    border-color: var(--app-med-blue);
+    color: var(--app-dark-blue);
+}
+
 .vd-chip--confirmado {
     background-color: #e4f6ec;
     border-color: #a9ddbf;
@@ -344,4 +351,45 @@
     background-color: #fdeaea;
     border-color: #f0b7b7;
     color: #8c2b2b;
+}
+
+.vd-paquete-acciones {
+    margin-top: .75rem;
+}
+
+/* Estados del paquete: cada paso del transporte tiene su propio color. */
+.vd-chip--asignado {
+    background-color: var(--app-light-blue);
+    border-color: #a8d8ec;
+    color: var(--app-dark-blue);
+}
+
+.vd-chip--retirado {
+    background-color: #fff4e0;
+    border-color: #f0d49a;
+    color: #8a5a10;
+}
+
+.vd-chip--encamino {
+    background-color: #efe9fb;
+    border-color: #cbb9ee;
+    color: #5b3d9e;
+}
+
+.vd-estado--asignado {
+    background-color: var(--app-light-blue);
+    border-color: #a8d8ec;
+    color: var(--app-dark-blue);
+}
+
+.vd-estado--retirado {
+    background-color: #fff4e0;
+    border-color: #f0d49a;
+    color: #8a5a10;
+}
+
+.vd-estado--encamino {
+    background-color: #efe9fb;
+    border-color: #cbb9ee;
+    color: #5b3d9e;
 }

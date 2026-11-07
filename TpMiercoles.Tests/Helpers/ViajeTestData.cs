@@ -34,7 +34,11 @@ namespace TpMiercoles.Tests.Helpers
             EstadoViaje estado = EstadoViaje.PENDIENTE,
             DateTime? fechaAceptacion = null,
             DateTime? fechaRetiro = null,
-            DateTime? fechaEntrega = null)
+            DateTime? fechaEntrega = null,
+            EstadoEnvio estadoEnvio = EstadoEnvio.BuscandoConductor,
+            string descripcion = "Paquete",
+            decimal monto = 0m,
+            double pesoKg = 1)
         {
             var usuario = new Usuario
             {
@@ -55,7 +59,10 @@ namespace TpMiercoles.Tests.Helpers
                 DireccionRetiro = CrearDireccion(id, direccionRetiro),
                 DireccionEntrega = CrearDireccion(id + 1, direccionEntrega),
                 FechaDesde = new DateTime(2026, 10, 28),
-                FechaHasta = new DateTime(2026, 11, 5)
+                FechaHasta = new DateTime(2026, 11, 5),
+                Estado = estadoEnvio,
+                Monto = monto,
+                Paquete = new Paquete { PesoKg = pesoKg, Descripcion = descripcion }
             };
 
             return new Asignacion

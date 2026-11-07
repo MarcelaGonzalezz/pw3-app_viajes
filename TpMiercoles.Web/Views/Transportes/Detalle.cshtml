@@ -1,0 +1,159 @@
+@model TransporteDetalleViewModel
+@{
+    ViewData["Title"] = $"Envío #{Model.EnvioId}";
+    var pasos = Model.ObtenerPasos();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/viajes/detalle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/viajes/viajes.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/transportes/transportes.css" asp-append-version="true" />
+}
+
+<div class="vd">
+
+    <header class="vd-header">
+        <div class="vd-header-main">
+            <p class="vd-eyebrow">Transporte #@Model.AsignacionId &middot; Envío #@Model.EnvioId</p>
+            <h1 class="vd-title">
+                <span>@Model.Origen</span>
+                <span class="vd-flecha" aria-hidden="true">&rarr;</span>
+                <span>@Model.Destino</span>
+            </h1>
+        </div>
+        <span class="vd-estado @Model.EstadoBadgeClass">@Model.EstadoTexto</span>
+    </header>
+
+    @if (TempData["Mensaje"] is string mensaje)
+    {
+        <div class="vl-aviso" role="status">@mensaje</div>
+    }
+
+    @if (TempData["Error"] is string error)
+    {
+        <div class="vl-aviso vl-aviso--error" role="alert">@error</div>
+    }
+
+    <div class="vl-acciones">
+        <a asp-action="Index" class="vl-btn">Volver a mis transportes</a>
+
+        <a asp-controller="Viajes" asp-action="Detalle" asp-route-id="@Model.ViajeId" class="vl-btn">Ver viaje</a>
+
+        @if (Model.TieneAccion)
+        {
+            <form asp-action="@Model.AccionNombre" asp-route-id="@Model.AsignacionId" method="post"
+                  class="vl-form-inline" onsubmit="@Model.AccionConfirmacionJs">
+                <input type="hidden" name="volverADetalle" value="true" />
+                <button type="submit" class="vl-btn vl-btn--principal">@Model.AccionTexto</button>
+            </form>
+        }
+    </div>
+
+    <section class="vd-datos" aria-label="Datos del paquete">
+        <div class="vd-dato">
+            <span class="vd-dato-label">Ganancia</span>
+            <span class="vd-dato-valor">@Model.GananciaTexto</span>
+        </div>
+        <div class="vd-dato">
+            <span class="vd-dato-label">Peso</span>
+            <span class="vd-dato-valor">@Model.PesoKg.ToString("0.##") kg</span>
+        </div>
+        <div class="vd-dato">
+            <span class="vd-dato-label">Tamaño</span>
+            <span class="vd-dato-valor">@Model.TamanioTexto</span>
+        </div>
+        <div class="vd-dato">
+            <span class="vd-dato-label">Salida del viaje</span>
+            <span class="vd-dato-valor">@Model.FechaSalidaViaje.ToString("dd/MM/yyyy HH:mm")</span>
+        </div>
+    </section>
+
+    <section class="vd-card" aria-label="Seguimiento">
+        <h2 class="vd-card-titulo">Seguimiento</h2>
+
+        @if (Model.Estado == TpMiercoles.Entidades.EstadoEnvio.Cancelado)
+        {
+            <p class="vd-vacio">El envío fue cancelado.</p>
+        }
+        else
+        {
+            <ol class="tr-pasos">
+                @foreach (var paso in pasos)
+                {
+                    <li class="tr-paso @(paso.Hecho ? "tr-paso--hecho" : "") @(paso.Actual ? "tr-paso--actual" : "")">
+                        <span class="tr-paso-titulo">@paso.Texto</span>
+                        <span class="tr-paso-fecha">
+                            @(paso.Fecha.HasValue
+                                ? paso.Fecha.Value.ToString("dd/MM/yyyy HH:mm")
+                                : (paso.Actual ? "Estado actual" : "\u2014"))
+                        </span>
+                    </li>
+                }
+            </ol>
+        }
+    </section>
+
+    <div class="vd-cols">
+
+        <section class="vd-card" aria-label="Puntos de entrega">
+            <h2 class="vd-card-titulo">Puntos de entrega</h2>
+            <ol class="vd-recorrido vd-recorrido--espaciado">
+                <li class="vd-punto vd-punto--extremo">
+                    <span class="vd-punto-tipo">Retiro</span>
+                    <span class="vd-punto-dir">@Model.Origen</span>
+                </li>
+                <li class="vd-punto vd-punto--extremo">
+                    <span class="vd-punto-tipo">Entrega</span>
+                    <span class="vd-punto-dir">@Model.Destino</span>
+                </li>
+            </ol>
+        </section>
+
+        <section class="vd-card" aria-label="Información del paquete">
+            <div class="mb-4">
+                <h2 class="vd-card-titulo">Paquete</h2>
+                <p class="mb-0 text-break">@Model.Titulo</p>
+            </div>
+
+            <div class="pt-3 border-top mb-4">
+                <h2 class="vd-card-titulo">Remitente</h2>
+                <dl class="vd-paquete-datos">
+                    <div>
+                        <dt>Nombre</dt>
+                        <dd>@Model.RemitenteNombre</dd>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(Model.RemitenteEmail))
+                    {
+                        <div>
+                            <dt>Contacto</dt>
+                            <dd><a href="mailto:@Model.RemitenteEmail" class="text-decoration-none">@Model.RemitenteEmail</a></dd>
+                        </div>
+                    }
+                </dl>
+            </div>
+
+            <div class="pt-3 border-top mt-auto">
+                <h2 class="vd-card-titulo">Mi viaje</h2>
+                <dl class="vd-paquete-datos">
+                    <div>
+                        <dt>Viaje</dt>
+                        <dd>#@Model.ViajeId</dd>
+                    </div>
+                    <div>
+                        <dt>Recorrido</dt>
+                        <dd>@Model.ViajeOrigen <span class="vd-flecha" aria-hidden="true">&rarr;</span> @Model.ViajeDestino</dd>
+                    </div>
+                    @if (Model.FechaLlegadaViaje.HasValue)
+                    {
+                        <div>
+                            <dt>Llegada</dt>
+                            <dd>@Model.FechaLlegadaViaje.Value.ToString("dd/MM/yyyy HH:mm")</dd>
+                        </div>
+                    }
+                </dl>
+            </div>
+        </section>
+
+    </div>
+
+</div>

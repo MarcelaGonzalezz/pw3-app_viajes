@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TpMiercoles.Entidades;
 using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.DTOs.Historial;
 using TpMiercoles.Web.Infraestructura;
@@ -23,9 +24,10 @@ namespace TpMiercoles.Web.Controllers
         }
 
         // GET /historial
-        // GET /historial?tipo=ViajeRealizado&desde=2026-09-01&hasta=2026-09-30
+        // GET /historial?tipo=ViajeRealizado&estado=ACTIVO&desde=2026-09-01&hasta=2026-09-30
         [HttpGet("/historial")]
-        public async Task<IActionResult> Index(TipoOperacionHistorial? tipo, DateTime? desde, DateTime? hasta)
+        public async Task<IActionResult> Index(
+            TipoOperacionHistorial? tipo, EstadoActividadViaje? estado, DateTime? desde, DateTime? hasta)
         {
             int? usuarioId = _sesionWeb.UsuarioId;
             if (usuarioId is null)
@@ -42,11 +44,12 @@ namespace TpMiercoles.Web.Controllers
             }
 
             // El servicio solo trae operaciones del usuario logueado: no hay forma de pedir las de otro.
-            HistorialDTO historial = await _servicio.ObtenerAsync(usuarioId.Value, tipo, desde, hasta);
+            HistorialDTO historial = await _servicio.ObtenerAsync(usuarioId.Value, tipo, estado, desde, hasta);
 
             HistorialViewModel modelo = new()
             {
                 Filtro = tipo,
+                Estado = estado,
                 Desde = desde,
                 Hasta = hasta,
                 Error = error,

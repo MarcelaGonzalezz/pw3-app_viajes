@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using TpMiercoles.Entidades;
 using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.DTOs.Historial;
 
@@ -28,6 +29,7 @@ namespace TpMiercoles.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<HistorialDTO>> Consultar(
             [FromQuery] TipoOperacionHistorial? tipo,
+            [FromQuery] EstadoActividadViaje? estado,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta)
         {
@@ -41,7 +43,7 @@ namespace TpMiercoles.Api.Controllers
                 return BadRequest("La fecha 'desde' no puede ser posterior a la fecha 'hasta'.");
             }
 
-            HistorialDTO historial = await _historialServicio.ObtenerAsync(usuarioId, tipo, desde, hasta);
+            HistorialDTO historial = await _historialServicio.ObtenerAsync(usuarioId, tipo, estado, desde, hasta);
             return Ok(historial);
         }
     }

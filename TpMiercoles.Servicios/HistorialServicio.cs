@@ -11,7 +11,10 @@ namespace TpMiercoles.Servicios
         //  - desde / hasta: rango inclusivo de fechas, ambos opcionales.
         // El resumen (viajes, envios transportados, ganancia) respeta el rango de fechas
         // pero no el tipo, para que las tarjetas no cambien al tocar un chip.
-        Task<HistorialDTO> ObtenerAsync(int usuarioId, TipoOperacionHistorial? tipo, DateTime? desde, DateTime? hasta);
+        //  - estado: Activo/Inactivo del viaje. Solo aplica a las filas de viaje: con este filtro
+        //    puesto no se listan envios. Tampoco cambia el resumen ni los contadores.
+        Task<HistorialDTO> ObtenerAsync(
+            int usuarioId, TipoOperacionHistorial? tipo, EstadoActividadViaje? estado, DateTime? desde, DateTime? hasta);
     }
 
     public class HistorialServicio : IHistorialServicio
@@ -24,7 +27,7 @@ namespace TpMiercoles.Servicios
         }
 
         public async Task<HistorialDTO> ObtenerAsync(
-            int usuarioId, TipoOperacionHistorial? tipo, DateTime? desde, DateTime? hasta)
+            int usuarioId, TipoOperacionHistorial? tipo, EstadoActividadViaje? estado, DateTime? desde, DateTime? hasta)
         {
             // Si vienen al reves los damos vuelta en vez de devolver un historial vacio.
             if (desde is not null && hasta is not null && desde > hasta)
@@ -49,6 +52,8 @@ namespace TpMiercoles.Servicios
             // 2) Filtro por tipo: afecta solo la lista.
             List<HistorialItemDTO> lista = enRango
                 .Where(i => tipo is null || i.Tipo == tipo.Value)
+                .Where(i => estado is null
+                            || (i.Tipo == TipoOperacionHistorial.ViajeRealizado && i.EstadoDelViaje == estado.Value))
                 .OrderByDescending(i => i.Fecha)
                 .ThenByDescending(i => i.Id)
                 .ToList();
@@ -78,6 +83,7 @@ namespace TpMiercoles.Servicios
             {
                 Tipo = TipoOperacionHistorial.ViajeRealizado,
                 Id = viaje.Id,
+                EstadoDelViaje = viaje.Estado,
                 Origen = viaje.DireccionOrigen.Texto,
                 Destino = viaje.DireccionDestino.Texto,
                 Fecha = viaje.FechaSalida,

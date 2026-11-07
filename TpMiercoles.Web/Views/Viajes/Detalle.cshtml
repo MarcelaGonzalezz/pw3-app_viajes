@@ -140,7 +140,11 @@
                                 <span class="vd-paquete-id">Envío #@paquete.EnvioId</span>
                                 <span class="vd-chip @paquete.EstadoClase">@paquete.EstadoTexto</span>
                             </div>
-                            <p class="vd-paquete-remitente">@paquete.Remitente</p>
+                            <p class="vd-paquete-remitente">
+                                @paquete.Titulo &middot; @paquete.MontoTexto &middot; @paquete.PesoKg.ToString("0.##") kg
+                                <br />
+                                <span>Remitente: @paquete.Remitente</span>
+                            </p>
                             <dl class="vd-paquete-datos">
                                 <div>
                                     <dt>Retiro</dt>
@@ -155,6 +159,9 @@
                                     <dd>@paquete.FechaDesde.ToString("dd/MM/yyyy") &ndash; @paquete.FechaHasta.ToString("dd/MM/yyyy")</dd>
                                 </div>
                             </dl>
+                            <div class="vl-acciones vd-paquete-acciones">
+                                <a class="vl-btn" asp-controller="Transportes" asp-action="Detalle" asp-route-id="@paquete.AsignacionId">Ver paquete</a>
+                            </div>
                         </li>
                     }
                 </ul>

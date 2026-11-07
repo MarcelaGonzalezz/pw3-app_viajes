@@ -29,7 +29,7 @@ namespace TpMiercoles.Tests.Servicios
         [Fact]
         public async Task ObtenerAsync_SinOperaciones_DevuelveTodoEnCero()
         {
-            var resultado = await _servicio.ObtenerAsync(UsuarioId, null, null, null);
+            var resultado = await _servicio.ObtenerAsync(UsuarioId, null, null, null, null);
 
             Assert.Equal(0, resultado.ViajesRealizados);
             Assert.Equal(0, resultado.EnviosTransportados);
@@ -40,7 +40,7 @@ namespace TpMiercoles.Tests.Servicios
         [Fact]
         public async Task ObtenerAsync_ConsultaSoloLasOperacionesDelUsuarioIndicado()
         {
-            await _servicio.ObtenerAsync(UsuarioId, null, null, null);
+            await _servicio.ObtenerAsync(UsuarioId, null, null, null, null);
 
             _repositorioMock.Verify(r => r.ListarViajesRealizadosAsync(UsuarioId, It.IsAny<DateTime>()), Times.Once);
             _repositorioMock.Verify(r => r.ListarEnviosFinalizadosAsync(UsuarioId), Times.Once);
@@ -56,7 +56,7 @@ namespace TpMiercoles.Tests.Servicios
                 CrearAsignacion(EstadoEnvio.Entregado, EstadoViaje.CANCELADO, 8888m));  // asignacion cancelada
             ConfigurarViajes(viaje);
 
-            var resultado = await _servicio.ObtenerAsync(UsuarioId, null, null, null);
+            var resultado = await _servicio.ObtenerAsync(UsuarioId, null, null, null, null);
 
             Assert.Equal(1, resultado.ViajesRealizados);
             Assert.Equal(2, resultado.EnviosTransportados);
@@ -80,7 +80,7 @@ namespace TpMiercoles.Tests.Servicios
                     CrearAsignacion(EstadoEnvio.Entregado, EstadoViaje.CONFIRMADO, 7000m),
                     CrearAsignacion(EstadoEnvio.Entregado, EstadoViaje.CONFIRMADO, 3500m)));
 
-            var resultado = await _servicio.ObtenerAsync(UsuarioId, null, null, null);
+            var resultado = await _servicio.ObtenerAsync(UsuarioId, null, null, null, null);
 
             Assert.Equal(2, resultado.ViajesRealizados);
             Assert.Equal(5, resultado.EnviosTransportados);
@@ -95,7 +95,7 @@ namespace TpMiercoles.Tests.Servicios
                 CrearViaje(2, new DateTime(2026, 10, 1, 8, 0, 0), CrearAsignacion(EstadoEnvio.Entregado, EstadoViaje.CONFIRMADO, 1000m)),
                 CrearViaje(3, new DateTime(2026, 9, 15, 8, 0, 0), CrearAsignacion(EstadoEnvio.Entregado, EstadoViaje.CONFIRMADO, 1000m)));
 
-            var resultado = await _servicio.ObtenerAsync(UsuarioId, null, null, null);
+            var resultado = await _servicio.ObtenerAsync(UsuarioId, null, null, null, null);
 
             Assert.Equal(new[] { 2, 3, 1 }, resultado.Items.Select(i => i.Id));
         }
@@ -110,7 +110,7 @@ namespace TpMiercoles.Tests.Servicios
                 fechaHasta: new DateTime(2026, 9, 20));
             ConfigurarEnvios(entregado, cancelado);
 
-            var resultado = await _servicio.ObtenerAsync(UsuarioId, null, null, null);
+            var resultado = await _servicio.ObtenerAsync(UsuarioId, null, null, null, null);
 
             HistorialItemDTO itemEntregado = resultado.Items.Single(i => i.Id == 10);
             HistorialItemDTO itemCancelado = resultado.Items.Single(i => i.Id == 11);
@@ -127,7 +127,7 @@ namespace TpMiercoles.Tests.Servicios
         {
             ConfigurarEnvios(CrearEnvio(10, EstadoEnvio.Entregado, 2500m, "Repuesto"));
 
-            var resultado = await _servicio.ObtenerAsync(UsuarioId, null, null, null);
+            var resultado = await _servicio.ObtenerAsync(UsuarioId, null, null, null, null);
 
             Assert.Equal(0, resultado.ViajesRealizados);
             Assert.Equal(0, resultado.EnviosTransportados);
@@ -145,7 +145,7 @@ namespace TpMiercoles.Tests.Servicios
                 CrearEnvio(10, EstadoEnvio.Entregado, 2500m, "Repuesto"),
                 CrearEnvio(11, EstadoEnvio.Cancelado, 3500m, "Documentos"));
 
-            var resultado = await _servicio.ObtenerAsync(UsuarioId, TipoOperacionHistorial.EnvioCancelado, null, null);
+            var resultado = await _servicio.ObtenerAsync(UsuarioId, TipoOperacionHistorial.EnvioCancelado, null, null, null);
 
             HistorialItemDTO item = Assert.Single(resultado.Items);
             Assert.Equal(11, item.Id);
@@ -166,7 +166,7 @@ namespace TpMiercoles.Tests.Servicios
                 CrearViaje(4, new DateTime(2026, 9, 21, 0, 0, 0), CrearAsignacion(EstadoEnvio.Entregado, EstadoViaje.CONFIRMADO, 4000m)));
 
             var resultado = await _servicio.ObtenerAsync(
-                UsuarioId, null, new DateTime(2026, 9, 10), new DateTime(2026, 9, 20));
+                UsuarioId, null, null, new DateTime(2026, 9, 10), new DateTime(2026, 9, 20));
 
             Assert.Equal(new[] { 3, 2 }, resultado.Items.Select(i => i.Id));
             Assert.Equal(2, resultado.ViajesRealizados);
@@ -181,10 +181,29 @@ namespace TpMiercoles.Tests.Servicios
                 CrearViaje(2, new DateTime(2026, 10, 15, 8, 0, 0), CrearAsignacion(EstadoEnvio.Entregado, EstadoViaje.CONFIRMADO, 2000m)));
 
             var resultado = await _servicio.ObtenerAsync(
-                UsuarioId, null, new DateTime(2026, 9, 30), new DateTime(2026, 9, 1));
+                UsuarioId, null, null, new DateTime(2026, 9, 30), new DateTime(2026, 9, 1));
 
             HistorialItemDTO item = Assert.Single(resultado.Items);
             Assert.Equal(1, item.Id);
+        }
+
+        [Fact]
+        public async Task ObtenerAsync_ElFiltroPorEstadoDelViajeSoloListaViajesYNoCambiaElResumen()
+        {
+            Viaje activo = CrearViaje(1, new DateTime(2026, 9, 1, 8, 0, 0),
+                CrearAsignacion(EstadoEnvio.Entregado, EstadoViaje.CONFIRMADO, 4000m));
+            Viaje inactivo = CrearViaje(2, new DateTime(2026, 9, 8, 8, 0, 0),
+                CrearAsignacion(EstadoEnvio.Entregado, EstadoViaje.CONFIRMADO, 5000m));
+            inactivo.Estado = EstadoActividadViaje.INACTIVO;
+            ConfigurarViajes(activo, inactivo);
+            ConfigurarEnvios(CrearEnvio(10, EstadoEnvio.Entregado, 2500m, "Repuesto"));
+
+            var resultado = await _servicio.ObtenerAsync(
+                UsuarioId, null, EstadoActividadViaje.INACTIVO, null, null);
+
+            Assert.Equal(2, Assert.Single(resultado.Items).Id);
+            Assert.Equal(2, resultado.ViajesRealizados);
+            Assert.Equal(9000m, resultado.GananciaEfectiva);
         }
 
         // ---------- Helpers ----------

@@ -1,0 +1,73 @@
+@model MisTransportesViewModel
+@{
+    ViewData["Title"] = "Mis transportes";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/viajes/detalle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/viajes/viajes.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/transportes/transportes.css" asp-append-version="true" />
+}
+
+<div class="vd">
+
+    <header class="vd-header">
+        <div class="vd-header-main">
+            <p class="vd-eyebrow">Conductor</p>
+            <h1 class="vd-title">Mis transportes</h1>
+            <p class="tr-subtitulo">Paquetes que aceptaste llevar.</p>
+        </div>
+    </header>
+
+    @if (TempData["Mensaje"] is string mensaje)
+    {
+        <div class="vl-aviso" role="status">@mensaje</div>
+    }
+
+    @if (TempData["Error"] is string error)
+    {
+        <div class="vl-aviso vl-aviso--error" role="alert">@error</div>
+    }
+
+    @if (Model.Transportes.Count == 0)
+    {
+        <section class="vd-card text-center py-5">
+            <p class="vd-vacio mb-3">Todavía no aceptaste envíos.</p>
+            <a asp-controller="Viajes" asp-action="Index" class="vl-btn vl-btn--principal">Buscar oportunidades en mis viajes</a>
+        </section>
+    }
+    else
+    {
+        <section class="vd-card tr-lista-card">
+            <ul class="tr-lista">
+                @foreach (var transporte in Model.Transportes)
+                {
+                    <li class="tr-fila">
+                        <div class="tr-fila-info">
+                            <p class="tr-fila-titulo">@transporte.Titulo</p>
+                            <p class="tr-fila-sub">
+                                @transporte.Origen <span class="vd-flecha" aria-hidden="true">&rarr;</span> @transporte.Destino
+                                &middot; @transporte.GananciaTexto
+                            </p>
+                        </div>
+
+                        <div class="tr-fila-der">
+                            <span class="vd-chip @transporte.EstadoClase">@transporte.EstadoTexto</span>
+                            <a asp-controller="Viajes" asp-action="Detalle" asp-route-id="@transporte.ViajeId" class="vl-btn">Ver viaje</a>
+                            <a asp-action="Detalle" asp-route-id="@transporte.AsignacionId" class="vl-btn">Ver envío</a>
+
+                            @if (transporte.TieneAccion)
+                            {
+                                <form asp-action="@transporte.AccionNombre" asp-route-id="@transporte.AsignacionId" method="post"
+                                      class="vl-form-inline" onsubmit="@transporte.AccionConfirmacionJs">
+                                    <button type="submit" class="vl-btn vl-btn--principal">@transporte.AccionTexto</button>
+                                </form>
+                            }
+                        </div>
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+
+</div>
