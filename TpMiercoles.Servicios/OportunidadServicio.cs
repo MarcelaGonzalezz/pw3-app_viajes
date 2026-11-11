@@ -4,7 +4,9 @@ using System.Text;
 using TpMiercoles.Entidades;
 using TpMiercoles.Repositorios;
 using TpMiercoles.Servicios.DTOs.Oportunidades;
+using TpMiercoles.Servicios.DTOs.Optimizacion;
 using TpMiercoles.Servicios.Excepciones;
+using TpMiercoles.Servicios.Optimizacion;
 using TpMiercoles.Servicios.Rutas;
 
 namespace TpMiercoles.Servicios
@@ -25,7 +27,8 @@ namespace TpMiercoles.Servicios
         // reserva el envio para la salida. Si todavia no existe, materializa el Viaje como
         // snapshot de la ruta. Vuelve a validar todo: entre que se vio la oportunidad y se
         // acepto, otro conductor pudo haberla tomado.
-        Task<ResultadoOperacionOportunidad> AceptarAsync(int rutaId, int envioId, int conductorId, DateTime? fechaSalida = null);
+        Task<ResultadoOperacionOportunidad> AceptarAsync(int rutaId, int envioId, int conductorId, DateTime? fechaSalida = null, int? viajeId = null);
+        Task<ResultadoAceptacionPropuestaDTO> AceptarPropuestaAsync(int rutaId, int? viajeId, DateTime fechaSalidaProgramada, IReadOnlyList<int> envioIds, int conductorId);
     }
 
     public class OportunidadServicio : IOportunidadServicio
@@ -190,10 +193,9 @@ namespace TpMiercoles.Servicios
             return detalle;
         }
 
-        public async Task<ResultadoOperacionOportunidad> AceptarAsync(int rutaId, int envioId, int conductorId, DateTime? fechaSalida = null)
+        public async Task<ResultadoOperacionOportunidad> AceptarAsync(int rutaId, int envioId, int conductorId, DateTime? fechaSalida = null, int? viajeId = null)
         {
-            Salida? salida = await ResolverSalidaAsync(rutaId, conductorId, fechaSalida, paraModificar: true);
-
+            Salida? salida = await ResolverSalidaAsync(rutaId, conductorId, fechaSalida, paraModificar: true, viajeId: viajeId);
             if (salida is null)
             {
                 return ResultadoOperacionOportunidad.NoExiste();
@@ -237,6 +239,76 @@ namespace TpMiercoles.Servicios
 
             return ResultadoOperacionOportunidad.Exitoso(asignacion.Id, viaje.Id);
         }
+        public async Task<ResultadoAceptacionPropuestaDTO> AceptarPropuestaAsync(int rutaId, int? viajeId, DateTime fechaSalidaProgramada, IReadOnlyList<int> envioIds, int conductorId)
+        {
+            ArgumentNullException.ThrowIfNull(envioIds);
+
+            if (rutaId <= 0 || conductorId <= 0
+                || (viajeId.HasValue && viajeId.Value <= 0)
+                || fechaSalidaProgramada == default)
+            {
+                return new ResultadoAceptacionPropuestaDTO
+                {
+                    Error = "Los datos de la salida no son válidos."
+                };
+            }
+
+            if (envioIds.Count == 0)
+            {
+                return new ResultadoAceptacionPropuestaDTO
+                {
+                    Error = "La propuesta debe incluir al menos un envío."
+                };
+            }
+
+            if (envioIds.Any(id => id <= 0))
+            {
+                return new ResultadoAceptacionPropuestaDTO
+                {
+                    Error = "La propuesta contiene identificadores de envío inválidos."
+                };
+            }
+
+            if (envioIds.Distinct().Count() != envioIds.Count)
+            {
+                return new ResultadoAceptacionPropuestaDTO
+                {
+                    Error = "La propuesta contiene envíos repetidos."
+                };
+            }
+
+            var aceptados = new List<int>();
+            int? viajeDestinoId = viajeId;
+
+            foreach (int envioId in envioIds)
+            {
+                ResultadoOperacionOportunidad resultado =
+                    await AceptarAsync(rutaId, envioId, conductorId, fechaSalidaProgramada, viajeDestinoId);
+
+                if (!resultado.EsExitoso)
+                {
+                    return new ResultadoAceptacionPropuestaDTO
+                    {
+                        EnviosAceptadosIds = aceptados.AsReadOnly(),
+                        ViajeId = aceptados.Count > 0 ? viajeDestinoId : null,
+                        EnvioFallidoId = envioId,
+                        Error = resultado.NoEncontrado
+                            ? $"No se encontró la salida o el envío #{envioId}."
+                            : resultado.Conflicto
+                                ?? $"No se pudo aceptar el envío #{envioId}."
+                    };
+                }
+
+                aceptados.Add(envioId);
+                viajeDestinoId = resultado.ViajeId;
+            }
+
+            return new ResultadoAceptacionPropuestaDTO
+            {
+                EnviosAceptadosIds = aceptados.AsReadOnly(),
+                ViajeId = viajeDestinoId
+            };
+        }
 
         // HELPERS
 
@@ -258,8 +330,40 @@ namespace TpMiercoles.Servicios
             public IEnumerable<Asignacion> Asignaciones => Viaje?.Asignaciones ?? [];
         }
 
-        private async Task<Salida?> ResolverSalidaAsync(int rutaId, int conductorId, DateTime? fecha, bool paraModificar)
+        private async Task<Salida?> ResolverSalidaAsync(
+    int rutaId,
+    int conductorId,
+    DateTime? fecha,
+    bool paraModificar,
+    int? viajeId = null)
         {
+            // Si se eligió un viaje existente, usamos su snapshot.
+            if (viajeId is int id)
+            {
+                Viaje? viajeSeleccionado = paraModificar
+                    ? await _viajeRepositorio.ObtenerParaAsignarAsync(id)
+                    : await _viajeRepositorio.ObtenerDetalleAsync(id);
+
+                if (viajeSeleccionado is null
+                    || viajeSeleccionado.RutaId != rutaId
+                    || viajeSeleccionado.Ruta.UsuarioId != conductorId)
+                {
+                    return null;
+                }
+
+                return new Salida
+                {
+                    Ruta = viajeSeleccionado.Ruta,
+                    Viaje = viajeSeleccionado,
+                    FechaSalida = viajeSeleccionado.FechaSalida,
+                    FechaLlegada = viajeSeleccionado.FechaLlegada
+                        ?? viajeSeleccionado.FechaSalida
+                            + CalendarioDeSalidas.Duracion(
+                                viajeSeleccionado.Ruta)
+                };
+            }
+
+            // Si no hay un viaje seleccionado, resolvemos una salida de la ruta.
             Ruta? ruta = paraModificar
                 ? await _rutaRepositorio.ObtenerPorIdParaModificarAsync(rutaId)
                 : await _rutaRepositorio.ObtenerPorIdAsync(rutaId);
@@ -278,7 +382,7 @@ namespace TpMiercoles.Servicios
 
                 if (proxima is null)
                 {
-                    return null; // la ruta no tiene salidas futuras dentro de su vigencia
+                    return null;
                 }
 
                 fechaSalida = proxima.Value;
@@ -288,10 +392,12 @@ namespace TpMiercoles.Servicios
                 DateTime dia = fecha.Value.Date;
 
                 bool dentroDeVigencia =
-                    dia >= ruta.FechaInicio.Date &&
-                    (ruta.FechaFin is null || dia <= ruta.FechaFin.Value.Date);
+                    dia >= ruta.FechaInicio.Date
+                    && (ruta.FechaFin is null
+                        || dia <= ruta.FechaFin.Value.Date);
 
-                bool esDiaDeLaRuta = ruta.RutaDias.Any(d => d.DiaSemana == dia.DayOfWeek);
+                bool esDiaDeLaRuta = ruta.RutaDias.Any(
+                    d => d.DiaSemana == dia.DayOfWeek);
 
                 if (!dentroDeVigencia || !esDiaDeLaRuta)
                 {
@@ -302,14 +408,18 @@ namespace TpMiercoles.Servicios
             }
 
             Viaje? viaje = paraModificar
-                ? await _viajeRepositorio.ObtenerParaAsignarPorRutaYFechaAsync(ruta.Id, fechaSalida)
-                : await _viajeRepositorio.ObtenerPorRutaYFechaAsync(ruta.Id, fechaSalida);
+                ? await _viajeRepositorio.ObtenerParaAsignarPorRutaYFechaAsync(
+                    ruta.Id,
+                    fechaSalida)
+                : await _viajeRepositorio.ObtenerPorRutaYFechaAsync(
+                    ruta.Id,
+                    fechaSalida);
 
             return new Salida
             {
                 Ruta = ruta,
                 Viaje = viaje,
-                FechaSalida = fechaSalida,
+                FechaSalida = viaje?.FechaSalida ?? fechaSalida,
                 FechaLlegada = viaje?.FechaLlegada
                     ?? fechaSalida + CalendarioDeSalidas.Duracion(ruta)
             };
@@ -330,7 +440,8 @@ namespace TpMiercoles.Servicios
 
             if (salida.Ruta.Estado != EstadoRuta.ACTIVA)
             {
-                motivos.Add("La ruta está inactiva: activala para volver a buscar oportunidades.");
+                motivos.Add(
+                    "La ruta está inactiva: activala para volver a buscar oportunidades.");
             }
 
             if (salida.Viaje is { Estado: EstadoActividadViaje.INACTIVO })
@@ -338,7 +449,7 @@ namespace TpMiercoles.Servicios
                 motivos.Add("El viaje de esa salida está inactivo.");
             }
 
-            if (salida.FechaSalida < Ahora())
+            if (salida.Viaje is null && salida.FechaSalida < Ahora())
             {
                 motivos.Add("La salida ya pasó.");
             }
@@ -364,22 +475,34 @@ namespace TpMiercoles.Servicios
             {
                 motivos.Add("El envío fue cancelado.");
             }
-            else if (envio.Estado != EstadoEnvio.BuscandoConductor ||
-                     envio.Asignaciones.Any(a => a.Estado != EstadoViaje.CANCELADO))
+            else if (envio.Estado != EstadoEnvio.BuscandoConductor
+                || envio.Asignaciones.Any(asignacion => asignacion.Estado != EstadoViaje.CANCELADO))
             {
                 motivos.Add("El envío ya fue asignado a otro conductor.");
             }
 
-            DateTime dia = salida.FechaSalida.Date;
+            DateTime momentoEvaluacion =
+                ReferenciaTemporalOptimizacion.DeterminarMomentoEvaluacion(salida.FechaSalida, Ahora());
+
+            DateTime dia = momentoEvaluacion.Date;
+
             if (dia < envio.FechaDesde.Date || dia > envio.FechaHasta.Date)
             {
-                motivos.Add($"El viaje sale el {dia:dd/MM/yyyy} y el envío se puede llevar del {envio.FechaDesde:dd/MM/yyyy} al {envio.FechaHasta:dd/MM/yyyy}.");
+                motivos.Add(
+                    $"La fecha evaluada es {dia:dd/MM/yyyy} "
+                    + $"y el envío se puede llevar del "
+                    + $"{envio.FechaDesde:dd/MM/yyyy} "
+                    + $"al {envio.FechaHasta:dd/MM/yyyy}.");
             }
 
-            double pesoRestante = PesoRestante(salida);
-            if (envio.Paquete.PesoKg > pesoRestante)
+            decimal pesoRestanteKg = (decimal)PesoRestante(salida);
+            decimal pesoEnvioKg = (decimal)envio.Paquete.PesoKg;
+
+            if (pesoEnvioKg > pesoRestanteKg)
             {
-                motivos.Add($"El paquete del envío pesa {envio.Paquete.PesoKg:0.##} kg y al viaje le quedan {pesoRestante:0.##} kg.");
+                motivos.Add(
+                    $"El paquete del envío pesa {pesoEnvioKg:0.##} kg "
+                    + $"y al viaje le quedan {pesoRestanteKg:0.##} kg.");
             }
 
             return motivos;
@@ -390,7 +513,15 @@ namespace TpMiercoles.Servicios
 
         private static int CapacidadRestante(Salida salida) => salida.CapacidadMax - AsignacionesVigentes(salida).Count();
 
-        private static double PesoRestante(Salida salida) => salida.PesoMax - AsignacionesVigentes(salida).Sum(a => a.Envio?.Paquete.PesoKg ?? 0);
+        private static double PesoRestante(Salida salida)
+        {
+            decimal pesoMaximoKg = (decimal)salida.PesoMax;
+
+            decimal pesoAsignadoKg = AsignacionesVigentes(salida)
+                .Sum(asignacion => (decimal)(asignacion.Envio?.Paquete.PesoKg ?? 0));
+
+            return (double)(pesoMaximoKg - pesoAsignadoKg);
+        }
         #endregion
 
         #region Rutas

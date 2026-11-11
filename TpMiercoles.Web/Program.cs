@@ -7,10 +7,12 @@ using System.Globalization;
 using TpMiercoles.Entidades;
 using TpMiercoles.Repositorios;
 using TpMiercoles.Servicios;
-using TpMiercoles.Web.Infraestructura;
-using TpMiercoles.Web.Mapeos;
+using TpMiercoles.Servicios.Excepciones;
+using TpMiercoles.Servicios.Optimizacion;
 using TpMiercoles.Servicios.Rutas;
 using TpMiercoles.Servicios.Rutas.OpenRouteService;
+using TpMiercoles.Web.Infraestructura;
+using TpMiercoles.Web.Mapeos;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,6 +53,24 @@ builder.Services.AddScoped<IHistorialServicio, HistorialServicio>();
 builder.Services.AddScoped<ISeedDeHistorial, SeedDeHistorial>();
 builder.Services.AddScoped<ISeedDeOportunidades, SeedDeOportunidades>();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<IResolvedorSalidaOptimizacion,ResolvedorSalidaOptimizacion>();
+builder.Services.AddScoped<IBuscadorCandidatosOptimizacion,BuscadorCandidatosOptimizacion>();
+builder.Services.AddScoped<ValidadorSolicitudOptimizacion>();
+builder.Services.AddScoped<ValidadorSalidaOptimizacion>();
+builder.Services.AddScoped<CalculadorCompromisosSalida>();
+builder.Services.AddScoped<ConstructorRecorridoOptimizacion>();
+builder.Services.AddScoped<EvaluadorDesvioCompromisos>();
+builder.Services.AddScoped<MotorDeCombinaciones>();
+
+decimal proporcionMinimaIngreso =
+    builder.Configuration.GetValue<decimal>(
+        "Optimizacion:ProporcionMinimaIngreso",
+        0.80m);
+
+builder.Services.AddScoped<IOptimizadorServicio>(proveedor =>
+    ActivatorUtilities.CreateInstance<OptimizadorServicio>(
+        proveedor,
+        proporcionMinimaIngreso));
 
 string carpetaClaves = Path.GetFullPath(
     Path.Combine(builder.Environment.ContentRootPath, "..", "shared-keys"));

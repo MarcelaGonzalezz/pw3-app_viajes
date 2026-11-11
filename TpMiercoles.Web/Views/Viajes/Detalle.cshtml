@@ -28,6 +28,12 @@
     {
         <div class="vl-aviso" role="status">@mensaje</div>
     }
+    @if (TempData["Error"] is string errorAceptacion)
+    {
+        <div class="vl-aviso vl-aviso--error" role="alert">
+            @errorAceptacion
+        </div>
+    }
 
     <div class="vl-acciones">
         <a class="vl-btn" asp-action="Index">Volver a mis viajes</a>

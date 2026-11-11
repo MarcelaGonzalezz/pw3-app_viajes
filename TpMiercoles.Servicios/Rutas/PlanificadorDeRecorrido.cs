@@ -11,29 +11,47 @@ namespace TpMiercoles.Servicios.Rutas
     {
         // recorrido = origen, paradas en orden, destino.
         // Devuelve el mismo recorrido con retiro y entrega insertados donde menos lo alargan
-        public static List<Coordenada> InsertarEnvio(IReadOnlyList<Coordenada> recorrido, Coordenada retiro, Coordenada entrega)
+        public static List<Coordenada> InsertarEnvio(
+    IReadOnlyList<Coordenada> recorrido,
+    Coordenada retiro,
+    Coordenada entrega)
         {
-            List<Coordenada?> mejor = null;
-            double mejorDistanciaKm = double.MaxValue;
+            ArgumentNullException.ThrowIfNull(recorrido);
+            ArgumentNullException.ThrowIfNull(retiro);
+            ArgumentNullException.ThrowIfNull(entrega);
 
-            for (int i = 1; i < recorrido.Count; i++)
+            if (recorrido.Count < 2)
             {
-                for (int j = 1; j < recorrido.Count; j++)
-                {
-                    List<Coordenada> candidato = [.. recorrido]; // copia los puntos del recorrido original
-                    candidato.Insert(j, entrega); // primero la entrega para no correr el indice i
-                    candidato.Insert(i, retiro);
+                throw new ArgumentException(
+                    "El recorrido debe contener al menos origen y destino.",
+                    nameof(recorrido));
+            }
 
-                    double distanciaKm = Geo.LongitudKm(candidato); // distancia en linea recta entre todos los puntos, incluyendo retiro y entrega
-                    if (distanciaKm < mejorDistanciaKm)
+            List<Coordenada>? mejorRecorrido = null;
+            double menorDistanciaKm = double.PositiveInfinity;
+
+            for (int posicionRetiro = 1; posicionRetiro < recorrido.Count; posicionRetiro++)
+            {
+                for (int posicionEntrega = posicionRetiro; posicionEntrega < recorrido.Count; posicionEntrega++)
+                {
+                    var candidato = new List<Coordenada>(recorrido);
+
+                    candidato.Insert(posicionEntrega, entrega);
+                    candidato.Insert(posicionRetiro, retiro);
+
+                    double distanciaKm = Geo.LongitudKm(candidato);
+
+                    if (distanciaKm < menorDistanciaKm)
                     {
-                        mejorDistanciaKm = distanciaKm;
-                        mejor = candidato;
+                        menorDistanciaKm = distanciaKm;
+                        mejorRecorrido = candidato;
                     }
                 }
             }
 
-            return mejor ?? [.. recorrido];
+            return mejorRecorrido
+                ?? throw new InvalidOperationException(
+                    "No se pudo construir un recorrido válido para el envío.");
         }
 
     }

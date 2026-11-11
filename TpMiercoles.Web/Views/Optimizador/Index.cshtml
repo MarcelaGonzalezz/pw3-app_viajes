@@ -1,0 +1,368 @@
+﻿@using System.Globalization
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using TpMiercoles.Servicios.DTOs.Optimizacion
+@model OptimizadorViewModel
+
+@{
+    ViewData["Title"] = "Optimizador";
+
+    var cultura = CultureInfo.GetCultureInfo("es-AR");
+
+    var opciones = Model.Salidas.Select(salida => new SelectListItem
+    {
+        Value = $"{salida.RutaId}:{salida.ViajeId}",
+        Text = $"{salida.Origen} → {salida.Destino}"
+            + $" · {salida.FechaSalida:dd/MM/yyyy HH:mm}"
+            + (salida.ViajeId.HasValue
+                ? $" · Viaje #{salida.ViajeId}"
+                : " · Próxima salida")
+    }).ToList();
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/viajes/detalle.css"
+          asp-append-version="true" />
+
+    <link rel="stylesheet"
+          href="~/css/viajes/viajes.css"
+          asp-append-version="true" />
+
+    <link rel="stylesheet"
+          href="~/css/optimizador/optimizador.css"
+          asp-append-version="true" />
+}
+
+<div class="vd op-page">
+    @if (TempData["Error"] is string errorAceptacion)
+    {
+        <div class="vl-aviso vl-aviso--error" role="alert">
+            @errorAceptacion
+        </div>
+    }
+    <header class="vd-header">
+        <div>
+            <p class="vd-eyebrow">Conductor</p>
+            <h1 class="vd-title">Optimizador de envíos</h1>
+            <p class="op-subtitulo">
+                Elegí una salida y compará combinaciones de paquetes
+                según sus ingresos y desvío.
+            </p>
+        </div>
+
+        <a asp-controller="Ruta"
+           asp-action="Obtener"
+           class="vl-btn">
+            Mis rutas
+        </a>
+    </header>
+
+    @if (Model.Salidas.Count == 0)
+    {
+        <section class="vd-card op-vacio">
+            <h2 class="vd-card-titulo">
+                No hay salidas disponibles
+            </h2>
+
+            <p class="vd-vacio">
+                Necesitás una ruta activa con una salida disponible
+                o un viaje activo para utilizar el optimizador.
+            </p>
+
+            <a asp-controller="Ruta"
+               asp-action="Crear"
+               class="vl-btn vl-btn--principal">
+                Crear una ruta
+            </a>
+        </section>
+    }
+    else
+    {
+        <section class="vd-card" aria-labelledby="titulo-configuracion">
+            <h2 id="titulo-configuracion" class="vd-card-titulo">
+                Configurá tu búsqueda
+            </h2>
+
+            <form asp-controller="Optimizador"
+                  asp-action="Index"
+                  method="post"
+                  asp-antiforgery="true">
+
+                <div asp-validation-summary="ModelOnly"
+                     class="vf-errores"
+                     role="alert"></div>
+
+                <div class="op-form-grid">
+                    <div class="vf-campo">
+                        <label asp-for="SalidaSeleccionada"></label>
+
+                        <select asp-for="SalidaSeleccionada"
+                                asp-items="opciones"
+                                class="op-select"
+                                aria-describedby="ayuda-salida error-salida">
+                            <option value="">Seleccioná una salida</option>
+                        </select>
+
+                        <small id="ayuda-salida" class="op-ayuda">
+                            Se analizará únicamente la salida seleccionada.
+                        </small>
+
+                        <span asp-validation-for="SalidaSeleccionada"
+                              id="error-salida"
+                              class="vf-error"></span>
+                    </div>
+
+                    <div class="vf-campo">
+                        <label asp-for="DesvioMaximoKm"></label>
+
+                        <input asp-for="DesvioMaximoKm"
+                               type="number"
+                               min="0"
+                               step="any"
+                               inputmode="decimal"
+                               placeholder="Ej.: 5"
+                               aria-describedby="ayuda-desvio error-desvio" />
+
+                        <small id="ayuda-desvio" class="op-ayuda">
+                            Incluye el desvío de los envíos ya aceptados.
+                            Ingresá 0 si no admitís kilómetros adicionales.
+                        </small>
+
+                        <span asp-validation-for="DesvioMaximoKm"
+                              id="error-desvio"
+                              class="vf-error"></span>
+                    </div>
+                </div>
+
+                <div class="vf-acciones">
+                    <button type="submit"
+                            class="vl-btn vl-btn--principal">
+                        Calcular propuestas
+                    </button>
+
+                    <a asp-controller="Optimizador"
+                       asp-action="Index"
+                       class="vl-btn">
+                        Limpiar
+                    </a>
+                </div>
+
+                <p class="op-ayuda op-nota">
+                    El cálculo considera el recorrido completo y conserva
+                    los envíos ya aceptados. Consultar propuestas no reserva
+                    paquetes.
+                </p>
+            </form>
+        </section>
+    }
+
+    @if (Model.Resultado is { } resultado)
+    {
+        <section class="op-resultados"
+                 aria-labelledby="titulo-resultados">
+            <header>
+                <h2 id="titulo-resultados" class="vd-card-titulo">
+                    Resultado de la búsqueda
+
+                    <span class="vd-contador">
+                        @resultado.Propuestas.Count
+                    </span>
+                </h2>
+
+                @if (resultado.FechaSalidaProgramada is DateTime fecha)
+                {
+                    <p class="op-subtitulo">
+                        Salida programada:
+                        @fecha.ToString("dd/MM/yyyy HH:mm", cultura)
+                    </p>
+                }
+            </header>
+
+            @foreach (var mensaje in resultado.Mensajes)
+            {
+                var esError =
+                    resultado.Estado != EstadoResultadoOptimizacion.Correcto;
+
+                <div class="@(esError
+                        ? "vl-aviso vl-aviso--error"
+                        : "op-aviso")"
+                     role="@(esError ? "alert" : "status")">
+                    @mensaje
+                </div>
+            }
+
+            @if (resultado.Propuestas.Count > 0)
+            {
+                <p class="op-ayuda">
+                    Los totales incluyen los envíos ya comprometidos.
+                    El ingreso adicional corresponde a los nuevos paquetes.
+                </p>
+
+                <div class="op-propuestas">
+                    @for (int i = 0; i < resultado.Propuestas.Count; i++)
+                    {
+                        var propuesta = resultado.Propuestas[i];
+
+                        <article class="vd-card op-propuesta"
+                                 aria-labelledby="propuesta-@i">
+                            <header>
+                                <h3 id="propuesta-@i"
+                                    class="vd-card-titulo">
+                                    Propuesta @(i + 1)
+                                </h3>
+
+                                <ul class="op-etiquetas"
+                                    aria-label="Criterios destacados">
+                                    @foreach (var etiqueta in propuesta.Etiquetas)
+                                    {
+                                        <li class="vd-estado vd-estado--activo">
+                                            @etiqueta
+                                        </li>
+                                    }
+                                </ul>
+                            </header>
+
+                            <div class="op-ingreso">
+                                <span class="vd-dato-label">
+                                    Ingreso adicional
+                                </span>
+
+                                <strong>
+                                    @propuesta.IngresoAdicional.ToString(
+                                        "C2", cultura)
+                                </strong>
+
+                                <span class="op-ayuda">
+                                    Por @propuesta.EnviosNuevosIds.Count
+                                    @(propuesta.EnviosNuevosIds.Count == 1
+                                        ? "nuevo envío"
+                                        : "nuevos envíos")
+                                </span>
+                            </div>
+
+                            <dl class="op-datos">
+                                <div>
+                                    <dt>Ingreso total del viaje</dt>
+                                    <dd>
+                                        @propuesta.IngresoTotal.ToString(
+                                            "C2", cultura)
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt>Desvío total</dt>
+                                    <dd>
+                                        @propuesta.DesvioTotalKm.ToString(
+                                            "0.##", cultura) km
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt>Peso total</dt>
+                                    <dd>
+                                        @propuesta.PesoTotalKg.ToString(
+                                            "0.##", cultura) kg
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt>Paquetes totales</dt>
+                                    <dd>@propuesta.CantidadTotalPaquetes</dd>
+                                </div>
+
+                                <div>
+                                    <dt>Distancia del recorrido</dt>
+                                    <dd>
+                                        @propuesta.DistanciaTotalKm.ToString(
+                                            "0.##", cultura) km
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt>Duración estimada</dt>
+                                    <dd>
+                                        @propuesta.DuracionTotalMinutos.ToString(
+                                            "0.#", cultura) min
+                                    </dd>
+                                </div>
+                            </dl>
+
+                            <div class="op-paquetes">
+                                <h4 class="vd-dato-label">
+                                    Nuevos envíos incluidos
+                                </h4>
+
+                                <ul class="op-etiquetas">
+                                    @foreach (int envioId in propuesta.EnviosNuevosIds)
+                                    {
+                                        <li class="op-paquete">
+                                            Envío #@envioId
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                            <form asp-controller="Optimizador" asp-action="AceptarPropuesta" method="post" asp-antiforgery="true">
+                                <input type="hidden" name="RutaId" value="@resultado.RutaId" />
+                                <input type="hidden" name="ViajeId" value="@resultado.ViajeId" />
+                                <input type="hidden" name="FechaSalidaProgramada" value="@(resultado.FechaSalidaProgramada?.ToString("O", CultureInfo.InvariantCulture))" />
+
+                                @foreach (int envioId in propuesta.EnviosNuevosIds)
+                                {
+                                    <input type="hidden" name="EnvioIds" value="@envioId" />
+                                }
+
+                                <div class="vf-acciones">
+                                    <button type="submit" class="vl-btn vl-btn--principal">
+                                        Aceptar propuesta
+                                    </button>
+                                </div>
+                            </form>
+                        </article>
+                    }
+                </div>
+            }
+            else if (resultado.Mensajes.Count == 0)
+            {
+                <div class="op-aviso" role="status">
+                    No se encontraron propuestas para esta búsqueda.
+                </div>
+            }
+        </section>
+    }
+    else
+    {
+        <section class="vd-card">
+            <h2 class="vd-card-titulo">Compará tus alternativas</h2>
+
+            <dl class="op-datos">
+                <div>
+                    <dt>Mayor ganancia</dt>
+                    <dd>
+                        Prioriza el ingreso. Ante un empate,
+                        elige el menor desvío.
+                    </dd>
+                </div>
+
+                <div>
+                    <dt>Menor desvío</dt>
+                    <dd>
+                        Prioriza los kilómetros adicionales.
+                        Ante un empate, elige el mayor ingreso.
+                    </dd>
+                </div>
+
+                <div>
+                    <dt>Equilibrada</dt>
+                    <dd>
+                        Busca un menor desvío conservando una proporción
+                        alta del mejor ingreso adicional.
+                    </dd>
+                </div>
+            </dl>
+        </section>
+    }
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
