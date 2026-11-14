@@ -10,6 +10,8 @@ namespace TpMiercoles.Servicios.DTOs.Optimizacion
 
         public int? ViajeId { get; init; }
 
+        public DateTime? FechaSalida { get; init; }
+
         public required double DesvioMaximoKm { get; init; }
     }
 }
