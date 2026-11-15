@@ -4,6 +4,7 @@ using System.Text;
 using TpMiercoles.Entidades;
 using TpMiercoles.Repositorios;
 using TpMiercoles.Servicios.DTOs.Oportunidades;
+using TpMiercoles.Servicios.Viajes;
 
 namespace TpMiercoles.Servicios.Optimizacion
 {

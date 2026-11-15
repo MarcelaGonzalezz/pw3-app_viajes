@@ -5,7 +5,7 @@ using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Servicios.DTOs.Direccion;
 using TpMiercoles.Servicios.DTOs.Ruta;
 
-namespace TpMiercoles.Servicios
+namespace TpMiercoles.Servicios.Viajes
 {
     public interface IViajeServicio
     {

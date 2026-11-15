@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TpMiercoles.Entidades;
-using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.DTOs;
+using TpMiercoles.Servicios.Viajes;
 
 namespace TpMiercoles.Api.Controllers
 {

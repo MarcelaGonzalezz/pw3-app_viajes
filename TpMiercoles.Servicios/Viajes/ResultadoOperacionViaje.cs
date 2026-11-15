@@ -1,4 +1,4 @@
-namespace TpMiercoles.Servicios
+namespace TpMiercoles.Servicios.Viajes
 {
     // Resultado de una operacion sobre un viaje. Separa "no existe o no es tuyo"
     // (que el controller traduce a 404) de "los datos no pasan las validaciones"

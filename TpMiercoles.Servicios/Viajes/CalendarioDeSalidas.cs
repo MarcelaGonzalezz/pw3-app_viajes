@@ -1,6 +1,6 @@
 using TpMiercoles.Entidades;
 
-namespace TpMiercoles.Servicios
+namespace TpMiercoles.Servicios.Viajes
 {
     // Calcula las salidas concretas de una ruta combinando sus dias, su horario y su vigencia.
     internal static class CalendarioDeSalidas

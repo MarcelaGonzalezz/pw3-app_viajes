@@ -7,6 +7,7 @@ using TpMiercoles.Servicios;
 using TpMiercoles.Api.Infraestructura;
 using TpMiercoles.Servicios.Rutas;
 using TpMiercoles.Servicios.Rutas.OpenRouteService;
+using TpMiercoles.Servicios.Viajes;
 
 var builder = WebApplication.CreateBuilder(args);
 

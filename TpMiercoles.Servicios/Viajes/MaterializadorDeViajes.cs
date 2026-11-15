@@ -1,7 +1,7 @@
 using TpMiercoles.Entidades;
 using TpMiercoles.Repositorios;
 
-namespace TpMiercoles.Servicios
+namespace TpMiercoles.Servicios.Viajes
 {
     public interface IMaterializadorDeViajes
     {

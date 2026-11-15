@@ -1,8 +1,8 @@
 using Moq;
 using TpMiercoles.Entidades;
 using TpMiercoles.Repositorios;
-using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.DTOs;
+using TpMiercoles.Servicios.Viajes;
 using TpMiercoles.Tests.Helpers;
 
 namespace TpMiercoles.Tests.Servicios
