@@ -6,7 +6,7 @@ using TpMiercoles.Servicios.DTOs.Oportunidades;
 using TpMiercoles.Servicios.Rutas;
 using TpMiercoles.Tests.Helpers;
 
-namespace TpMiercoles.Tests.Servicios
+namespace TpMiercoles.Tests.Servicios.Oportunidades
 {
     public class OportunidadServicioTests
     {

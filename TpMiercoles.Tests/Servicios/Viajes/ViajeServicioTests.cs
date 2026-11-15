@@ -5,7 +5,7 @@ using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Servicios.Viajes;
 using TpMiercoles.Tests.Helpers;
 
-namespace TpMiercoles.Tests.Servicios
+namespace TpMiercoles.Tests.Servicios.Viajes
 {
     public class ViajeServicioTests
     {
