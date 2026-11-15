@@ -16,12 +16,21 @@ namespace TpMiercoles.Web.Controllers
     public class HomeController : Controller
     {
         private readonly IEnvioServicio _envioServicio;
+        private readonly IViajeServicio _viajeServicio;
+        private readonly IOportunidadServicio _oportunidadServicio;
         private readonly ISesionWeb _sesionWeb;
         private readonly IMapper _mapper;
 
-        public HomeController(IEnvioServicio envioServicio, ISesionWeb sesionWeb, IMapper mapper)
+        public HomeController(
+            IEnvioServicio envioServicio,
+            IViajeServicio viajeServicio,
+            IOportunidadServicio oportunidadServicio,
+            ISesionWeb sesionWeb,
+            IMapper mapper)
         {
             _envioServicio = envioServicio;
+            _viajeServicio = viajeServicio;
+            _oportunidadServicio = oportunidadServicio;
             _sesionWeb = sesionWeb;
             _mapper = mapper;
         }
@@ -42,11 +51,23 @@ namespace TpMiercoles.Web.Controllers
                 .OrderByDescending(e => e.Id)
                 .ToList();
 
+            List<ViajeListadoDTO> viajesActivos = await _viajeServicio.ListarAsync(usuarioId.Value, EstadoActividadViaje.ACTIVO);
+
+            var proximosViajes = viajesActivos
+                .Where(v => v.FechaSalida >= DateTime.Now)
+                .OrderBy(v => v.FechaSalida)
+                .ToList();
+
+            int oportunidades = await _oportunidadServicio.ContarDisponiblesAsync(usuarioId.Value);
+
             var modelo = new DashboardViewModel
             {
                 NombreUsuario = User.Identity?.Name ?? string.Empty,
                 EnviosPendientes = pendientes.Count,
-                EnviosPendientesLista = pendientes.Select(_mapper.Map<EnvioListadoViewModel>).ToList()
+                EnviosPendientesLista = pendientes.Select(_mapper.Map<EnvioListadoViewModel>).ToList(),
+                ProximosViajes = proximosViajes.Count,
+                ProximosViajesLista = proximosViajes.Take(5).Select(_mapper.Map<ViajeListadoViewModel>).ToList(),
+                Oportunidades = oportunidades
             };
 
             return View(modelo);

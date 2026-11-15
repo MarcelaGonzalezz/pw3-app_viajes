@@ -29,6 +29,9 @@ namespace TpMiercoles.Servicios
         // acepto, otro conductor pudo haberla tomado.
         Task<ResultadoOperacionOportunidad> AceptarAsync(int rutaId, int envioId, int conductorId, DateTime? fechaSalida = null, int? viajeId = null);
         Task<ResultadoAceptacionPropuestaDTO> AceptarPropuestaAsync(int rutaId, int? viajeId, DateTime fechaSalidaProgramada, IReadOnlyList<int> envioIds, int conductorId);
+        // cantidad de envios que pasan los chequeos baratos para alguna salida del conductor.
+        // No calcula rutas, asi que puede ser algo mayor que la lista de oportunidades.
+        Task<int> ContarDisponiblesAsync(int conductorId, CancellationToken ct = default);
     }
 
     public class OportunidadServicio : IOportunidadServicio
@@ -154,6 +157,35 @@ namespace TpMiercoles.Servicios
 
             resultado.Oportunidades = Ordenar(resultado.Oportunidades, orden);
             return resultado;
+        }
+
+        public async Task<int> ContarDisponiblesAsync(int conductorId, CancellationToken ct = default)
+        {
+            List<SalidaDeRutaDTO> salidas = await ListarSalidasAsync(conductorId, ct);
+            HashSet<int> envioIds = [];
+
+            foreach (SalidaDeRutaDTO dto in salidas)
+            {
+                Salida? salida = await ResolverSalidaAsync(dto.RutaId, conductorId, dto.FechaSalida, paraModificar: false);
+
+                if (salida is null || MotivosDeLaSalida(salida).Count > 0)
+                {
+                    continue;
+                }
+
+                List<Envio> candidatos = await _envioRepositorio.ListarDisponiblesAsync(salida.FechaSalida, conductorId);
+
+                foreach (Envio envio in candidatos)
+                {
+                    if (MotivosDelEnvio(salida, envio, conductorId).Count == 0)
+                    {
+                        envioIds.Add(envio.Id);
+                    }
+                }
+            }
+
+            // un mismo envio compatible con varias salidas se cuenta una sola vez
+            return envioIds.Count;
         }
 
         public async Task<OportunidadDetalleDTO?> ObtenerDetalleAsync(int rutaId, int envioId, int conductorId, DateTime? fechaSalida = null, CancellationToken ct = default)
