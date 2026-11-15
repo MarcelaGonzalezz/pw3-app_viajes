@@ -151,6 +151,23 @@ public class OptimizadorServicioTests
     }
 
     [Fact]
+    public async Task ViajeYFechaJuntos_SeRechazaSinConsultarMapas()
+    {
+        var caso = new Escenario();
+        var resultado = await caso.Servicio.CalcularAsync( new SolicitudOptimizacionDTO
+            {
+                RutaId = 1,
+                ViajeId = 20,
+                FechaSalida = new DateTime(2026, 11, 9, 8, 0, 0),
+                DesvioMaximoKm = 5
+            }, 7);
+
+        Assert.Equal(EstadoResultadoOptimizacion.SolicitudInvalida, resultado.Estado);
+        Assert.NotEmpty(resultado.Mensajes);
+        Assert.Empty(caso.Proveedor.Consultas);
+    }
+
+    [Fact]
     public async Task OtroConductor_NoObtienePropuestasNiConsultaMapas()
     {
         var caso = new Escenario();

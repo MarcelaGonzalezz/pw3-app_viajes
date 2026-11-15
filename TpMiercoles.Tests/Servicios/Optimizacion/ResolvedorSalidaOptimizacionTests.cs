@@ -139,4 +139,71 @@ public class ResolvedorSalidaOptimizacionTests
         _rutas.VerifyNoOtherCalls();
         _viajes.VerifyNoOtherCalls();
     }
+
+    [Fact]
+    public async Task Fecha_SinViajeMaterializado_ArmaLaSalidaDesdeLaRuta()
+    {
+        DateTime proximoLunes = new(2026, 11, 9, 8, 0, 0);
+        _rutas.Setup(r => r.ObtenerPorIdAsync(1)).ReturnsAsync(OptimizacionTestData.Ruta());
+
+        var salida = await Crear().ResolverSalidaEnFechaAsync(1, proximoLunes, 7);
+
+        Assert.NotNull(salida);
+        Assert.Null(salida.ViajeId);
+        Assert.Equal(proximoLunes, salida.FechaSalidaProgramada);
+        // Salida futura: se evalua con las salidas de ese dia, no con las de hoy.
+        Assert.Equal(proximoLunes, salida.MomentoEvaluacion);
+    }
+
+    [Fact]
+    public async Task Fecha_YaMaterializada_DelegaEnElViajeYTraeLosCompromisos()
+    {
+        var ruta = OptimizacionTestData.Ruta();
+        var viaje = OptimizacionTestData.Viaje(ruta);
+        OptimizacionTestData.Asignar(viaje, OptimizacionTestData.Envio());
+        _rutas.Setup(r => r.ObtenerPorIdAsync(1)).ReturnsAsync(ruta);
+        _viajes.Setup(r => r.ObtenerPorRutaYFechaAsync(1, OptimizacionTestData.Fecha)).ReturnsAsync(viaje);
+        _viajes.Setup(r => r.ObtenerDetalleAsync(20)).ReturnsAsync(viaje);
+
+        var salida = await Crear().ResolverSalidaEnFechaAsync(1, OptimizacionTestData.Fecha, 7);
+
+        Assert.NotNull(salida);
+        Assert.Equal(20, salida.ViajeId);
+        Assert.Single(salida.Asignaciones);
+    }
+
+    [Theory]
+    [InlineData(2026, 11, 10, 8)]   // martes
+    [InlineData(2026, 10, 26, 8)]   // lunes anterior a la vigencia
+    [InlineData(2026, 11, 9, 14)]   // lunes correcto, hora equivocada
+    public async Task Fecha_QueNoEsSalidaDeLaRuta_DevuelveNull(int anio, int mes, int dia, int hora)
+    {
+        _rutas.Setup(r => r.ObtenerPorIdAsync(1)).ReturnsAsync(OptimizacionTestData.Ruta());
+        Assert.Null(await Crear().ResolverSalidaEnFechaAsync(
+            1, new DateTime(anio, mes, dia, hora, 0, 0), 7));
+    }
+
+    [Fact]
+    public async Task Fecha_DeRutaDeOtroConductor_NoSeExpone()
+    {
+        _rutas.Setup(r => r.ObtenerPorIdAsync(1)).ReturnsAsync(OptimizacionTestData.Ruta());
+        Assert.Null(await Crear().ResolverSalidaEnFechaAsync(1, OptimizacionTestData.Fecha, 99));
+    }
+
+    [Fact]
+    public async Task Fecha_DeRutaInexistente_DevuelveNull()
+        => Assert.Null(await Crear().ResolverSalidaEnFechaAsync(999, OptimizacionTestData.Fecha, 7));
+
+    [Fact]
+    public async Task Fecha_YaPasada_SeEvaluaConElPresente()
+    {
+        // 12:00 UTC = 09:00 Argentina, una hora despues de la salida de las 08:00.
+        _reloj.Fijar(new DateTimeOffset(2026, 11, 2, 12, 0, 0, TimeSpan.Zero));
+        _rutas.Setup(r => r.ObtenerPorIdAsync(1)).ReturnsAsync(OptimizacionTestData.Ruta());
+        var salida = await Crear().ResolverSalidaEnFechaAsync(1, OptimizacionTestData.Fecha, 7);
+
+        Assert.NotNull(salida);
+        Assert.Equal(new DateTime(2026, 11, 2, 9, 0, 0), salida.MomentoEvaluacion);
+    }
+
 }

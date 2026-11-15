@@ -89,7 +89,7 @@ namespace TpMiercoles.Servicios
             DateTime primerDia = ruta.FechaInicio.Date > desde.Date ? ruta.FechaInicio.Date : desde.Date;
             DateTime ultimoDia = ruta.FechaFin is not null && ruta.FechaFin.Value.Date < hasta.Date ? ruta.FechaFin.Value.Date : hasta.Date;
 
-            for (DateTime dia = primerDia; dia <= ultimoDia; dia = dia.AddDays(1)) //Se usa addDays porque conoce el calendario y los cambios de horario de verano
+            for (DateTime dia = primerDia; dia <= ultimoDia; dia = dia.AddDays(1)) //Se usa addDays porque conoce el calendario
             {
                 if (!ruta.RutaDias.Any(d => d.DiaSemana== dia.DayOfWeek))
                 {

@@ -372,7 +372,13 @@ namespace TpMiercoles.Servicios.Optimizacion
                     viajeId,
                     conductorId);
             }
-            else
+            else if (solicitud.FechaSalida is DateTime fechaSalida)
+            {
+                salida = await _resolvedor.ResolverSalidaEnFechaAsync(
+                    solicitud.RutaId,
+                    fechaSalida,
+                    conductorId);
+            } else
             {
                 salida = await _resolvedor.ResolverProximaSalidaAsync(
                     solicitud.RutaId,
