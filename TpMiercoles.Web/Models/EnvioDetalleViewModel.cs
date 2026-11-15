@@ -24,7 +24,14 @@ namespace TpMiercoles.Web.Models
         public DateTime? FechaRetiro { get; set; }
         public DateTime? FechaEntrega { get; set; }
 
-        public string EstadoTexto => Estado switch
+        public bool EstaVencido =>
+            Estado == EstadoEnvio.BuscandoConductor && FechaHasta.Date < HoyEnArgentina;
+
+        private static DateTime HoyEnArgentina =>
+            TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow,
+                TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires")).Date;
+
+        public string EstadoTexto => EstaVencido ? "Vencido" : Estado switch
         {
             EstadoEnvio.BuscandoConductor => "Buscando conductor",
             EstadoEnvio.ConductorAsignado => "Conductor asignado",

@@ -47,11 +47,15 @@ namespace TpMiercoles.Web.Controllers
             List<EnvioListadoDTO> todos = await _envioServicio.ListarAsync(usuarioId.Value, null);
 
             var pendientes = todos
-                .Where(e => e.Estado != EstadoEnvio.Entregado && e.Estado != EstadoEnvio.Cancelado)
+                .Select(_mapper.Map<EnvioListadoViewModel>)
+                .Where(e => e.Estado != EstadoEnvio.Entregado
+                         && e.Estado != EstadoEnvio.Cancelado
+                         && !e.EstaVencido)
                 .OrderByDescending(e => e.Id)
                 .ToList();
 
-            List<ViajeListadoDTO> viajesActivos = await _viajeServicio.ListarAsync(usuarioId.Value, EstadoActividadViaje.ACTIVO);
+            List<ViajeListadoDTO> viajesActivos =
+                await _viajeServicio.ListarAsync(usuarioId.Value, EstadoActividadViaje.ACTIVO);
 
             var proximosViajes = viajesActivos
                 .Where(v => v.FechaSalida >= DateTime.Now)
@@ -64,7 +68,7 @@ namespace TpMiercoles.Web.Controllers
             {
                 NombreUsuario = User.Identity?.Name ?? string.Empty,
                 EnviosPendientes = pendientes.Count,
-                EnviosPendientesLista = pendientes.Select(_mapper.Map<EnvioListadoViewModel>).ToList(),
+                EnviosPendientesLista = pendientes,
                 ProximosViajes = proximosViajes.Count,
                 ProximosViajesLista = proximosViajes.Take(5).Select(_mapper.Map<ViajeListadoViewModel>).ToList(),
                 Oportunidades = oportunidades

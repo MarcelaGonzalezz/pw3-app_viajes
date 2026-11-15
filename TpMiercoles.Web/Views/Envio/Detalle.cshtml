@@ -4,7 +4,7 @@
 @{
     ViewData["Title"] = $"Envío #{Model.Id}";
 
-    var badgeClase = Model.Estado switch
+    var badgeClase = Model.EstaVencido ? "vd-estado--inactivo" : Model.Estado switch
     {
         EstadoEnvio.BuscandoConductor => "vd-estado--asignado",
         EstadoEnvio.ConductorAsignado => "vd-estado--asignado",
@@ -163,6 +163,10 @@
                             </div>
                         }
                     </dl>
+                }
+                else if (Model.EstaVencido)
+                {
+                    <p class="vd-vacio">Este envío venció sin que ningún conductor lo tomara. Podés cancelarlo y publicar uno nuevo.</p>
                 }
                 else
                 {

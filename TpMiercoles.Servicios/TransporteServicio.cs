@@ -94,6 +94,15 @@ namespace TpMiercoles.Servicios
             }
 
             DateTime ahora = Ahora();
+
+            // Se puede retirar desde el dia de la salida del viaje (no antes).
+            if (destino == EstadoEnvio.Retirado
+                && asignacion.Viaje.FechaSalida.Date > ahora.Date)
+            {
+                return ResultadoOperacionTransporte.EnConflicto(
+                    $"Todavía no podés retirar este paquete: el viaje sale el {asignacion.Viaje.FechaSalida:dd/MM/yyyy}.");
+            }
+
             envio.Estado = destino;
 
             if (destino == EstadoEnvio.Retirado)

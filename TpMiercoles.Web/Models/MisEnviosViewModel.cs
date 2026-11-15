@@ -14,5 +14,7 @@ namespace TpMiercoles.Web.Models
         public int TotalEnCamino { get; set; }
         public int TotalEntregados { get; set; }
         public int TotalCancelados { get; set; }
+        public bool SoloVencidos { get; set; }
+        public int TotalVencidos { get; set; }
     }
 }
