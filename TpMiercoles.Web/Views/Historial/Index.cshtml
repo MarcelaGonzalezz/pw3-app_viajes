@@ -1,3 +1,4 @@
+@using TpMiercoles.Entidades
 @using TpMiercoles.Servicios.DTOs.Historial
 @model HistorialViewModel
 @{
@@ -52,22 +53,22 @@
     <section class="vd-card hs-filtros-card">
         <nav class="vl-filtros" aria-label="Filtrar por tipo">
             <a class="vl-filtro @(Model.Filtro is null ? "vl-filtro--on" : "")"
-               asp-action="Index" asp-route-desde="@desdeTxt" asp-route-hasta="@hastaTxt">
+               asp-action="Index" asp-route-estado="@Model.Estado" asp-route-desde="@desdeTxt" asp-route-hasta="@hastaTxt">
                 Todos <span class="vl-filtro-n">@Model.TotalOperaciones</span>
             </a>
             <a class="vl-filtro @(Model.Filtro == TipoOperacionHistorial.ViajeRealizado ? "vl-filtro--on" : "")"
                asp-action="Index" asp-route-tipo="@TipoOperacionHistorial.ViajeRealizado"
-               asp-route-desde="@desdeTxt" asp-route-hasta="@hastaTxt">
+               asp-route-estado="@Model.Estado" asp-route-desde="@desdeTxt" asp-route-hasta="@hastaTxt">
                 Viajes realizados <span class="vl-filtro-n">@Model.ViajesRealizados</span>
             </a>
             <a class="vl-filtro @(Model.Filtro == TipoOperacionHistorial.EnvioEntregado ? "vl-filtro--on" : "")"
                asp-action="Index" asp-route-tipo="@TipoOperacionHistorial.EnvioEntregado"
-               asp-route-desde="@desdeTxt" asp-route-hasta="@hastaTxt">
+               asp-route-estado="@Model.Estado" asp-route-desde="@desdeTxt" asp-route-hasta="@hastaTxt">
                 Envíos entregados <span class="vl-filtro-n">@Model.TotalEnviosEntregados</span>
             </a>
             <a class="vl-filtro @(Model.Filtro == TipoOperacionHistorial.EnvioCancelado ? "vl-filtro--on" : "")"
                asp-action="Index" asp-route-tipo="@TipoOperacionHistorial.EnvioCancelado"
-               asp-route-desde="@desdeTxt" asp-route-hasta="@hastaTxt">
+               asp-route-estado="@Model.Estado" asp-route-desde="@desdeTxt" asp-route-hasta="@hastaTxt">
                 Envíos cancelados <span class="vl-filtro-n">@Model.TotalEnviosCancelados</span>
             </a>
         </nav>
@@ -77,6 +78,14 @@
             {
                 <input type="hidden" name="tipo" value="@Model.Filtro" />
             }
+            <div class="vf-campo">
+                <label for="estado">Estado del viaje</label>
+                <select id="estado" name="estado">
+                    <option value="">Todos</option>
+                    <option value="@EstadoActividadViaje.ACTIVO" selected="@(Model.Estado == EstadoActividadViaje.ACTIVO)">Activo</option>
+                    <option value="@EstadoActividadViaje.INACTIVO" selected="@(Model.Estado == EstadoActividadViaje.INACTIVO)">Inactivo</option>
+                </select>
+            </div>
             <div class="vf-campo">
                 <label for="desde">Desde</label>
                 <input type="date" id="desde" name="desde" value="@desdeTxt" />
@@ -89,7 +98,7 @@
                 <button type="submit" class="vl-btn vl-btn--principal">Filtrar</button>
                 @if (Model.HayFiltroDeFechas)
                 {
-                    <a class="vl-btn" asp-action="Index" asp-route-tipo="@Model.Filtro">Limpiar fechas</a>
+                    <a class="vl-btn" asp-action="Index" asp-route-tipo="@Model.Filtro" asp-route-estado="@Model.Estado">Limpiar fechas</a>
                 }
             </div>
         </form>
@@ -99,7 +108,7 @@
     {
         <section class="vd-card">
             <p class="vd-vacio">
-                @(Model.Filtro is null && !Model.HayFiltroDeFechas
+                @(!Model.HayFiltros
                     ? "Todavía no tenés operaciones finalizadas."
                     : "No hay operaciones que coincidan con los filtros elegidos.")
             </p>

@@ -1,4 +1,5 @@
 using System.Globalization;
+using TpMiercoles.Entidades;
 using TpMiercoles.Servicios.DTOs.Historial;
 
 namespace TpMiercoles.Web.Models
@@ -9,6 +10,7 @@ namespace TpMiercoles.Web.Models
 
         // Filtros activos. null = "Todos" / sin limite.
         public TipoOperacionHistorial? Filtro { get; set; }
+        public EstadoActividadViaje? Estado { get; set; }
         public DateTime? Desde { get; set; }
         public DateTime? Hasta { get; set; }
 
@@ -33,5 +35,6 @@ namespace TpMiercoles.Web.Models
         public string PromedioTexto => PromedioPorViaje.ToString("C0", Argentina);
 
         public bool HayFiltroDeFechas => Desde is not null || Hasta is not null;
+        public bool HayFiltros => Filtro is not null || Estado is not null || HayFiltroDeFechas;
     }
 }

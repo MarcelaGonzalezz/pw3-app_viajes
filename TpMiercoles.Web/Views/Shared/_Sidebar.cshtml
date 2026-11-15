@@ -30,7 +30,7 @@
         <a asp-controller="Envio" asp-action="Index" class="sidebar-link @(currentController == "Envio" ? "active" : "")">Mis envíos</a>
         <a asp-controller="Oportunidades" asp-action="Index" class="sidebar-link @(currentController == "Oportunidades" ? "active" : "")">Oportunidades</a>
         <a href="#" class="sidebar-link">Optimizador</a>
-        <a href="#" class="sidebar-link">Mis transportes</a>
+        <a asp-controller="Transportes" asp-action="Index" class="sidebar-link @(currentController == "Transportes" ? "active" : "")">Mis transportes</a>
         <a asp-controller="Historial" asp-action="Index"
            class="sidebar-link @(currentController == "Historial" ? "active" : "")">Historial</a>
     </nav>

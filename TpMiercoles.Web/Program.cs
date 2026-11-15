@@ -52,6 +52,9 @@ builder.Services.AddScoped<IHistorialRepositorio, HistorialRepositorio>();
 builder.Services.AddScoped<IHistorialServicio, HistorialServicio>();
 builder.Services.AddScoped<ISeedDeHistorial, SeedDeHistorial>();
 builder.Services.AddScoped<ISeedDeOportunidades, SeedDeOportunidades>();
+builder.Services.AddScoped<ITransporteRepositorio, TransporteRepositorio>();
+builder.Services.AddScoped<ITransporteServicio, TransporteServicio>();
+builder.Services.AddScoped<ISeedDeTransportes, SeedDeTransportes>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IResolvedorSalidaOptimizacion,ResolvedorSalidaOptimizacion>();
 builder.Services.AddScoped<IBuscadorCandidatosOptimizacion,BuscadorCandidatosOptimizacion>();
@@ -153,6 +156,7 @@ if (app.Environment.IsDevelopment())
     await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeDesarrollo>().SembrarAsync();
     await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeHistorial>().SembrarAsync();
     await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeOportunidades>().SembrarAsync();
+    await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeTransportes>().SembrarAsync();
 }
 
 if (!app.Environment.IsDevelopment())

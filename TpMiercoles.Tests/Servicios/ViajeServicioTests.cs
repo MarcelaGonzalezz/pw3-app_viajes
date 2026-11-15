@@ -71,14 +71,19 @@ namespace TpMiercoles.Tests.Servicios
                         direccionRetiro: "Ciudadela",
                         direccionEntrega: "Centro",
                         estado: EstadoViaje.CONFIRMADO,
-                        fechaRetiro: new DateTime(2026, 10, 31, 9, 0, 0)),
+                        fechaRetiro: new DateTime(2026, 10, 31, 9, 0, 0),
+                        estadoEnvio: EstadoEnvio.Entregado),
                     ViajeTestData.CrearAsignacion(
                         id: 1,
                         envioId: 100,
                         direccionRetiro: "Liniers",
                         direccionEntrega: "Once",
                         estado: EstadoViaje.PENDIENTE,
-                        fechaAceptacion: fechaAceptacion)
+                        fechaAceptacion: fechaAceptacion,
+                        estadoEnvio: EstadoEnvio.Retirado,
+                        descripcion: "Zapatillas",
+                        monto: 4000m,
+                        pesoKg: 2)
                 ]);
             viaje.DireccionOrigen = ViajeTestData.CrearDireccion(20, "Ramos Mejía");
             viaje.DireccionDestino = ViajeTestData.CrearDireccion(21, "Microcentro");
@@ -125,7 +130,10 @@ namespace TpMiercoles.Tests.Servicios
                     Assert.Equal("Carla Méndez", paquete.Remitente);
                     Assert.Equal("Liniers", paquete.DireccionRetiro);
                     Assert.Equal("Once", paquete.DireccionEntrega);
-                    Assert.Equal(EstadoViaje.PENDIENTE, paquete.Estado);
+                    Assert.Equal(EstadoEnvio.Retirado, paquete.Estado);
+                    Assert.Equal("Zapatillas", paquete.Descripcion);
+                    Assert.Equal(4000m, paquete.Monto);
+                    Assert.Equal(2, paquete.PesoKg);
                     Assert.Equal(fechaAceptacion, paquete.FechaAceptacion);
                 },
                 paquete =>
@@ -135,7 +143,7 @@ namespace TpMiercoles.Tests.Servicios
                     Assert.Equal("Juan Pérez", paquete.Remitente);
                     Assert.Equal("Ciudadela", paquete.DireccionRetiro);
                     Assert.Equal("Centro", paquete.DireccionEntrega);
-                    Assert.Equal(EstadoViaje.CONFIRMADO, paquete.Estado);
+                    Assert.Equal(EstadoEnvio.Entregado, paquete.Estado);
                     Assert.Equal(new DateTime(2026, 10, 31, 9, 0, 0), paquete.FechaRetiro);
                 });
         }

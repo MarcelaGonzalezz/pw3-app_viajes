@@ -4,6 +4,9 @@ namespace TpMiercoles.Servicios.DTOs.Historial
     {
         public TipoOperacionHistorial Tipo { get; set; }
 
+        // Solo viajes: si el viaje esta activo o inactivo. Null en los envios.
+        public TpMiercoles.Entidades.EstadoActividadViaje? EstadoDelViaje { get; set; }
+
         // Id del viaje o del envio, segun el tipo. Sirve para armar el link al detalle.
         public int Id { get; set; }
 
