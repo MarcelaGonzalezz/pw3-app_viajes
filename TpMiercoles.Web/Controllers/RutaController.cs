@@ -48,7 +48,7 @@ namespace TpMiercoles.Web.Controllers
             }
             catch (ValidacionRutaException e)
             {
-                ModelState.AddModelError("Error al crear la ruta: ", e.Message);
+                ModelState.AddModelError(string.Empty, e.Message); 
                 return View(ruta);
             }
         }
