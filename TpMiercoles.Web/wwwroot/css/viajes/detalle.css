@@ -393,3 +393,15 @@
     border-color: #cbb9ee;
     color: #5b3d9e;
 }
+
+.vd-estado--entregado {
+    background-color: #e4f6ec;
+    border-color: #a9ddbf;
+    color: #1d6b40;
+}
+
+.vd-estado--cancelado {
+    background-color: #fdeaea;
+    border-color: #f0b7b7;
+    color: #8c2b2b;
+}
