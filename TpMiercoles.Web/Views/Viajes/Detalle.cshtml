@@ -6,6 +6,8 @@
 @section Styles {
     <link rel="stylesheet" href="~/css/viajes/detalle.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/viajes/viajes.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="~/css/viajes/mapa-viaje.css" asp-append-version="true" />
 }
 
 <div class="vd">
@@ -98,7 +100,23 @@
             </ul>
         }
     </section>
-
+    <section class="vd-card" aria-label="Mapa del recorrido">
+        <h2 class="vd-card-titulo">Mapa del recorrido</h2>
+        <div id="mapaViaje" class="mv-mapa" data-url="/api/viajes/@Model.Id/mapa"></div>
+        <p id="mapaViajeAviso" class="mv-aviso" hidden></p>
+        <ul class="mv-leyenda">
+            <li><span class="mv-linea mv-linea--habitual"></span>Recorrido habitual</li>
+            @if (Model.Paquetes.Count > 0) {
+                <li><span class="mv-linea mv-linea--sugerido"></span>Recorrido sugerido con paquetes</li>
+                <li><span class="mv-punto mv-punto--retiro"></span>Retiro</li>
+                <li><span class="mv-punto mv-punto--entrega"></span>Entrega</li>
+            }
+            <li><span class="mv-punto mv-punto--parada"></span>Parada</li>
+            <li><span class="mv-punto mv-punto--origen"></span>Origen</li>
+            <li><span class="mv-punto mv-punto--destino"></span>Destino</li>
+        </ul>
+        <p id="mapaViajeResumen" class="mv-resumen"></p>
+    </section>
     <div class="vd-cols">
 
         <section class="vd-card" aria-label="Recorrido">
@@ -176,6 +194,10 @@
 
     </div>
 </div>
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="~/js/viajes/mapa-viaje.js" asp-append-version="true"></script>
+}
 
 @functions {
     private static readonly DayOfWeek[] OrdenSemana = new[]
