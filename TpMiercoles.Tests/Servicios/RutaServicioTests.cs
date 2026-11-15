@@ -10,10 +10,8 @@ using TpMiercoles.Servicios.Excepciones;
 using TpMiercoles.Servicios.Rutas;
 using TpMiercoles.Tests.Helpers;
 
-namespace TpMiercoles.Tests.Servicios
-{
-    public class RutaServicioTests
-    {
+namespace TpMiercoles.Tests.Servicios {
+    public class RutaServicioTests {
         private const int UsuarioId = 1;
 
         private readonly Mock<IRutaRepositorio> _rutaRepositorioMock;
@@ -39,8 +37,7 @@ namespace TpMiercoles.Tests.Servicios
         #region Caso feliz
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoLaRutaEsValida_CreaLaRutaConElUsuarioYLosDatosMapeados()
-        {
+        public async Task CrearRutaAsync_CuandoLaRutaEsValida_CreaLaRutaConElUsuarioYLosDatosMapeados() {
             var dto = CrearRutaValida();
             var usuario = CrearUsuario();
             Ruta? rutaGuardada = null;
@@ -67,8 +64,7 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoLaRutaEsValida_BuscaElUsuarioPorElIdRecibido()
-        {
+        public async Task CrearRutaAsync_CuandoLaRutaEsValida_BuscaElUsuarioPorElIdRecibido() {
             ConfigurarUsuario(CrearUsuario());
 
             await _servicio.CrearRutaAsync(UsuarioId, CrearRutaValida());
@@ -77,8 +73,7 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoLaRutaNoTieneParadas_CreaLaRuta()
-        {
+        public async Task CrearRutaAsync_CuandoLaRutaNoTieneParadas_CreaLaRuta() {
             var dto = CrearRutaValida();
             dto.Paradas = [];
             ConfigurarUsuario(CrearUsuario());
@@ -89,8 +84,7 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoNoHayFechaFin_CreaLaRuta()
-        {
+        public async Task CrearRutaAsync_CuandoNoHayFechaFin_CreaLaRuta() {
             var dto = CrearRutaValida();
             dto.FechaFin = null;
             ConfigurarUsuario(CrearUsuario());
@@ -101,8 +95,7 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoLaFechaFinEsIgualALaFechaInicio_CreaLaRuta()
-        {
+        public async Task CrearRutaAsync_CuandoLaFechaFinEsIgualALaFechaInicio_CreaLaRuta() {
             var dto = CrearRutaValida();
             dto.FechaFin = dto.FechaInicio;
             ConfigurarUsuario(CrearUsuario());
@@ -113,8 +106,7 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoLosOrdenesDeParadasEstanDesordenadosPeroSonConsecutivos_CreaLaRuta()
-        {
+        public async Task CrearRutaAsync_CuandoLosOrdenesDeParadasEstanDesordenadosPeroSonConsecutivos_CreaLaRuta() {
             var dto = CrearRutaValida();
             dto.Paradas =
             [
@@ -130,8 +122,7 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoElOrigenYElDestinoSoloDifierenEnLaLatitud_CreaLaRuta()
-        {
+        public async Task CrearRutaAsync_CuandoElOrigenYElDestinoSoloDifierenEnLaLatitud_CreaLaRuta() {
             var dto = CrearRutaValida();
             dto.DireccionOrigen = CrearDireccion(10.12345m, 20.12345m);
             dto.DireccionDestino = CrearDireccion(10.12346m, 20.12345m);
@@ -144,8 +135,7 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoElOrigenYElDestinoSoloDifierenEnLaLongitud_CreaLaRuta()
-        {
+        public async Task CrearRutaAsync_CuandoElOrigenYElDestinoSoloDifierenEnLaLongitud_CreaLaRuta() {
             var dto = CrearRutaValida();
             dto.DireccionOrigen = CrearDireccion(10.12345m, 20.12345m);
             dto.DireccionDestino = CrearDireccion(10.12345m, 20.12346m);
@@ -162,8 +152,7 @@ namespace TpMiercoles.Tests.Servicios
         #region Origen y destino
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoElOrigenYElDestinoTienenLasMismasCoordenadas_LanzaValidacionRutaException()
-        {
+        public async Task CrearRutaAsync_CuandoElOrigenYElDestinoTienenLasMismasCoordenadas_LanzaValidacionRutaException() {
             var dto = CrearRutaValida();
             dto.DireccionOrigen = CrearDireccion(10.12345m, 20.12345m);
             dto.DireccionDestino = CrearDireccion(10.12345m, 20.12345m);
@@ -173,8 +162,7 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoElOrigenYElDestinoTienenLasMismasCoordenadasPeroDistintoTexto_LanzaValidacionRutaException()
-        {
+        public async Task CrearRutaAsync_CuandoElOrigenYElDestinoTienenLasMismasCoordenadasPeroDistintoTexto_LanzaValidacionRutaException() {
             var dto = CrearRutaValida();
             dto.DireccionOrigen = CrearDireccion(10.12345m, 20.12345m, "Calle A 123");
             dto.DireccionDestino = CrearDireccion(10.12345m, 20.12345m, "Calle B 456");
@@ -184,8 +172,7 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoLasCoordenadasDifierenSoloDesdeElSextoDecimal_LasConsideraIguales()
-        {
+        public async Task CrearRutaAsync_CuandoLasCoordenadasDifierenSoloDesdeElSextoDecimal_LasConsideraIguales() {
             var dto = CrearRutaValida();
             dto.DireccionOrigen = CrearDireccion(10.123451m, 20.123451m);
             dto.DireccionDestino = CrearDireccion(10.123454m, 20.123454m);
@@ -195,8 +182,7 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoLasCoordenadasEstanEnElPuntoMedioDelRedondeo_UsaRedondeoAlParMasCercano()
-        {
+        public async Task CrearRutaAsync_CuandoLasCoordenadasEstanEnElPuntoMedioDelRedondeo_UsaRedondeoAlParMasCercano() {
             // 10.123455 -> 10.12346 y 10.123465 -> 10.12346 (MidpointRounding.ToEven).
             // Con redondeo "away from zero" darían 10.12346 y 10.12347, y serían distintas.
             var dto = CrearRutaValida();
@@ -212,8 +198,7 @@ namespace TpMiercoles.Tests.Servicios
         #region Días
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoNoHayDiasSeleccionados_LanzaValidacionRutaException()
-        {
+        public async Task CrearRutaAsync_CuandoNoHayDiasSeleccionados_LanzaValidacionRutaException() {
             var dto = CrearRutaValida();
             dto.RutaDias = [];
 
@@ -228,8 +213,7 @@ namespace TpMiercoles.Tests.Servicios
         [InlineData(0)]
         [InlineData(-0.5)]
         [InlineData(-10)]
-        public async Task CrearRutaAsync_CuandoElPesoMaximoNoEsMayorACero_LanzaValidacionRutaException(double pesoMax)
-        {
+        public async Task CrearRutaAsync_CuandoElPesoMaximoNoEsMayorACero_LanzaValidacionRutaException(double pesoMax) {
             var dto = CrearRutaValida();
             dto.PesoMax = pesoMax;
 
@@ -240,8 +224,7 @@ namespace TpMiercoles.Tests.Servicios
         [InlineData(0)]
         [InlineData(-1)]
         [InlineData(-10)]
-        public async Task CrearRutaAsync_CuandoLaCapacidadMaximaNoEsMayorACero_LanzaValidacionRutaException(int capacidad)
-        {
+        public async Task CrearRutaAsync_CuandoLaCapacidadMaximaNoEsMayorACero_LanzaValidacionRutaException(int capacidad) {
             var dto = CrearRutaValida();
             dto.CapacidadMaxPaquetes = capacidad;
 
@@ -257,8 +240,7 @@ namespace TpMiercoles.Tests.Servicios
         [InlineData(11, 10)]
         public async Task CrearRutaAsync_CuandoLaHoraDeSalidaNoEsAnteriorALaDeLlegada_LanzaValidacionRutaException(
             int horaSalida,
-            int horaLlegada)
-        {
+            int horaLlegada) {
             var dto = CrearRutaValida();
             dto.HoraSalida = new TimeOnly(horaSalida, 0);
             dto.HoraLlegada = new TimeOnly(horaLlegada, 0);
@@ -271,8 +253,7 @@ namespace TpMiercoles.Tests.Servicios
         #region Fechas
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoLaFechaFinEsAnteriorALaFechaInicio_LanzaValidacionRutaException()
-        {
+        public async Task CrearRutaAsync_CuandoLaFechaFinEsAnteriorALaFechaInicio_LanzaValidacionRutaException() {
             var dto = CrearRutaValida();
             dto.FechaInicio = new DateTime(2026, 11, 10);
             dto.FechaFin = new DateTime(2026, 11, 9);
@@ -285,8 +266,7 @@ namespace TpMiercoles.Tests.Servicios
         #region Paradas
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoUnaParadaTieneLasCoordenadasDelOrigen_LanzaValidacionRutaException()
-        {
+        public async Task CrearRutaAsync_CuandoUnaParadaTieneLasCoordenadasDelOrigen_LanzaValidacionRutaException() {
             var dto = CrearRutaValida();
             dto.Paradas =
             [
@@ -297,8 +277,7 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoUnaParadaTieneLasCoordenadasDelDestino_LanzaValidacionRutaException()
-        {
+        public async Task CrearRutaAsync_CuandoUnaParadaTieneLasCoordenadasDelDestino_LanzaValidacionRutaException() {
             var dto = CrearRutaValida();
             dto.Paradas =
             [
@@ -309,8 +288,7 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoUnaParadaSoloDifiereDelOrigenDesdeElSextoDecimal_LanzaValidacionRutaException()
-        {
+        public async Task CrearRutaAsync_CuandoUnaParadaSoloDifiereDelOrigenDesdeElSextoDecimal_LanzaValidacionRutaException() {
             var dto = CrearRutaValida();
             dto.DireccionOrigen = CrearDireccion(10.12345m, 20.12345m);
             dto.DireccionDestino = CrearDireccion(30.00000m, 40.00000m);
@@ -320,8 +298,7 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoDosParadasTienenLasMismasCoordenadas_LanzaValidacionRutaException()
-        {
+        public async Task CrearRutaAsync_CuandoDosParadasTienenLasMismasCoordenadas_LanzaValidacionRutaException() {
             var dto = CrearRutaValida();
             dto.Paradas =
             [
@@ -333,8 +310,7 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoDosParadasSoloDifierenDesdeElSextoDecimal_LanzaValidacionRutaException()
-        {
+        public async Task CrearRutaAsync_CuandoDosParadasSoloDifierenDesdeElSextoDecimal_LanzaValidacionRutaException() {
             var dto = CrearRutaValida();
             dto.Paradas =
             [
@@ -352,8 +328,7 @@ namespace TpMiercoles.Tests.Servicios
         [InlineData(new[] { 1, 1 })]
         [InlineData(new[] { -1, 1 })]
         public async Task CrearRutaAsync_CuandoElOrdenDeLasParadasNoEsConsecutivoDesdeUno_LanzaValidacionRutaException(
-            int[] ordenes)
-        {
+            int[] ordenes) {
             var dto = CrearRutaValida();
             dto.Paradas = ordenes
                 .Select((orden, indice) => CrearParada(-34.60500m - (indice * 0.001m), -58.38300m, orden))
@@ -367,8 +342,7 @@ namespace TpMiercoles.Tests.Servicios
         #region Orden de operaciones
 
         [Fact]
-        public async Task CrearRutaAsync_CuandoLaValidacionFalla_NoBuscaAlUsuarioNiCreaLaRuta()
-        {
+        public async Task CrearRutaAsync_CuandoLaValidacionFalla_NoBuscaAlUsuarioNiCreaLaRuta() {
             var dto = CrearRutaValida();
             dto.RutaDias = [];
 
@@ -381,14 +355,77 @@ namespace TpMiercoles.Tests.Servicios
 
         #endregion
 
+        #region Detalle: completar recorrido faltante
+
+        [Fact]
+        public async Task ObtenerDetalleAsync_CuandoLaRutaNoTieneGeometria_LaCalculaYLaGuarda() {
+            var ruta = RutaTestData.CrearRuta(id: 7, usuarioId: UsuarioId);
+            const string geometria = "{\"type\":\"LineString\",\"coordinates\":[[-58.5,-34.6],[-58.4,-34.7]]}";
+
+            _rutaRepositorioMock.Setup(r => r.ObtenerPorIdAsync(7)).ReturnsAsync(ruta);
+            _recorridoServicioMock
+                .Setup(r => r.CalcularAsync(It.IsAny<RecorridoDTO>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ResultadoRuta(20000, 1500, geometria));
+
+            RutaDTO detalle = await _servicio.ObtenerDetalleAsync(7, UsuarioId);
+
+            Assert.Equal(geometria, detalle.GeometriaJson);
+            Assert.Equal(geometria, ruta.GeometriaJson);
+            Assert.Equal(20000, ruta.DistanciaMetros);
+            Assert.Equal(1500, ruta.DuracionSegundos);
+            _rutaRepositorioMock.Verify(r => r.GuardarCambiosAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task ObtenerDetalleAsync_CuandoLaRutaYaTieneGeometria_NoRecalcula() {
+            var ruta = RutaTestData.CrearRuta(id: 8, usuarioId: UsuarioId);
+            ruta.GeometriaJson = "{\"type\":\"LineString\",\"coordinates\":[]}";
+
+            _rutaRepositorioMock.Setup(r => r.ObtenerPorIdAsync(8)).ReturnsAsync(ruta);
+
+            await _servicio.ObtenerDetalleAsync(8, UsuarioId);
+
+            _recorridoServicioMock.Verify(
+                r => r.CalcularAsync(It.IsAny<RecorridoDTO>(), It.IsAny<CancellationToken>()), Times.Never);
+            _rutaRepositorioMock.Verify(r => r.GuardarCambiosAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task ObtenerDetalleAsync_CuandoElServicioDeRutasFalla_DevuelveElDetalleSinGuardar() {
+            var ruta = RutaTestData.CrearRuta(id: 9, usuarioId: UsuarioId);
+
+            _rutaRepositorioMock.Setup(r => r.ObtenerPorIdAsync(9)).ReturnsAsync(ruta);
+            _recorridoServicioMock
+                .Setup(r => r.CalcularAsync(It.IsAny<RecorridoDTO>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new RutaNoEncontradaException("ORS caído"));
+
+            RutaDTO detalle = await _servicio.ObtenerDetalleAsync(9, UsuarioId);
+
+            Assert.Null(detalle.GeometriaJson);
+            _rutaRepositorioMock.Verify(r => r.GuardarCambiosAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task ObtenerDetalleAsync_CuandoElServicioNoDevuelveGeometria_NoGuarda() {
+            var ruta = RutaTestData.CrearRuta(id: 10, usuarioId: UsuarioId);
+
+            _rutaRepositorioMock.Setup(r => r.ObtenerPorIdAsync(10)).ReturnsAsync(ruta);
+            // El constructor configura el mock sin geometría, como el MockServicioRutas.
+
+            await _servicio.ObtenerDetalleAsync(10, UsuarioId);
+
+            Assert.Null(ruta.GeometriaJson);
+            _rutaRepositorioMock.Verify(r => r.GuardarCambiosAsync(), Times.Never);
+        }
+
+        #endregion
+
         #region Desactivar y Activar ruta
 
         [Fact]
-        public async Task DesactivarRutaAsync_CuandoRutaExisteYEsDelUsuario_CambiaEstadoAInactivaYGuardaCambios()
-        {
+        public async Task DesactivarRutaAsync_CuandoRutaExisteYEsDelUsuario_CambiaEstadoAInactivaYGuardaCambios() {
             const int rutaId = 15;
-            var ruta = new Ruta
-            {
+            var ruta = new Ruta {
                 Id = rutaId,
                 UsuarioId = UsuarioId,
                 Estado = EstadoRuta.ACTIVA
@@ -405,8 +442,7 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task DesactivarRutaAsync_CuandoRutaNoExiste_LanzaRutaNoEncontradaException()
-        {
+        public async Task DesactivarRutaAsync_CuandoRutaNoExiste_LanzaRutaNoEncontradaException() {
             const int rutaId = 99;
             _rutaRepositorioMock
                 .Setup(r => r.ObtenerPorIdParaModificarAsync(rutaId))
@@ -419,12 +455,10 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task DesactivarRutaAsync_CuandoRutaNoPerteneceAlUsuario_LanzaUnauthorizedAccessException()
-        {
+        public async Task DesactivarRutaAsync_CuandoRutaNoPerteneceAlUsuario_LanzaUnauthorizedAccessException() {
             const int rutaId = 15;
             const int otroUsuarioId = 999;
-            var ruta = new Ruta
-            {
+            var ruta = new Ruta {
                 Id = rutaId,
                 UsuarioId = otroUsuarioId,
                 Estado = EstadoRuta.ACTIVA
@@ -442,11 +476,9 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task ActivarRutaAsync_CuandoRutaExisteYEsDelUsuario_CambiaEstadoAActivaYGuardaCambios()
-        {
+        public async Task ActivarRutaAsync_CuandoRutaExisteYEsDelUsuario_CambiaEstadoAActivaYGuardaCambios() {
             const int rutaId = 15;
-            var ruta = new Ruta
-            {
+            var ruta = new Ruta {
                 Id = rutaId,
                 UsuarioId = UsuarioId,
                 Estado = EstadoRuta.INACTIVA
@@ -466,8 +498,7 @@ namespace TpMiercoles.Tests.Servicios
 
         #region Helpers
 
-        private async Task AssertValidacionFallaAsync(CrearRutaDTO dto, string mensajeEsperado)
-        {
+        private async Task AssertValidacionFallaAsync(CrearRutaDTO dto, string mensajeEsperado) {
             var excepcion = await Assert.ThrowsAsync<ValidacionRutaException>(
                 () => _servicio.CrearRutaAsync(UsuarioId, dto));
 
@@ -475,17 +506,14 @@ namespace TpMiercoles.Tests.Servicios
             _rutaRepositorioMock.Verify(r => r.CrearRutaAsync(It.IsAny<Ruta>()), Times.Never);
         }
 
-        private void ConfigurarUsuario(Usuario usuario)
-        {
+        private void ConfigurarUsuario(Usuario usuario) {
             _usuarioRepositorioMock
                 .Setup(r => r.BuscarPorIdAsync(UsuarioId))
                 .ReturnsAsync(usuario);
         }
 
-        private static Usuario CrearUsuario()
-        {
-            return new Usuario
-            {
+        private static Usuario CrearUsuario() {
+            return new Usuario {
                 Id = UsuarioId,
                 Nombre = "test",
                 Apellido = "unitario",
@@ -493,29 +521,23 @@ namespace TpMiercoles.Tests.Servicios
             };
         }
 
-        private static DireccionDTO CrearDireccion(decimal latitud, decimal longitud, string texto = "Direccion de prueba")
-        {
-            return new DireccionDTO
-            {
+        private static DireccionDTO CrearDireccion(decimal latitud, decimal longitud, string texto = "Direccion de prueba") {
+            return new DireccionDTO {
                 Texto = texto,
                 Latitud = latitud,
                 Longitud = longitud
             };
         }
 
-        private static ParadaDTO CrearParada(decimal latitud, decimal longitud, int orden)
-        {
-            return new ParadaDTO
-            {
+        private static ParadaDTO CrearParada(decimal latitud, decimal longitud, int orden) {
+            return new ParadaDTO {
                 Direccion = CrearDireccion(latitud, longitud),
                 Orden = orden
             };
         }
 
-        private static CrearRutaDTO CrearRutaValida()
-        {
-            return new CrearRutaDTO
-            {
+        private static CrearRutaDTO CrearRutaValida() {
+            return new CrearRutaDTO {
                 DireccionOrigen = CrearDireccion(-34.60372m, -58.38160m, "Origen"),
                 DireccionDestino = CrearDireccion(-34.90111m, -57.92220m, "Destino"),
                 PesoMax = 100,
