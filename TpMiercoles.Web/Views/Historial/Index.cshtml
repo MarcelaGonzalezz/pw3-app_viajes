@@ -5,6 +5,11 @@
     ViewData["Title"] = "Historial";
     string? desdeTxt = Model.Desde?.ToString("yyyy-MM-dd");
     string? hastaTxt = Model.Hasta?.ToString("yyyy-MM-dd");
+
+    string esteMesDesde = Model.EsteMesDesde.ToString("yyyy-MM-dd");
+    string esteMesHasta = Model.EsteMesHasta.ToString("yyyy-MM-dd");
+    string mesAntDesde = Model.MesAnteriorDesde.ToString("yyyy-MM-dd");
+    string mesAntHasta = Model.MesAnteriorHasta.ToString("yyyy-MM-dd");
 }
 
 @section Styles {
@@ -41,7 +46,7 @@
             <span class="vd-dato-label">Ganancia efectiva</span>
             <span class="hs-numero">@Model.GananciaTexto</span>
             <span class="vd-dato-extra">
-                Solo paquetes entregados
+                @Model.PeriodoTexto · Solo paquetes entregados
                 @if (Model.ViajesRealizados > 0)
                 {
                     <text> · @Model.PromedioTexto por viaje</text>
@@ -51,6 +56,23 @@
     </section>
 
     <section class="vd-card hs-filtros-card">
+        <nav class="vl-filtros" aria-label="Filtrar por período">
+            <a class="vl-filtro @(Model.EsEsteMes ? "vl-filtro--on" : "")"
+               asp-action="Index" asp-route-tipo="@Model.Filtro" asp-route-estado="@Model.Estado"
+               asp-route-desde="@esteMesDesde" asp-route-hasta="@esteMesHasta">
+                Este mes
+            </a>
+            <a class="vl-filtro @(Model.EsMesAnterior ? "vl-filtro--on" : "")"
+               asp-action="Index" asp-route-tipo="@Model.Filtro" asp-route-estado="@Model.Estado"
+               asp-route-desde="@mesAntDesde" asp-route-hasta="@mesAntHasta">
+                Mes anterior
+            </a>
+            <a class="vl-filtro @(Model.EsTodo ? "vl-filtro--on" : "")"
+               asp-action="Index" asp-route-tipo="@Model.Filtro" asp-route-estado="@Model.Estado">
+                Todo
+            </a>
+        </nav>
+
         <nav class="vl-filtros" aria-label="Filtrar por tipo">
             <a class="vl-filtro @(Model.Filtro is null ? "vl-filtro--on" : "")"
                asp-action="Index" asp-route-estado="@Model.Estado" asp-route-desde="@desdeTxt" asp-route-hasta="@hastaTxt">
@@ -65,11 +87,6 @@
                asp-action="Index" asp-route-tipo="@TipoOperacionHistorial.EnvioEntregado"
                asp-route-estado="@Model.Estado" asp-route-desde="@desdeTxt" asp-route-hasta="@hastaTxt">
                 Envíos entregados <span class="vl-filtro-n">@Model.TotalEnviosEntregados</span>
-            </a>
-            <a class="vl-filtro @(Model.Filtro == TipoOperacionHistorial.EnvioCancelado ? "vl-filtro--on" : "")"
-               asp-action="Index" asp-route-tipo="@TipoOperacionHistorial.EnvioCancelado"
-               asp-route-estado="@Model.Estado" asp-route-desde="@desdeTxt" asp-route-hasta="@hastaTxt">
-                Envíos cancelados <span class="vl-filtro-n">@Model.TotalEnviosCancelados</span>
             </a>
         </nav>
 

@@ -13,7 +13,9 @@ namespace TpMiercoles.Servicios.DTOs.Historial
         public string Origen { get; set; } = string.Empty;
         public string Destino { get; set; } = string.Empty;
 
-        // Fecha de la operacion: salida del viaje, entrega del envio o fecha limite si se cancelo.
+        // Fecha en que se acredita la operacion:
+        //  - Viaje: fecha de entrega de su ultimo paquete entregado (si no se registro, la de salida).
+        //  - Envio: fecha de entrega.
         public DateTime Fecha { get; set; }
 
         // Solo viajes: paquetes entregados en ese viaje.
