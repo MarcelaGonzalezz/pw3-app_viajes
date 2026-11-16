@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using TpMiercoles.Entidades;
 using TpMiercoles.Servicios;
+using TpMiercoles.Servicios.Viajes;
 using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Web.Infraestructura;
 using TpMiercoles.Web.Models;
