@@ -59,6 +59,7 @@ builder.Services.AddScoped<ISeedDeTransportes, SeedDeTransportes>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IResolvedorSalidaOptimizacion,ResolvedorSalidaOptimizacion>();
 builder.Services.AddScoped<IBuscadorCandidatosOptimizacion,BuscadorCandidatosOptimizacion>();
+builder.Services.AddScoped<IGananciasServicio, GananciasServicio>();
 builder.Services.AddScoped<ValidadorSolicitudOptimizacion>();
 builder.Services.AddScoped<ValidadorSalidaOptimizacion>();
 builder.Services.AddScoped<CalculadorCompromisosSalida>();

@@ -372,7 +372,8 @@ namespace TpMiercoles.Servicios.Optimizacion
                 return new ResultadoOptimizacionDTO
                 {
                     Estado = EstadoResultadoOptimizacion.SalidaNoHabilitada,
-                    Mensajes = erroresCapacidad
+                    Mensajes = erroresCapacidad,
+                    IngresoComprometido = compromisos.IngresoComprometido
                 };
             }
 
@@ -442,7 +443,8 @@ namespace TpMiercoles.Servicios.Optimizacion
                 RutaId = salida.RutaId,
                 ViajeId = salida.ViajeId,
                 FechaSalidaProgramada = salida.FechaSalidaProgramada,
-                MomentoEvaluacion = salida.MomentoEvaluacion
+                MomentoEvaluacion = salida.MomentoEvaluacion,
+                IngresoComprometido = compromisos.IngresoComprometido
             };
         }
 

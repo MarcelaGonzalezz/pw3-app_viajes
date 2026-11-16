@@ -22,6 +22,7 @@ namespace TpMiercoles.Servicios
     {
         private static readonly TimeZoneInfo ZonaArgentina =
             TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
+        private const double DesvioMaximoKmPorDefecto = 5;
 
         private readonly IRutaRepositorio _rutas;
         private readonly IOptimizadorServicio _optimizador;
@@ -49,7 +50,7 @@ namespace TpMiercoles.Servicios
             DateTime efectivaHasta = ahora < inicioMes ? inicioMes : ahora > finMes ? finMes : ahora;
 
             HistorialDTO historial =
-                await _historial.ObtenerAsync(conductorId, null, inicioMes, finMes);
+                await _historial.ObtenerAsync(conductorId, null, null, inicioMes, finMes);
 
             List<Ruta> rutas =
                 await _rutas.ObtenerRutasActivasDeUnUsuarioAsync(conductorId);
@@ -91,6 +92,7 @@ namespace TpMiercoles.Servicios
                 Anio = anio,
                 Mes = mes,
                 Criterio = criterio,
+                DesvioMaximoKm = DesvioMaximoKmPorDefecto,
 
                 EfectivaDesde = inicioMes,
                 EfectivaHasta = efectivaHasta,
@@ -121,8 +123,13 @@ namespace TpMiercoles.Servicios
         private DateTime Ahora() =>
             TimeZoneInfo.ConvertTime(_reloj.GetUtcNow(), ZonaArgentina).DateTime;
 
-        private static (DateTime inicio, DateTime fin) LimitesDelMes(int anio, int mes) =>
-            throw new NotImplementedException();
+        private static (DateTime inicio, DateTime fin) LimitesDelMes(int anio, int mes)
+        {
+            DateTime inicio = new DateTime(anio, mes, 1);
+            DateTime fin = inicio.AddMonths(1).AddTicks(-1);
+
+            return (inicio, fin);
+        }
 
         private async Task<SalidaEstimadaDTO?> EstimarSalidaAsync(
             Ruta ruta,
@@ -130,18 +137,107 @@ namespace TpMiercoles.Servicios
             int conductorId,
             CriterioOptimizacion criterio,
             IReadOnlyCollection<int> yaUsados,
-            CancellationToken ct) =>
-            throw new NotImplementedException();
+            CancellationToken ct)
+        {
+            SolicitudOptimizacionDTO solicitud = new()
+            {
+                RutaId = ruta.Id,
+                FechaSalida = salida,
+                DesvioMaximoKm = DesvioMaximoKmPorDefecto,
+                EnviosExcluidos = [.. yaUsados]
+            };
+
+            ResultadoOptimizacionDTO resultado =
+                await _optimizador.CalcularAsync(solicitud, conductorId, ct);
+
+            if (resultado.Estado != EstadoResultadoOptimizacion.Correcto)
+            {
+                return null;
+            }
+
+            PropuestaOptimizacionDTO? propuesta = ElegirPropuesta(resultado, criterio);
+
+            return new SalidaEstimadaDTO
+            {
+                RutaId = ruta.Id,
+                FechaSalida = salida,
+                Origen = ruta.DireccionOrigen.Texto,
+                Destino = ruta.DireccionDestino.Texto,
+
+                PropuestaElegida = propuesta is null ? null : EtiquetaDe(criterio),
+                EnviosIds = propuesta?.EnviosNuevosIds ?? [],
+
+                GananciaPotencial = propuesta?.IngresoAdicional ?? 0m,
+                GananciaComprometida = resultado.IngresoComprometido,
+
+                PesoKg = propuesta?.PesoAdicionalKg ?? 0,
+                DesvioKm = propuesta?.DesvioTotalKm ?? 0,
+                DistanciaKm = propuesta?.DistanciaTotalKm ?? (ruta.DistanciaMetros ?? 0) / 1000,
+                DuracionMinutos = propuesta?.DuracionTotalMinutos ?? (ruta.DuracionSegundos ?? 0) / 60,
+
+                CapacidadMaximaPaquetes = ruta.CapacidadMaxPaquetes,
+                PesoMaximoKg = ruta.PesoMax
+            };
+        }
+
+        private static string EtiquetaDe(CriterioOptimizacion criterio) => criterio switch
+        {
+            CriterioOptimizacion.MayorGanancia => "Mayor ganancia",
+            CriterioOptimizacion.MenorDesvio => "Menor desvío",
+            _ => "Equilibrada"
+        };
 
         private static PropuestaOptimizacionDTO? ElegirPropuesta(
             ResultadoOptimizacionDTO resultado,
-            CriterioOptimizacion criterio) =>
-            throw new NotImplementedException();
+            CriterioOptimizacion criterio)
+        {
+            string etiqueta = EtiquetaDe(criterio);
+
+            return resultado.Propuestas.FirstOrDefault(p => p.Etiquetas.Contains(etiqueta));
+        }
 
         private static List<SemanaDeGananciasDTO> AgruparPorSemana(
             IReadOnlyList<SalidaEstimadaDTO> salidas,
             DateTime desde,
-            DateTime hasta) =>
-            throw new NotImplementedException();
+            DateTime hasta)
+        {
+            List<SemanaDeGananciasDTO> semanas = [];
+
+            if (desde > hasta)
+            {
+                return semanas;
+            }
+
+            int diasDesdeElLunes = ((int)desde.DayOfWeek + 6) % 7; //cuántos días pasaron desde el dia 'desde'
+            DateTime lunes = desde.Date.AddDays(-diasDesdeElLunes);
+            int numero = 1;
+
+            while (lunes <= hasta)
+            {
+                DateTime finDeSemana = lunes.AddDays(7).AddTicks(-1);
+
+                DateTime inicio = lunes > desde ? lunes : desde;
+                DateTime fin = finDeSemana < hasta ? finDeSemana : hasta;
+
+                List<SalidaEstimadaDTO> deLaSemana = salidas
+                    .Where(s => s.FechaSalida >= inicio && s.FechaSalida <= fin)
+                    .ToList();
+
+                semanas.Add(new SemanaDeGananciasDTO
+                {
+                    Numero = numero,
+                    Desde = inicio,
+                    Hasta = fin,
+                    Viajes = deLaSemana.Count,
+                    Paquetes = deLaSemana.Sum(s => s.CantidadPaquetes),
+                    GananciaPotencial = deLaSemana.Sum(s => s.GananciaPotencial)
+                });
+
+                lunes = lunes.AddDays(7);
+                numero++;
+            }
+
+            return semanas;
+        }
     }
 }
