@@ -208,7 +208,7 @@ namespace TpMiercoles.Servicios
                 return semanas;
             }
 
-            int diasDesdeElLunes = ((int)desde.DayOfWeek + 6) % 7; //cuántos días pasaron desde el dia 'desde'
+            int diasDesdeElLunes = ((int)desde.DayOfWeek + 6) % 7; //cuántos días pasaron desde el dia desde el lunes de esa semana
             DateTime lunes = desde.Date.AddDays(-diasDesdeElLunes);
             int numero = 1;
 
