@@ -32,7 +32,7 @@
     }
 
     <nav class="vl-filtros" aria-label="Filtrar envíos">
-        <a class="vl-filtro @(Model.Filtro is null ? "vl-filtro--on" : "")"
+        <a class="vl-filtro @(Model.Filtro is null && !Model.SoloVencidos ? "vl-filtro--on" : "")"
            asp-action="Index">
             Todos <span class="vl-filtro-n">@Model.TotalTodos</span>
         </a>
@@ -56,13 +56,17 @@
            asp-action="Index" asp-route-estado="@EstadoEnvio.Cancelado">
             Cancelados <span class="vl-filtro-n">@Model.TotalCancelados</span>
         </a>
+        <a class="vl-filtro @(Model.SoloVencidos ? "vl-filtro--on" : "")"
+           asp-action="Index" asp-route-vencidos="true">
+            Vencidos <span class="vl-filtro-n">@Model.TotalVencidos</span>
+        </a>
     </nav>
 
     @if (Model.Envios.Count == 0)
     {
         <section class="vd-card text-center py-5">
             <p class="vd-vacio mb-3">
-                @(Model.Filtro is null
+                @(Model.Filtro is null && !Model.SoloVencidos
                     ? "Todavía no publicaste envíos."
                     : "No hay envíos con ese estado.")
             </p>
@@ -74,14 +78,14 @@
         <ul class="vl-lista">
             @foreach (var envio in Model.Envios)
             {
-                var badgeClase = envio.Estado switch
+                var badgeClase = envio.EstaVencido ? "vd-estado--inactivo" : envio.Estado switch
                 {
-                    EstadoEnvio.BuscandoConductor => "vd-estado--activo",
-                    EstadoEnvio.ConductorAsignado => "vd-estado--activo",
-                    EstadoEnvio.Retirado => "vd-estado--activo",
-                    EstadoEnvio.EnCamino => "vd-estado--activo",
-                    EstadoEnvio.Entregado => "vd-estado--inactivo",
-                    EstadoEnvio.Cancelado => "vd-estado--inactivo",
+                    EstadoEnvio.BuscandoConductor => "vd-estado--asignado",
+                    EstadoEnvio.ConductorAsignado => "vd-estado--asignado",
+                    EstadoEnvio.Retirado => "vd-estado--retirado",
+                    EstadoEnvio.EnCamino => "vd-estado--encamino",
+                    EstadoEnvio.Entregado => "vd-estado--entregado",
+                    EstadoEnvio.Cancelado => "vd-estado--cancelado",
                     _ => "vd-estado--inactivo"
                 };
 

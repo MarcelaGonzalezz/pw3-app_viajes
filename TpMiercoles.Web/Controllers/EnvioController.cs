@@ -30,7 +30,7 @@ namespace TpMiercoles.Web.Controllers
         }
 
         [HttpGet("/envios")]
-        public async Task<IActionResult> Index(EstadoEnvio? estado)
+        public async Task<IActionResult> Index(EstadoEnvio? estado, bool vencidos = false)
         {
             int? usuarioId = _sesionWeb.UsuarioId;
             if (usuarioId is null)
@@ -38,18 +38,24 @@ namespace TpMiercoles.Web.Controllers
                 return Challenge();
             }
 
-            List<EnvioListadoDTO> todos = await _servicio.ListarAsync(usuarioId.Value, null);
+            List<EnvioListadoViewModel> todos = (await _servicio.ListarAsync(usuarioId.Value, null))
+                .Select(_mapper.Map<EnvioListadoViewModel>)
+                .ToList();
 
-            List<EnvioListadoDTO> filtrados = estado is null
-                ? todos
-                : todos.Where(e => e.Estado == estado.Value).ToList();
+            List<EnvioListadoViewModel> filtrados = vencidos
+                ? todos.Where(e => e.EstaVencido).ToList()
+                : estado is null
+                    ? todos
+                    : todos.Where(e => e.Estado == estado.Value && !e.EstaVencido).ToList();
 
             var modelo = new MisEnviosViewModel
             {
                 Filtro = estado,
-                Envios = filtrados.Select(_mapper.Map<EnvioListadoViewModel>).ToList(),
+                SoloVencidos = vencidos,
+                Envios = filtrados,
                 TotalTodos = todos.Count,
-                TotalBuscando = todos.Count(e => e.Estado == EstadoEnvio.BuscandoConductor),
+                TotalBuscando = todos.Count(e => e.Estado == EstadoEnvio.BuscandoConductor && !e.EstaVencido),
+                TotalVencidos = todos.Count(e => e.EstaVencido),
                 TotalAsignados = todos.Count(e => e.Estado == EstadoEnvio.ConductorAsignado),
                 TotalEnCamino = todos.Count(e => e.Estado == EstadoEnvio.Retirado || e.Estado == EstadoEnvio.EnCamino),
                 TotalEntregados = todos.Count(e => e.Estado == EstadoEnvio.Entregado),
