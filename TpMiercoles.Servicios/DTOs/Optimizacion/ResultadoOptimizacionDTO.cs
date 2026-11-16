@@ -31,5 +31,7 @@ namespace TpMiercoles.Servicios.DTOs.Optimizacion
         public DateTime? FechaSalidaProgramada { get; init; }
 
         public DateTime? MomentoEvaluacion { get; init; }
+
+        public decimal IngresoComprometido { get; init; }
     }
 }

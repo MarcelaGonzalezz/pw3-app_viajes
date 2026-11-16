@@ -6,6 +6,7 @@ using TpMiercoles.Servicios.DTOs.Historial;
 using TpMiercoles.Servicios.DTOs.Ruta;
 using TpMiercoles.Servicios.DTOs.Oportunidades;
 using TpMiercoles.Web.Models;
+using TpMiercoles.Servicios.DTOs.Ganancias;
 
 namespace TpMiercoles.Web.Mapeos
 {
@@ -54,6 +55,11 @@ namespace TpMiercoles.Web.Mapeos
                 .IncludeBase<OportunidadDTO, OportunidadViewModel>();
             CreateMap<SalidaDeRutaDTO, SalidaDeRutaViewModel>();
             CreateMap<OportunidadesDeRutaDTO, OportunidadesDeRutaViewModel>();
+            CreateMap<PaquetePropuestoDTO, PaquetePropuestoViewModel>();
+            CreateMap<SalidaEstimadaDTO, SalidaEstimadaViewModel>();
+            CreateMap<SemanaDeGananciasDTO, SemanaDeGananciasViewModel>();
+            CreateMap<GananciasMensualDTO, GananciasViewModel>()
+                .ForMember(d => d.Error, o => o.Ignore());
         }
     }
 }
