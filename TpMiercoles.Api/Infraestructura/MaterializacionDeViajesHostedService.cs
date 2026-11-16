@@ -1,4 +1,4 @@
-using TpMiercoles.Servicios;
+using TpMiercoles.Servicios.Viajes;
 
 namespace TpMiercoles.Api.Infraestructura
 {

@@ -22,6 +22,23 @@ namespace TpMiercoles.Api.Controllers
 
         // GET /api/rutas/{rutaId}/oportunidades
         // GET /api/rutas/{rutaId}/oportunidades?fecha=2026-11-09&orden=Desvio&desvioMaximoKm=5
+        /// <summary>
+        /// Busca los envíos compatibles con una salida de la ruta del conductor.
+        /// </summary>
+        /// <remarks>
+        /// Solo considera envíos disponibles (sin conductor y no cancelados) cuya fecha incluya el día de la salida,
+        /// que entren en la capacidad y el peso que le quedan al viaje, y que no sean del propio conductor.
+        /// Para cada uno calcula el desvío, el tiempo adicional y la ganancia por km adicional.
+        /// </remarks>
+        /// <param name="rutaId">Id de la ruta del conductor.</param>
+        /// <param name="fecha">Salida a evaluar. Si no se envía, se usa la próxima salida de la ruta.</param>
+        /// <param name="orden">Criterio de orden: Ganancia (por defecto), Desvio o Compatibilidad.</param>
+        /// <param name="desvioMaximoKm">Opcional: descarta los envíos que desvían más que estos kilómetros.</param>
+        /// <response code="200">Salida evaluada y lista de oportunidades (puede estar vacía).</response>
+        /// <response code="400">El desvío máximo es negativo.</response>
+        /// <response code="404">La ruta no existe, es de otro usuario o no tiene una salida válida en esa fecha.</response>
+        /// <response code="401">No hay sesión iniciada.</response>
+        /// <response code="502">El servicio de rutas (OpenRouteService) no respondió.</response>
         [HttpGet]
         [ProducesResponseType(typeof(OportunidadesDeRutaDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -61,6 +78,21 @@ namespace TpMiercoles.Api.Controllers
         }
 
         // GET /api/rutas/{rutaId}/oportunidades/{envioId}?fecha=2026-11-09
+        /// <summary>
+        /// Explica por qué un envío es compatible con una salida de la ruta.
+        /// </summary>
+        /// <remarks>
+        /// Compara el recorrido habitual con el recorrido pasando por el retiro y la entrega:
+        /// distancias, desvío, tiempo adicional, pago, peso, capacidad restante y ganancia por km adicional.
+        /// Si el envío ya no se puede aceptar, lo indica con EsAceptable = false y explica por qué en Motivos.
+        /// </remarks>
+        /// <param name="rutaId">Id de la ruta del conductor.</param>
+        /// <param name="envioId">Id del envío.</param>
+        /// <param name="fecha">Salida a evaluar. Si no se envía, se usa la próxima salida de la ruta.</param>
+        /// <response code="200">Detalle de la oportunidad.</response>
+        /// <response code="404">La ruta o el envío no existen, o la ruta es de otro usuario.</response>
+        /// <response code="401">No hay sesión iniciada.</response>
+        /// <response code="502">El servicio de rutas (OpenRouteService) no respondió.</response>
         [HttpGet("{envioId:int}")]
         [ProducesResponseType(typeof(OportunidadDetalleDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -92,6 +124,20 @@ namespace TpMiercoles.Api.Controllers
         }
 
         // POST /api/rutas/{rutaId}/oportunidades/{envioId}/aceptar?fecha=2026-11-09
+        /// <summary>
+        /// Acepta una oportunidad: asigna el envío al viaje de esa salida.
+        /// </summary>
+        /// <remarks>
+        /// Antes de aceptar vuelve a controlar que el envío siga disponible y que entre en el viaje.
+        /// Si el viaje de esa fecha todavía no existía, lo crea. El envío pasa a "Conductor asignado".
+        /// </remarks>
+        /// <param name="rutaId">Id de la ruta del conductor.</param>
+        /// <param name="envioId">Id del envío a aceptar.</param>
+        /// <param name="fecha">Salida en la que se va a llevar. Si no se envía, se usa la próxima salida de la ruta.</param>
+        /// <response code="201">Envío aceptado. Devuelve el id del transporte creado y el del viaje.</response>
+        /// <response code="404">La ruta o el envío no existen, o la ruta es de otro usuario.</response>
+        /// <response code="409">El envío ya no está disponible o ya no entra en el viaje (por ejemplo, lo tomó otro conductor).</response>
+        /// <response code="401">No hay sesión iniciada.</response>
         [HttpPost("{envioId:int}/aceptar")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

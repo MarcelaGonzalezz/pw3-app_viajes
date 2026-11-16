@@ -6,10 +6,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Moq;
 using TpMiercoles.Entidades;
-using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Servicios.DTOs.Direccion;
 using TpMiercoles.Servicios.DTOs.Ruta;
+using TpMiercoles.Servicios.Viajes;
 using TpMiercoles.Tests.Helpers;
 using TpMiercoles.Web.Controllers;
 using TpMiercoles.Web.Infraestructura;
@@ -192,7 +192,7 @@ namespace TpMiercoles.Tests.Web.Controllers
                         AsignacionId = 7,
                         EnvioId = 20,
                         Remitente = "Carla Méndez",
-                        Estado = EstadoViaje.CONFIRMADO
+                        Estado = EstadoEnvio.Retirado
                     }
                 ]
             };
@@ -213,7 +213,10 @@ namespace TpMiercoles.Tests.Web.Controllers
             Assert.Equal(3, modelo.LugaresDisponibles);
             Assert.Equal([DayOfWeek.Monday], modelo.DiasSemana);
             Assert.Equal("Ciudadela", Assert.Single(modelo.Paradas).Direccion.Texto);
-            Assert.Equal(7, Assert.Single(modelo.Paquetes).AsignacionId);
+            PaqueteAsignadoViewModel paquete = Assert.Single(modelo.Paquetes);
+            Assert.Equal(7, paquete.AsignacionId);
+            Assert.Equal(EstadoEnvio.Retirado, paquete.Estado);
+            Assert.Equal("Retirado", paquete.EstadoTexto);
             Assert.True(modelo.EstaActivo);
         }
 

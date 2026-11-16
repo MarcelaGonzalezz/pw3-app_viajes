@@ -11,6 +11,7 @@ using TpMiercoles.Servicios.Excepciones;
 using TpMiercoles.Servicios.Optimizacion;
 using TpMiercoles.Servicios.Rutas;
 using TpMiercoles.Servicios.Rutas.OpenRouteService;
+using TpMiercoles.Servicios.Viajes;
 using TpMiercoles.Web.Infraestructura;
 using TpMiercoles.Web.Mapeos;
 
@@ -52,6 +53,9 @@ builder.Services.AddScoped<IHistorialRepositorio, HistorialRepositorio>();
 builder.Services.AddScoped<IHistorialServicio, HistorialServicio>();
 builder.Services.AddScoped<ISeedDeHistorial, SeedDeHistorial>();
 builder.Services.AddScoped<ISeedDeOportunidades, SeedDeOportunidades>();
+builder.Services.AddScoped<ITransporteRepositorio, TransporteRepositorio>();
+builder.Services.AddScoped<ITransporteServicio, TransporteServicio>();
+builder.Services.AddScoped<ISeedDeTransportes, SeedDeTransportes>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IResolvedorSalidaOptimizacion,ResolvedorSalidaOptimizacion>();
 builder.Services.AddScoped<IBuscadorCandidatosOptimizacion,BuscadorCandidatosOptimizacion>();
@@ -133,6 +137,7 @@ if (rutasOpts.UsarOpenRouteService)
 }
 
 builder.Services.AddScoped<IRecorridoServicio, RecorridoServicio>();
+builder.Services.AddScoped<IMapaViajeServicio, MapaViajeServicio>();
 builder.Services.AddScoped<IOportunidadServicio, OportunidadServicio>();
 builder.Services.AddScoped<IMaterializadorDeViajes, MaterializadorDeViajes>();
 builder.Services.AddHostedService<MaterializacionDeViajesHostedService>();
@@ -153,6 +158,7 @@ if (app.Environment.IsDevelopment())
     await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeDesarrollo>().SembrarAsync();
     await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeHistorial>().SembrarAsync();
     await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeOportunidades>().SembrarAsync();
+    await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeTransportes>().SembrarAsync();
 }
 
 if (!app.Environment.IsDevelopment())

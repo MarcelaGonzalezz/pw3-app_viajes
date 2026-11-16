@@ -40,6 +40,10 @@ namespace TpMiercoles.Servicios {
 
             if (ruta.UsuarioId != usuarioId)
                 throw new UnauthorizedAccessException("No tienes permisos para ver esta ruta.");
+            // Rutas viejas (seed, o creadas con el mock) no tienen el trazado guardado:
+            // lo calculamos ahora y lo guardamos para no repetir la consulta.
+            if (string.IsNullOrWhiteSpace(ruta.GeometriaJson))
+                await CompletarRecorridoFaltanteAsync(ruta);
 
             return _mapper.Map<RutaDTO>(ruta);
         }
@@ -143,6 +147,27 @@ namespace TpMiercoles.Servicios {
                 ruta.GeometriaJson = resultado.GeometriaJson; 
             } catch (RutaNoEncontradaException) {
                 // Si el servicio de rutas falla, la ruta se guarda igual sin distancia.
+            }
+        }
+
+        private async Task CompletarRecorridoFaltanteAsync(Ruta ruta) {
+            try {
+                ResultadoRuta resultado = await _recorridoServicio.CalcularAsync(new RecorridoDTO {
+                    Origen = _mapper.Map<DireccionDTO>(ruta.DireccionOrigen),
+                    Destino = _mapper.Map<DireccionDTO>(ruta.DireccionDestino),
+                    Paradas = _mapper.Map<List<ParadaDTO>>(ruta.Paradas)
+                });
+
+                // El mock no devuelve trazado: no hay nada nuevo para guardar.
+                if (string.IsNullOrWhiteSpace(resultado.GeometriaJson))
+                    return;
+
+                ruta.DistanciaMetros = resultado.DistanciaMetros;
+                ruta.DuracionSegundos = resultado.DuracionSegundos;
+                ruta.GeometriaJson = resultado.GeometriaJson;
+                await _rutaRepositorio.GuardarCambiosAsync();
+            } catch (RutaNoEncontradaException) {
+                // Si ORS falla, mostramos el detalle igual (sin la línea) y se reintenta la próxima vez.
             }
         }
     }

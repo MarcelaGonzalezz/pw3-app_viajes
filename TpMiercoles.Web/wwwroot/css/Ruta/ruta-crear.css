@@ -459,3 +459,58 @@
         border-bottom: none;
     }
 }
+/* ---------- Pantallas anchas: dos columnas ---------- */
+/* Izquierda: Recorrido. Derecha: Días y horario, Vigencia y Capacidad. */
+
+@media (min-width: 992px) {
+    .ruta-form {
+        max-width: 1180px;
+        padding: 1.75em 2.25em;
+    }
+
+    .ruta-subtitulo {
+        margin-bottom: 1.5rem;
+    }
+
+    .ruta-columnas {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        column-gap: 2.5rem;
+        align-items: start;
+    }
+
+    .ruta-seccion {
+        margin-bottom: 1.5rem;
+    }
+
+    .ruta-form .campo {
+        margin-bottom: 1rem;
+    }
+
+    .ruta-form input[type="text"],
+    .ruta-form input[type="number"],
+    .ruta-form input[type="date"],
+    .ruta-form input[type="time"] {
+        height: 46px;
+    }
+
+    /* Los 7 días entran en una sola fila dentro de la columna */
+    .dia span {
+        min-width: 0;
+        height: 40px;
+        padding: 0 0.8rem;
+    }
+
+    /* Botones centrados debajo de las dos columnas */
+    .acciones {
+        justify-content: center;
+        margin-top: 1rem;
+        padding-top: 1.25rem;
+        border-top: 2px solid var(--light-blue);
+    }
+
+    .ruta-form .btn-guardar {
+        flex: 0 0 360px;
+        height: 50px;
+    }
+}

@@ -16,7 +16,15 @@ namespace TpMiercoles.Web.Models
         public decimal Monto { get; set; }
         public EstadoEnvio Estado { get; set; }
 
-        public string EstadoTexto => Estado switch
+        // "Vencido" no se guarda: es un envio que nadie tomo y cuya fecha limite ya paso.
+        public bool EstaVencido =>
+            Estado == EstadoEnvio.BuscandoConductor && FechaHasta.Date < HoyEnArgentina;
+
+        private static DateTime HoyEnArgentina =>
+            TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow,
+                TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires")).Date;
+
+        public string EstadoTexto => EstaVencido ? "Vencido" : Estado switch
         {
             EstadoEnvio.BuscandoConductor => "Buscando conductor",
             EstadoEnvio.ConductorAsignado => "Conductor asignado",

@@ -3,6 +3,17 @@
 @model EnvioDetalleViewModel
 @{
     ViewData["Title"] = $"Envío #{Model.Id}";
+
+    var badgeClase = Model.EstaVencido ? "vd-estado--inactivo" : Model.Estado switch
+    {
+        EstadoEnvio.BuscandoConductor => "vd-estado--asignado",
+        EstadoEnvio.ConductorAsignado => "vd-estado--asignado",
+        EstadoEnvio.Retirado => "vd-estado--retirado",
+        EstadoEnvio.EnCamino => "vd-estado--encamino",
+        EstadoEnvio.Entregado => "vd-estado--entregado",
+        EstadoEnvio.Cancelado => "vd-estado--cancelado",
+        _ => "vd-estado--inactivo"
+    };
 }
 
 @section Styles {
@@ -21,7 +32,7 @@
                 <span>@Model.Destino</span>
             </h1>
         </div>
-        <span class="vd-estado @Model.EstadoBadgeClass">
+        <span class="vd-estado @badgeClase">
             @Model.EstadoTexto
         </span>
     </header>
@@ -152,6 +163,10 @@
                             </div>
                         }
                     </dl>
+                }
+                else if (Model.EstaVencido)
+                {
+                    <p class="vd-vacio">Este envío venció sin que ningún conductor lo tomara. Podés cancelarlo y publicar uno nuevo.</p>
                 }
                 else
                 {

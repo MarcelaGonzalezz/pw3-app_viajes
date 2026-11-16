@@ -1,6 +1,6 @@
 using TpMiercoles.Entidades;
 
-namespace TpMiercoles.Servicios
+namespace TpMiercoles.Servicios.Viajes
 {
     // Crea el viaje como copia independiente de la ruta para una salida concreta.
     public static class SnapshotDeRuta

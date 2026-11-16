@@ -1,0 +1,92 @@
+﻿/* Mapa del detalle del viaje */
+
+.mv-mapa {
+    height: 420px;
+    width: 100%;
+    border-radius: 8px;
+}
+
+.mv-aviso {
+    margin: .75rem 0 0;
+    font-size: .875rem;
+    color: #842029;
+}
+
+.mv-resumen {
+    margin: .5rem 0 0;
+    font-size: .875rem;
+    font-weight: 600;
+}
+
+.mv-leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem 1.25rem;
+    margin: .75rem 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: .8125rem;
+}
+
+    .mv-leyenda li {
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+    }
+
+/* Muestras de línea: relleno de color con borde oscuro, igual que en el mapa */
+/* Muestras de línea: relleno de color con borde oscuro, igual que en el mapa */
+.mv-linea {
+    display: inline-block;
+    width: 24px;
+    border-radius: 4px;
+    border: 2px solid;
+}
+
+.mv-linea--habitual {
+    height: 8px;
+    background-color: #0d6efd;
+    border-color: #0a2a66;
+}
+
+.mv-linea--sugerido {
+    height: 6px;
+    background-color: #fd7e14;
+    border-color: #8a3c00;
+}
+
+.mv-punto {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #fff;
+    border-radius: 50% 50% 50% 0; /* forma de gota */
+    transform: rotate(-45deg); /* con la punta hacia abajo */
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, .35);
+}
+
+.mv-punto--retiro {
+    background-color: #198754;
+}
+
+.mv-punto--entrega {
+    background-color: #dc3545;
+}
+
+.mv-punto--parada {
+    background-color: #6c757d;
+}
+.mv-punto--origen {
+    background-color: #0a2a66;
+}
+
+.mv-punto--destino {
+    background-color: #212529;
+}
+
+/* Pines del mapa: sin el recuadro blanco que Leaflet le pone por defecto a los divIcon */
+.mv-pin {
+    background: none;
+    border: none;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .35));
+}

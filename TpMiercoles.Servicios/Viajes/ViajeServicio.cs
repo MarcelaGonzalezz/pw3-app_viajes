@@ -5,7 +5,7 @@ using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Servicios.DTOs.Direccion;
 using TpMiercoles.Servicios.DTOs.Ruta;
 
-namespace TpMiercoles.Servicios
+namespace TpMiercoles.Servicios.Viajes
 {
     public interface IViajeServicio
     {
@@ -76,7 +76,11 @@ namespace TpMiercoles.Servicios
                     DireccionEntrega = a.Envio.DireccionEntrega.Texto,
                     FechaDesde = a.Envio.FechaDesde,
                     FechaHasta = a.Envio.FechaHasta,
-                    Estado = a.Estado,
+                    Descripcion = a.Envio.Paquete.Descripcion,
+                    PesoKg = a.Envio.Paquete.PesoKg,
+                    Monto = a.Envio.Monto,
+                    // El estado que importa es el del envio, no el de la asignacion.
+                    Estado = a.Envio.Estado,
                     FechaAceptacion = a.FechaAceptacion,
                     FechaRetiro = a.FechaRetiro,
                     FechaEntrega = a.FechaEntrega

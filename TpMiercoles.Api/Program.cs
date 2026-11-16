@@ -7,11 +7,22 @@ using TpMiercoles.Servicios;
 using TpMiercoles.Api.Infraestructura;
 using TpMiercoles.Servicios.Rutas;
 using TpMiercoles.Servicios.Rutas.OpenRouteService;
+using TpMiercoles.Servicios.Viajes;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+// Genera la especificación OpenAPI (/openapi/v1.json) que después dibuja Swagger.
+builder.Services.AddOpenApi(opciones => {
+    opciones.AddDocumentTransformer((documento, contexto, ct) => {
+        documento.Info.Title = "RuteaYa API";
+        documento.Info.Version = "v1";
+        documento.Info.Description =
+            "API REST de RuteaYa: viajes, oportunidades, transportes e historial. " +
+            "Requiere iniciar sesión: entrá primero en la aplicación web y después probá los endpoints desde acá.";
+        return Task.CompletedTask;
+    });
+});
 
 builder.Services.AddDbContext<ViajesDbContext>(options =>
     options.UseSqlServer(
@@ -87,9 +98,14 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+if (app.Environment.IsDevelopment()) {
     app.MapOpenApi();
+
+    // Página de Swagger en /swagger, armada a partir de /openapi/v1.json.
+    app.UseSwaggerUI(opciones => {
+        opciones.SwaggerEndpoint("/openapi/v1.json", "RuteaYa API v1");
+        opciones.DocumentTitle = "RuteaYa API";
+    });
 }
 
 app.UseHttpsRedirection();
