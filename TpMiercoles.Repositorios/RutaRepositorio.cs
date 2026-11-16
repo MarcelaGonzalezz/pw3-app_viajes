@@ -13,7 +13,7 @@ namespace TpMiercoles.Repositorios
         Task<Ruta?> ObtenerPorIdParaModificarAsync(int id);
 
         // Igual que ObtenerPorIdParaModificarAsync, pero ademas trae los viajes ya creados
-        // con sus asignaciones y paquetes, para validar la edicion contra ellos.
+        // con sus asignaciones, para validar la edicion contra ellos.
         Task<Ruta?> ObtenerParaEditarAsync(int id);
 
         // Borran las filas de paradas y dias de la ruta. Hace falta borrarlas explicitamente:
@@ -108,8 +108,6 @@ namespace TpMiercoles.Repositorios
                     .ThenInclude(p => p.Direccion)
                 .Include(r => r.Viajes)
                     .ThenInclude(v => v.Asignaciones)
-                        .ThenInclude(a => a.Envio)
-                            .ThenInclude(e => e.Paquete)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync(r => r.Id == id);
         }
