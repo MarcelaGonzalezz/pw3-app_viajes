@@ -12,6 +12,7 @@ namespace TpMiercoles.Web.Models
         public string Destino { get; set; } = string.Empty;
         public string? PropuestaElegida { get; set; }
         public List<int> EnviosIds { get; set; } = [];
+        public List<PaquetePropuestoViewModel> Paquetes { get; set; } = [];
 
         public decimal GananciaPotencial { get; set; }
         public decimal GananciaComprometida { get; set; }

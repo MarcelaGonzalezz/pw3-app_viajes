@@ -13,6 +13,10 @@
 
         public required IReadOnlyList<int> EnviosIds { get; init; }
 
+        // Qué paquetes hay que aceptar. Se completa al final, con una sola consulta
+        // para todas las salidas del mes.
+        public IReadOnlyList<PaquetePropuestoDTO> Paquetes { get; set; } = [];
+
         public required decimal GananciaPotencial { get; init; }
         public required decimal GananciaComprometida { get; init; }
         public required double PesoKg { get; init; }

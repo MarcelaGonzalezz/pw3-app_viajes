@@ -10,7 +10,12 @@ namespace TpMiercoles.Web.Models
         public int Anio { get; set; }
         public int Mes { get; set; }
         public CriterioOptimizacion Criterio { get; set; }
-        public double DesvioMaximoKm { get; set; }
+        public const double DesvioDelSistemaKm = 5;
+        public double? DesvioMaximoKm { get; set; }
+        public bool LimitaDesvio => DesvioMaximoKm.HasValue;
+        public string DesvioMaximoTexto => DesvioMaximoKm is double km
+            ? $"{km.ToString("0.#", Argentina)} km"
+            : "sin límite";
         public string? Error { get; set; }
 
         public DateTime EfectivaDesde { get; set; }

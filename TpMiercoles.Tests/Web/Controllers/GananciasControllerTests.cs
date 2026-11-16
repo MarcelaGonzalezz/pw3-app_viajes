@@ -26,8 +26,8 @@ namespace TpMiercoles.Tests.Web.Controllers
             _servicioMock
                 .Setup(s => s.CalcularAsync(
                     It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(),
-                    It.IsAny<CriterioOptimizacion>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((int _, int anio, int mes, CriterioOptimizacion criterio, CancellationToken _) =>
+                    It.IsAny<CriterioOptimizacion>(), It.IsAny<double?>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((int _, int anio, int mes, CriterioOptimizacion criterio, double? _, CancellationToken _) =>
                     Resultado(anio, mes, criterio));
 
             _controller = new GananciasController(
@@ -54,7 +54,7 @@ namespace TpMiercoles.Tests.Web.Controllers
             await _controller.Index(null, null);
 
             _servicioMock.Verify(s => s.CalcularAsync(
-                UsuarioId, 2026, 11, CriterioOptimizacion.MayorGanancia, It.IsAny<CancellationToken>()),
+                UsuarioId, 2026, 11, CriterioOptimizacion.MayorGanancia, null, It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
@@ -64,7 +64,7 @@ namespace TpMiercoles.Tests.Web.Controllers
             IActionResult resultado = await _controller.Index(2026, 12, CriterioOptimizacion.MenorDesvio);
 
             _servicioMock.Verify(s => s.CalcularAsync(
-                UsuarioId, 2026, 12, CriterioOptimizacion.MenorDesvio, It.IsAny<CancellationToken>()),
+                UsuarioId, 2026, 12, CriterioOptimizacion.MenorDesvio, null, It.IsAny<CancellationToken>()),
                 Times.Once);
 
             GananciasViewModel modelo =
@@ -90,8 +90,34 @@ namespace TpMiercoles.Tests.Web.Controllers
             Assert.NotNull(modelo.Error);
 
             _servicioMock.Verify(s => s.CalcularAsync(
-                UsuarioId, 2026, 11, CriterioOptimizacion.MayorGanancia, It.IsAny<CancellationToken>()),
+                UsuarioId, 2026, 11, CriterioOptimizacion.MayorGanancia, null, It.IsAny<CancellationToken>()),
                 Times.Once);
+        }
+
+        [Fact]
+        public async Task Index_SinTildarElLimite_CalculaSinLimite()
+        {
+            await _controller.Index(null, null, CriterioOptimizacion.MayorGanancia, limitarDesvio: false);
+
+            _servicioMock.Verify(s => s.CalcularAsync(
+                UsuarioId, 2026, 11, CriterioOptimizacion.MayorGanancia, null, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task Index_TildandoElLimite_UsaElDelSistema()
+        {
+            IActionResult resultado = await _controller.Index(
+                null, null, CriterioOptimizacion.MayorGanancia, limitarDesvio: true);
+
+            _servicioMock.Verify(s => s.CalcularAsync(
+                UsuarioId, 2026, 11, CriterioOptimizacion.MayorGanancia,
+                GananciasViewModel.DesvioDelSistemaKm, It.IsAny<CancellationToken>()),
+                Times.Once);
+
+            GananciasViewModel modelo =
+                Assert.IsType<GananciasViewModel>(Assert.IsType<ViewResult>(resultado).Model);
+            Assert.Null(modelo.Error);
         }
 
         private static GananciasMensualDTO Resultado(int anio, int mes, CriterioOptimizacion criterio)

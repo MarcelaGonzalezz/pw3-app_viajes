@@ -29,11 +29,8 @@ namespace TpMiercoles.Web.Controllers
         }
 
         [HttpGet("/ganancias")]
-        public async Task<IActionResult> Index(
-            int? anio,
-            int? mes,
-            CriterioOptimizacion criterio = CriterioOptimizacion.MayorGanancia,
-            CancellationToken ct = default)
+        public async Task<IActionResult> Index( int? anio, int? mes, CriterioOptimizacion criterio = CriterioOptimizacion.MayorGanancia,
+            bool limitarDesvio = false, CancellationToken ct = default)
         {
             int? conductorId = _sesionWeb.UsuarioId;
             if (conductorId is null)
@@ -52,11 +49,14 @@ namespace TpMiercoles.Web.Controllers
                 criterio = CriterioOptimizacion.MayorGanancia;
             }
 
+            double? limite = limitarDesvio ? GananciasViewModel.DesvioDelSistemaKm : null;
+
             GananciasMensualDTO ganancias = await _servicio.CalcularAsync(
                 conductorId.Value,
                 anio ?? hoy.Year,
                 mes ?? hoy.Month,
                 criterio,
+                limite,
                 ct);
 
             GananciasViewModel modelo = _mapper.Map<GananciasViewModel>(ganancias);

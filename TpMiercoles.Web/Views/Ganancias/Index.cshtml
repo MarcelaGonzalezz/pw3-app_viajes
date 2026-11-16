@@ -60,6 +60,12 @@
                     }
                 </select>
             </div>
+            <div class="vf-campo gn-campo-check">
+                <label class="gn-check">
+                    <input type="checkbox" name="limitarDesvio" value="true" checked="@Model.LimitaDesvio" />
+                    Limitar el desvío a @GananciasViewModel.DesvioDelSistemaKm.ToString("0.#", argentina) km por viaje
+                </label>
+            </div>
             <div class="hs-fechas-acciones">
                 <button type="submit" class="vl-btn vl-btn--principal">Calcular</button>
             </div>
@@ -132,8 +138,7 @@
 
         <p class="gn-nota">
             Criterio: <strong>@TextoCriterio(Model.Criterio)</strong> ·
-            desvío máximo por viaje: <strong>@Model.DesvioMaximoKm.ToString("0.#", argentina) km</strong> ·
-            un mismo envío se cuenta en un solo viaje.
+            desvío máximo por viaje: <strong>@Model.DesvioMaximoTexto</strong>.
             @if (Model.SalidasDescartadas > 0) //solo aparece si es mayor que cero
             {
                 <text>@Model.SalidasDescartadas salidas no se pudieron analizar.</text>
@@ -213,7 +218,23 @@
                                 <td>@salida.Origen &rarr; @salida.Destino</td>
                                 @if (salida.TuvoEnvios)
                                 {
-                                    <td>@salida.OcupacionTexto · @salida.PesoTexto</td>
+                                    <td>
+                                        @salida.OcupacionTexto · @salida.PesoTexto
+                                        @if (salida.Paquetes.Count > 0)
+                                        {
+                                            <ul class="gn-paquetes">
+                                                @foreach (var paquete in salida.Paquetes)
+                                                {
+                                                    <li>
+                                                        <a href="@($"/oportunidades/{salida.RutaId}/envios/{paquete.EnvioId}?fecha={salida.FechaSalida:yyyy-MM-dd}")"
+                                                           title="Ver el envío y aceptarlo">@paquete.Descripcion</a>
+                                                        <span class="gn-paquete-dato">@paquete.PesoTexto · @paquete.MontoTexto</span>
+                                                        <span class="gn-paquete-ruta">@paquete.Retiro &rarr; @paquete.Entrega</span>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
+                                    </td>
                                     <td class="gn-num">@salida.DesvioTexto</td>
                                 }
                                 else

@@ -131,3 +131,62 @@
         overflow-x: auto;
     }
 }
+
+/* ---------- Limite de desvio opcional ---------- */
+
+/* El check va dentro de .vf-campo: se pisan las mayusculas de su label
+   y el borde/relleno que le da a todos los input. */
+.vf-campo.gn-campo-check {
+    padding-bottom: .6rem;
+}
+
+.vf-campo .gn-check {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    font-size: .9375rem;
+    font-weight: 400;
+    letter-spacing: normal;
+    text-transform: none;
+    color: var(--app-text);
+    cursor: pointer;
+}
+
+    .vf-campo .gn-check input {
+        width: 1.05rem;
+        height: 1.05rem;
+        margin: 0;
+        padding: 0;
+        accent-color: var(--app-med-blue);
+    }
+
+.gn-paquetes {
+    list-style: none;
+    margin: .45rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: .35rem;
+}
+
+    .gn-paquetes li {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0 .5rem;
+        padding-left: .6rem;
+        border-left: 2px solid var(--app-med-blue);
+    }
+
+    .gn-paquetes a {
+        font-weight: 600;
+    }
+
+.gn-paquete-dato {
+    font-size: .85rem;
+}
+
+.gn-paquete-ruta {
+    flex-basis: 100%;
+    font-size: .8rem;
+    opacity: .75;
+}

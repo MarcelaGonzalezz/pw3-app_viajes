@@ -55,6 +55,7 @@ namespace TpMiercoles.Web.Mapeos
                 .IncludeBase<OportunidadDTO, OportunidadViewModel>();
             CreateMap<SalidaDeRutaDTO, SalidaDeRutaViewModel>();
             CreateMap<OportunidadesDeRutaDTO, OportunidadesDeRutaViewModel>();
+            CreateMap<PaquetePropuestoDTO, PaquetePropuestoViewModel>();
             CreateMap<SalidaEstimadaDTO, SalidaEstimadaViewModel>();
             CreateMap<SemanaDeGananciasDTO, SemanaDeGananciasViewModel>();
             CreateMap<GananciasMensualDTO, GananciasViewModel>()

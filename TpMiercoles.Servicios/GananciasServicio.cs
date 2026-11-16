@@ -15,6 +15,7 @@ namespace TpMiercoles.Servicios
         Task<GananciasMensualDTO> CalcularAsync(
                int conductorId, int anio, int mes,
                CriterioOptimizacion criterio,
+               double? desvioMaximoKm = null,
                CancellationToken ct = default);
     }
 
@@ -22,26 +23,30 @@ namespace TpMiercoles.Servicios
     {
         private static readonly TimeZoneInfo ZonaArgentina =
             TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
-        private const double DesvioMaximoKmPorDefecto = 5;
+        private const double SinLimite = double.MaxValue;
 
         private readonly IRutaRepositorio _rutas;
         private readonly IOptimizadorServicio _optimizador;
         private readonly IHistorialServicio _historial;
+        private readonly IEnvioRepositorio _envios;
         private readonly TimeProvider _reloj;
 
         public GananciasServicio(
             IRutaRepositorio rutas,
             IOptimizadorServicio optimizador,
             IHistorialServicio historial,
+            IEnvioRepositorio envios,
             TimeProvider reloj)
         {
             _rutas = rutas;
             _optimizador = optimizador;
             _historial = historial;
+            _envios = envios;
             _reloj = reloj;
         }
 
-        public async Task<GananciasMensualDTO> CalcularAsync(int conductorId, int anio, int mes, CriterioOptimizacion criterio, CancellationToken ct = default)
+        public async Task<GananciasMensualDTO> CalcularAsync(int conductorId, int anio, int mes, CriterioOptimizacion criterio,
+            double? desvioMaximoKm = null, CancellationToken ct = default)
         {
             (DateTime inicioMes, DateTime finMes) = LimitesDelMes(anio, mes);
 
@@ -71,7 +76,7 @@ namespace TpMiercoles.Servicios
                 ct.ThrowIfCancellationRequested();
 
                 SalidaEstimadaDTO? estimada = await EstimarSalidaAsync(
-                    ruta, salida, conductorId, criterio, enviosUsados, ct);
+                    ruta, salida, conductorId, criterio, desvioMaximoKm, enviosUsados, ct);
 
                 if (estimada is null)
                 {
@@ -87,12 +92,14 @@ namespace TpMiercoles.Servicios
                 salidas.Add(estimada);
             }
 
+            await CompletarPaquetesAsync(salidas);
+
             return new GananciasMensualDTO
             {
                 Anio = anio,
                 Mes = mes,
                 Criterio = criterio,
-                DesvioMaximoKm = DesvioMaximoKmPorDefecto,
+                DesvioMaximoKm = desvioMaximoKm,
 
                 EfectivaDesde = inicioMes,
                 EfectivaHasta = efectivaHasta,
@@ -136,6 +143,7 @@ namespace TpMiercoles.Servicios
             DateTime salida,
             int conductorId,
             CriterioOptimizacion criterio,
+            double? desvioMaximoKm,
             IReadOnlyCollection<int> yaUsados,
             CancellationToken ct)
         {
@@ -143,7 +151,7 @@ namespace TpMiercoles.Servicios
             {
                 RutaId = ruta.Id,
                 FechaSalida = salida,
-                DesvioMaximoKm = DesvioMaximoKmPorDefecto,
+                DesvioMaximoKm = desvioMaximoKm ?? SinLimite,
                 EnviosExcluidos = [.. yaUsados]
             };
 
@@ -179,6 +187,37 @@ namespace TpMiercoles.Servicios
                 PesoMaximoKg = ruta.PesoMax
             };
         }
+
+        private async Task CompletarPaquetesAsync(List<SalidaEstimadaDTO> salidas)
+        {
+            List<int> ids = salidas.SelectMany(s => s.EnviosIds).Distinct().ToList();
+
+            if (ids.Count == 0)
+            {
+                return;
+            }
+
+            Dictionary<int, Envio> envios = (await _envios.ListarPorIdsAsync(ids))
+                .ToDictionary(e => e.Id);
+
+            foreach (SalidaEstimadaDTO salida in salidas)
+            {
+                salida.Paquetes = salida.EnviosIds
+                    .Where(envios.ContainsKey)
+                    .Select(id => ArmarPaquete(envios[id]))
+                    .ToList();
+            }
+        }
+
+        private static PaquetePropuestoDTO ArmarPaquete(Envio envio) => new()
+        {
+            EnvioId = envio.Id,
+            Descripcion = envio.Paquete.Descripcion,
+            PesoKg = envio.Paquete.PesoKg,
+            Monto = envio.Monto,
+            Retiro = envio.DireccionRetiro.Texto,
+            Entrega = envio.DireccionEntrega.Texto
+        };
 
         private static string EtiquetaDe(CriterioOptimizacion criterio) => criterio switch
         {

@@ -20,6 +20,7 @@ namespace TpMiercoles.Tests.Servicios
         private readonly Mock<IRutaRepositorio> _rutas = new();
         private readonly Mock<IOptimizadorServicio> _optimizador = new();
         private readonly Mock<IHistorialServicio> _historial = new();
+        private readonly Mock<IEnvioRepositorio> _envios = new();
         private readonly GananciasServicio _servicio;
 
         public GananciasServicioTests()
@@ -30,10 +31,15 @@ namespace TpMiercoles.Tests.Servicios
                 .Setup(h => h.ObtenerAsync(ConductorId, null, null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>()))
                 .ReturnsAsync(new HistorialDTO());
 
+            _envios
+                .Setup(e => e.ListarPorIdsAsync(It.IsAny<IReadOnlyCollection<int>>()))
+                .ReturnsAsync((IReadOnlyCollection<int> ids) => ids.Select(CrearEnvio).ToList());
+
             _servicio = new GananciasServicio(
                 _rutas.Object,
                 _optimizador.Object,
                 _historial.Object,
+                _envios.Object,
                 new RelojFijo(PrimeroDeNoviembre));
         }
 
@@ -135,6 +141,54 @@ namespace TpMiercoles.Tests.Servicios
             Assert.Equal(10000m, dto.GananciaComprometida);
             Assert.Equal(5000m, dto.GananciaPotencial);
         }
+
+        [Fact]
+        public async Task ElLimiteDeDesvioLlegaAlOptimizadorSoloSiSePide()
+        {
+            List<SolicitudOptimizacionDTO> recibidas = ConfigurarOptimizador(0m, (1, 5000m));
+
+            GananciasMensualDTO sinLimite = await _servicio.CalcularAsync(
+                ConductorId, 2026, 11, CriterioOptimizacion.MayorGanancia);
+            GananciasMensualDTO conLimite = await _servicio.CalcularAsync(
+                ConductorId, 2026, 11, CriterioOptimizacion.MayorGanancia, 5);
+
+            Assert.Null(sinLimite.DesvioMaximoKm);
+            Assert.Equal(5, conLimite.DesvioMaximoKm);
+
+            Assert.Equal(10, recibidas.Count);
+            Assert.All(recibidas.Take(5), s => Assert.Equal(double.MaxValue, s.DesvioMaximoKm));
+            Assert.All(recibidas.Skip(5), s => Assert.Equal(5, s.DesvioMaximoKm));
+        }
+
+        [Fact]
+        public async Task CadaSalidaInformaQuePaquetesHayQueAceptar()
+        {
+            ConfigurarOptimizador(0m, (1, 5000m), (2, 3000m));
+
+            GananciasMensualDTO dto = await _servicio.CalcularAsync(
+                ConductorId, 2026, 11, CriterioOptimizacion.MayorGanancia);
+
+            PaquetePropuestoDTO paquete = Assert.Single(dto.Salidas[0].Paquetes);
+            Assert.Equal(1, paquete.EnvioId);
+            Assert.Equal("Paquete 1", paquete.Descripcion);
+            Assert.Equal("Retiro 1", paquete.Retiro);
+            Assert.Equal("Entrega 1", paquete.Entrega);
+
+            Assert.Equal(2, Assert.Single(dto.Salidas[1].Paquetes).EnvioId);
+            Assert.Empty(dto.Salidas[2].Paquetes);
+
+            // Una sola consulta para todo el mes, no una por salida.
+            _envios.Verify(e => e.ListarPorIdsAsync(It.IsAny<IReadOnlyCollection<int>>()), Times.Once);
+        }
+
+        private static Envio CrearEnvio(int id) => new()
+        {
+            Id = id,
+            Monto = 1000m * id,
+            Paquete = new Paquete { Descripcion = $"Paquete {id}", PesoKg = 2 },
+            DireccionRetiro = new Direccion { Texto = $"Retiro {id}" },
+            DireccionEntrega = new Direccion { Texto = $"Entrega {id}" }
+        };
 
         private void UsarRutas(params Ruta[] rutas)
         {
