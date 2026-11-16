@@ -3,14 +3,22 @@
 
 /* ---------- Bloques: ya obtenido / potencial ---------- */
 
+/* Un renglón para "Ya obtenido" y otro para "Potencial" */
 .gn-bloques {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+}
+
+/* Potencial y comprometida, uno al lado del otro */
+.gn-par {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: .75rem;
 }
 
 @media (max-width: 800px) {
-    .gn-bloques {
+    .gn-par {
         grid-template-columns: 1fr;
     }
 }

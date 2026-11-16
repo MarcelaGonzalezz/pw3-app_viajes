@@ -9,6 +9,7 @@ using TpMiercoles.Entidades;
 using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.Viajes;
 using TpMiercoles.Servicios.DTOs;
+using TpMiercoles.Servicios.DTOs.Ganancias;
 using TpMiercoles.Servicios.Viajes;
 using TpMiercoles.Web.Infraestructura;
 using TpMiercoles.Web.Models;
@@ -20,25 +21,34 @@ namespace TpMiercoles.Web.Controllers
         private readonly IEnvioServicio _envioServicio;
         private readonly IViajeServicio _viajeServicio;
         private readonly IOportunidadServicio _oportunidadServicio;
+        private readonly IGananciasServicio _gananciasServicio;
         private readonly ISesionWeb _sesionWeb;
         private readonly IMapper _mapper;
+        private readonly TimeProvider _reloj;
+        private readonly ILogger<HomeController> _logger;
 
         public HomeController(
             IEnvioServicio envioServicio,
             IViajeServicio viajeServicio,
             IOportunidadServicio oportunidadServicio,
+            IGananciasServicio gananciasServicio,
             ISesionWeb sesionWeb,
-            IMapper mapper)
+            IMapper mapper,
+            TimeProvider reloj,
+            ILogger<HomeController> logger)
         {
             _envioServicio = envioServicio;
             _viajeServicio = viajeServicio;
             _oportunidadServicio = oportunidadServicio;
+            _gananciasServicio = gananciasServicio;
             _sesionWeb = sesionWeb;
             _mapper = mapper;
+            _reloj = reloj;
+            _logger = logger;
         }
 
         [Authorize]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(CancellationToken ct)
         {
             int? usuarioId = _sesionWeb.UsuarioId;
             if (usuarioId is null)
@@ -66,6 +76,8 @@ namespace TpMiercoles.Web.Controllers
 
             int oportunidades = await _oportunidadServicio.ContarDisponiblesAsync(usuarioId.Value);
 
+            decimal? potencialMes = await CalcularPotencialDelMesAsync(usuarioId.Value, ct);
+
             var modelo = new DashboardViewModel
             {
                 NombreUsuario = User.Identity?.Name ?? string.Empty,
@@ -73,10 +85,32 @@ namespace TpMiercoles.Web.Controllers
                 EnviosPendientesLista = pendientes,
                 ProximosViajes = proximosViajes.Count,
                 ProximosViajesLista = proximosViajes.Take(5).Select(_mapper.Map<ViajeListadoViewModel>).ToList(),
-                Oportunidades = oportunidades
+                Oportunidades = oportunidades,
+                PotencialMes = potencialMes
             };
 
             return View(modelo);
+        }
+
+        // Mismo calculo que la pantalla de Potencial de ganancias, con los valores por defecto
+        // (mes actual, Mayor ganancia, sin limite de desvio). Si falla (por ejemplo, el servicio
+        // de rutas no responde) el inicio igual carga y la tarjeta muestra un guion.
+        private async Task<decimal?> CalcularPotencialDelMesAsync(int usuarioId, CancellationToken ct)
+        {
+            DateTimeOffset hoy = _reloj.GetLocalNow();
+
+            try
+            {
+                GananciasMensualDTO ganancias = await _gananciasServicio.CalcularAsync(
+                    usuarioId, hoy.Year, hoy.Month, CriterioOptimizacion.MayorGanancia, null, ct);
+
+                return ganancias.GananciaPotencial;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogWarning(ex, "No se pudo calcular el potencial del mes para el usuario {UsuarioId}.", usuarioId);
+                return null;
+            }
         }
 
         public IActionResult Privacy()

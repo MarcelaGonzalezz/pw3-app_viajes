@@ -41,11 +41,11 @@
             <span class="vd-dato-label">Ganancia efectiva</span>
             <span class="hs-numero">@Model.GananciaTexto</span>
             <span class="vd-dato-extra">
-                Solo paquetes entregados
+                Paquetes entregados
                 @(Model.Desde is not null || Model.Hasta is not null ? "en el rango filtrado" : "en todo el período")
                 @if (Model.ViajesRealizados > 0)
                 {
-                    <text> · @Model.PromedioTexto por viaje</text>
+                    <text><br />@Model.PromedioTexto por viaje</text>
                 }
             </span>
         </div>

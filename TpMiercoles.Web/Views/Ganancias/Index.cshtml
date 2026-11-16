@@ -100,15 +100,17 @@
             }
             else
             {
-                <div class="vd-dato gn-dato--potencial">
-                    <span class="vd-dato-label">Ganancia potencial</span>
-                    <span class="hs-numero">@Model.GananciaPotencialTexto</span>
-                    <span class="vd-dato-extra">Envíos que podrías sumar · @Model.PeriodoPotencialTexto</span>
-                </div>
-                <div class="vd-dato">
-                    <span class="vd-dato-label">Ganancia comprometida</span>
-                    <span class="hs-numero">@Model.GananciaComprometidaTexto</span>
-                    <span class="vd-dato-extra">Envíos aceptados, todavía sin entregar</span>
+                <div class="gn-par">
+                    <div class="vd-dato gn-dato--potencial">
+                        <span class="vd-dato-label">Ganancia potencial</span>
+                        <span class="hs-numero">@Model.GananciaPotencialTexto</span>
+                        <span class="vd-dato-extra">Envíos que podrías sumar · @Model.PeriodoPotencialTexto</span>
+                    </div>
+                    <div class="vd-dato">
+                        <span class="vd-dato-label">Ganancia comprometida</span>
+                        <span class="hs-numero">@Model.GananciaComprometidaTexto</span>
+                        <span class="vd-dato-extra">Envíos aceptados, todavía sin entregar</span>
+                    </div>
                 </div>
             }
         </section>

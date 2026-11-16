@@ -48,12 +48,15 @@
         </div>
     </div>
     <div class="col-6 col-lg-3">
-        <div class="card h-100 bg-success-subtle">
+        <a asp-controller="Ganancias" asp-action="Index" class="card h-100 bg-success-subtle text-decoration-none text-reset">
             <div class="card-body">
                 <small class="text-success">Potencial del mes</small>
-                <div class="fs-3 fw-bold text-success">@Model.PotencialMes.ToString("C0", pesos)</div>
+                <div class="fs-3 fw-bold text-success">@(Model.PotencialMes?.ToString("C0", pesos) ?? "—")</div>
+                <small class="text-muted">
+                    @(Model.PotencialMes is null ? "No se pudo calcular ahora" : "Con mayor ganancia, sin límite de desvío")
+                </small>
             </div>
-        </div>
+        </a>
     </div>
 </div>
 <div class="row g-3">
