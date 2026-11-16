@@ -23,6 +23,20 @@ namespace TpMiercoles.Api.Controllers
 
         // GET /api/historial
         // GET /api/historial?tipo=ViajeRealizado&desde=2026-09-01&hasta=2026-09-30
+        /// <summary>
+        /// Consulta las operaciones anteriores del usuario logueado.
+        /// </summary>
+        /// <remarks>
+        /// Incluye los viajes realizados como conductor (con su ganancia) y los envíos propios entregados o cancelados.
+        /// Devuelve un resumen (viajes realizados, envíos transportados y ganancia efectiva) y el detalle de cada operación.
+        /// Nunca muestra información de otros usuarios.
+        /// </remarks>
+        /// <param name="tipo">Filtro opcional: ViajeRealizado, EnvioEntregado o EnvioCancelado.</param>
+        /// <param name="desde">Filtro opcional: fecha desde (inclusive).</param>
+        /// <param name="hasta">Filtro opcional: fecha hasta (inclusive).</param>
+        /// <response code="200">Resumen y lista de operaciones (puede estar vacía).</response>
+        /// <response code="400">La fecha "desde" es posterior a la fecha "hasta".</response>
+        /// <response code="401">No hay sesión iniciada.</response>
         [HttpGet]
         [ProducesResponseType(typeof(HistorialDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
