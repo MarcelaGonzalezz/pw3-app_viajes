@@ -22,6 +22,12 @@ namespace TpMiercoles.Api.Controllers
 
         // GET /api/transportes
         // GET /api/transportes?estado=Retirado
+        /// <summary>
+        /// Lista los paquetes que el conductor logueado aceptó transportar.
+        /// </summary>
+        /// <param name="estado">Filtro opcional por estado del envío: ConductorAsignado, Retirado, EnCamino o Entregado.</param>
+        /// <response code="200">Lista de transportes del conductor (puede estar vacía).</response>
+        /// <response code="401">No hay sesión iniciada.</response>
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<TransporteListadoDTO>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -37,6 +43,13 @@ namespace TpMiercoles.Api.Controllers
         }
 
         // GET /api/transportes/{id}
+        /// <summary>
+        /// Devuelve el detalle de un transporte: viaje, paquete, estado, ganancia, retiro y entrega.
+        /// </summary>
+        /// <param name="id">Id del transporte (la asignación del paquete al viaje).</param>
+        /// <response code="200">Detalle del transporte.</response>
+        /// <response code="404">El transporte no existe o el viaje pertenece a otro conductor.</response>
+        /// <response code="401">No hay sesión iniciada.</response>
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(TransporteDetalleDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -55,6 +68,17 @@ namespace TpMiercoles.Api.Controllers
         }
 
         // POST /api/transportes/{id}/retirar
+        /// <summary>
+        /// Marca el paquete como retirado.
+        /// </summary>
+        /// <remarks>
+        /// Solo se puede si el envío está en "Conductor asignado".
+        /// </remarks>
+        /// <param name="id">Id del transporte (la asignación del paquete al viaje).</param>
+        /// <response code="200">Transporte actualizado con el nuevo estado.</response>
+        /// <response code="404">El transporte no existe o el viaje pertenece a otro conductor.</response>
+        /// <response code="409">El estado actual del paquete no permite este cambio.</response>
+        /// <response code="401">No hay sesión iniciada.</response>
         [HttpPost("{id:int}/retirar")]
         [ProducesResponseType(typeof(TransporteListadoDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -63,6 +87,17 @@ namespace TpMiercoles.Api.Controllers
         public Task<IActionResult> Retirar(int id) => Avanzar(id, EstadoEnvio.Retirado);
 
         // POST /api/transportes/{id}/en-camino
+        /// <summary>
+        /// Marca el paquete como en camino.
+        /// </summary>
+        /// <remarks>
+        /// Solo se puede si el paquete ya fue retirado.
+        /// </remarks>
+        /// <param name="id">Id del transporte (la asignación del paquete al viaje).</param>
+        /// <response code="200">Transporte actualizado con el nuevo estado.</response>
+        /// <response code="404">El transporte no existe o el viaje pertenece a otro conductor.</response>
+        /// <response code="409">El estado actual del paquete no permite este cambio.</response>
+        /// <response code="401">No hay sesión iniciada.</response>
         [HttpPost("{id:int}/en-camino")]
         [ProducesResponseType(typeof(TransporteListadoDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -71,6 +106,17 @@ namespace TpMiercoles.Api.Controllers
         public Task<IActionResult> MarcarEnCamino(int id) => Avanzar(id, EstadoEnvio.EnCamino);
 
         // POST /api/transportes/{id}/entregar
+        /// <summary>
+        /// Marca el paquete como entregado.
+        /// </summary>
+        /// <remarks>
+        /// Solo se puede si el paquete está en camino: no se puede entregar un paquete que no fue retirado.
+        /// </remarks>
+        /// <param name="id">Id del transporte (la asignación del paquete al viaje).</param>
+        /// <response code="200">Transporte actualizado con el nuevo estado.</response>
+        /// <response code="404">El transporte no existe o el viaje pertenece a otro conductor.</response>
+        /// <response code="409">El estado actual del paquete no permite este cambio.</response>
+        /// <response code="401">No hay sesión iniciada.</response>
         [HttpPost("{id:int}/entregar")]
         [ProducesResponseType(typeof(TransporteListadoDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
