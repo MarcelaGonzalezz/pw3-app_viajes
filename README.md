@@ -25,6 +25,39 @@ RuteaYa permite aprovechar viajes habituales en auto para transportar paquetes. 
 | `TpMiercoles.Entidades` | Entidades, `ViajesDbContext` y migraciones de EF Core |
 | `TpMiercoles.Tests` | Tests unitarios |
  
+
+## Arquitectura
+
+La solución separa la aplicación en capas:
+
+    Navegador
+       │
+       ▼
+    TpMiercoles.Web (MVC) ──── HttpClient ───▶ TpMiercoles.Api (Web API REST)
+       │                                         │
+       ▼                                         ▼
+    TpMiercoles.Servicios (lógica de negocio, DTOs, optimizador, rutas)
+       │
+       ▼
+    TpMiercoles.Repositorios (acceso a datos)
+       │
+       ▼
+    TpMiercoles.Entidades (EF Core) ──▶ SQL Server
+
+- Los controllers de la Web y de la Api **no acceden al `DbContext`**: llaman a la capa de servicios, y los servicios usan los repositorios.
+- La Web y la Api **comparten la misma capa de servicios**, así la lógica de negocio no se duplica.
+- La Api devuelve **DTOs**, nunca entidades, y usa los códigos HTTP correspondientes (200, 201, 204, 400, 401, 404, 409, 502).
+
+### Consumo de la Web API desde la aplicación MVC
+
+La pantalla **Mis viajes** obtiene sus datos llamando a la Web API (`GET /api/viajes`) mediante un `HttpClient` configurado en `TpMiercoles.Web/Program.cs`:
+
+- La dirección de la API se configura en `Api:BaseUrl` (en desarrollo, `http://localhost:5069/`, en `appsettings.Development.json`).
+- La Web reenvía la cookie de sesión del usuario en cada llamada, así la API sabe quién es y devuelve solo sus viajes.
+- Si la API responde 401, la Web redirige al login.
+
+Por eso la Api tiene que estar corriendo para que *Mis viajes* funcione.
+
 ---
 
 ## Requisitos previos
@@ -143,16 +176,22 @@ En Visual Studio también podés hacer clic derecho en el proyecto → **Adminis
   }
 }
 ```
+ 
+## 7. Documentación de la API (Swagger)
 
-## 7. Documentación de la API
- 
-Con la Api corriendo en Development, la especificación OpenAPI está disponible en:
- 
-```
-https://localhost:7192/openapi/v1.json
-```
- 
-Los endpoints de la API requieren estar logueado: primero iniciá sesión desde la Web.
+Con la Api corriendo en Development, la documentación interactiva está en:
+
+**https://localhost:7192/swagger**
+
+Ahí se ven todos los endpoints agrupados por recurso (Historial, Oportunidades, Transportes y Viajes), con su descripción, sus parámetros y los códigos HTTP que puede devolver cada uno.
+
+Para probarlos con **Try it out**:
+
+1. Iniciá la Web y la Api.
+2. Iniciá sesión en la Web (https://localhost:7219) con alguno de los usuarios de prueba.
+3. Abrí Swagger en otra pestaña del mismo navegador: la sesión se comparte, así que los endpoints responden con los datos de ese usuario.
+
+La especificación OpenAPI en formato JSON está en `https://localhost:7192/openapi/v1.json`.
  
 ## 8. Tests
  
