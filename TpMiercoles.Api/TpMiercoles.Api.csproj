@@ -5,11 +5,16 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>67ef348e-eec0-4198-bee6-8f2449ff4ff4</UserSecretsId>
+	  <!-- Genera el archivo XML con los comentarios /// para mostrarlos en Swagger -->
+	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
+	  <!-- No avisar por cada método público que no tenga comentario /// -->
+	  <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="17.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="11.0.1" />
   </ItemGroup>
 
   <ItemGroup>
