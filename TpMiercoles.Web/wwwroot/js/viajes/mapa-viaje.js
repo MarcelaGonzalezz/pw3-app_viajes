@@ -189,5 +189,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             partes.push(`Con paquetes: ${formatearKm(datos.distanciaConEnviosKm)} km`);
             partes.push(`Desvío: +${formatearKm(Math.max(0, datos.desvioKm ?? 0))} km`);
         }
-        resumen.textContent = partes.join(' · ') + (datos.distanciasEstimadas ? ' (estimado)' : '');    }
+        resumen.textContent = partes.join('\n') + (datos.distanciasEstimadas ? ' (estimado)' : '');
+    }
 });

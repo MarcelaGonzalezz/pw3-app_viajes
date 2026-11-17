@@ -116,8 +116,10 @@
                      data-destino-lat="@Model.DireccionDestino.Latitud.ToString(System.Globalization.CultureInfo.InvariantCulture)"
                      data-destino-lng="@Model.DireccionDestino.Longitud.ToString(System.Globalization.CultureInfo.InvariantCulture)"
                      data-destino-texto="@AcortarDireccion(Model.DireccionDestino.Texto)"
-                     data-geometria="@Model.GeometriaJson">
+                     data-geometria="@Model.GeometriaJson"
+                     data-paradas="@System.Text.Json.JsonSerializer.Serialize(Model.Paradas.OrderBy(p => p.Orden).Select(p => new { lat = p.Direccion.Latitud, lng = p.Direccion.Longitud, texto = AcortarDireccion(p.Direccion.Texto), orden = p.Orden }))">
                 </div>
+                <p id="mapaAviso" class="text-danger small mt-2 mb-0" hidden></p>
             </div>
         </div>
     </div>
@@ -128,5 +130,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Script externo -->
-    <script src="~/js/Ruta/detalle.js"></script>
+    <script src="~/js/mapa/curvas.js" asp-append-version="true"></script>
+    <script src="~/js/Ruta/detalle.js" asp-append-version="true"></script>
 }

@@ -1,0 +1,126 @@
+﻿/* Detalle del viaje: diseño más ancho y compacto.
+   Solo lo usa Views/Viajes/Detalle.cshtml. Las clases nuevas van con el prefijo .vdv-
+   para no cambiar las .vd- que también usan otras pantallas (envíos, transportes, oportunidades). */
+
+.vd.vd--ancho {
+    max-width: 1440px;
+}
+
+/* ---------- Fila de datos: horario, carga y días ---------- */
+
+.vdv-resumen {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .75rem;
+}
+
+.vdv-filas {
+    margin: .35rem 0 0;
+    display: grid;
+    gap: .35rem;
+}
+
+    .vdv-filas > div {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: .75rem;
+    }
+
+    .vdv-filas dt {
+        font-size: .875rem;
+        font-weight: 600;
+        color: var(--app-muted);
+    }
+
+    .vdv-filas dd {
+        margin: 0;
+        font-size: 1.0625rem;
+        font-weight: 600;
+        color: var(--app-title);
+        text-align: right;
+    }
+
+        .vdv-filas dd small {
+            display: block;
+            font-size: .8125rem;
+            font-weight: 400;
+            color: var(--app-muted);
+        }
+
+.vdv-resumen .vd-chips {
+    margin-top: .5rem;
+}
+
+/* ---------- Recorrido: información a la izquierda, mapa a la derecha ---------- */
+
+.vdv-recorrido {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) minmax(0, 2.4fr);
+    gap: 1.5rem;
+    align-items: stretch;
+}
+
+.vdv-recorrido-info {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    min-width: 0;
+}
+
+.vdv-separador {
+    margin: .25rem 0;
+    border: 0;
+    border-top: 1px solid var(--app-light-blue);
+    opacity: 1;
+}
+
+/* El mapa ocupa todo el alto de la columna de información, con un mínimo */
+.vdv-mapa {
+    height: auto;
+    min-height: 460px;
+}
+
+/* Leyenda en dos columnas; las líneas (habitual y sugerido) ocupan el ancho completo */
+.vdv-recorrido-info .mv-leyenda {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .45rem .75rem;
+}
+
+    .vdv-recorrido-info .mv-leyenda li:has(.mv-linea) {
+        grid-column: 1 / -1;
+    }
+
+/* El resumen de km se muestra en renglones separados */
+.vdv-recorrido-info .mv-resumen {
+    margin: 0;
+    white-space: pre-line;
+    line-height: 1.6;
+}
+
+.vdv-recorrido-info .mv-aviso {
+    margin: 0;
+}
+
+/* ---------- Paquetes en grilla ---------- */
+
+.vdv-paquetes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: .75rem;
+}
+
+/* ---------- Pantallas chicas: todo en una columna ---------- */
+
+@media (max-width: 992px) {
+    .vdv-resumen,
+    .vdv-recorrido {
+        grid-template-columns: 1fr;
+    }
+
+    .vdv-mapa {
+        min-height: 380px;
+    }
+}
