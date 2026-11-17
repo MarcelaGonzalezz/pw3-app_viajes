@@ -51,6 +51,18 @@
         color: var(--app-dark-blue);
     }
 
+/* Suma de efectiva + comprometida + potencial */
+.gn-dato--total {
+    background-color: var(--app-dark-blue);
+    border-color: var(--app-dark-blue);
+}
+
+    .gn-dato--total .vd-dato-label,
+    .gn-dato--total .vd-dato-extra,
+    .gn-dato--total .hs-numero {
+        color: #fff;
+    }
+
 /* ---------- Resumen ---------- */
 
 .gn-resumen {

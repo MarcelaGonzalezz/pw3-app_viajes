@@ -53,5 +53,10 @@ namespace TpMiercoles.Web.Models
         public string GananciaComprometidaTexto => GananciaComprometida.ToString("C0", Argentina);
         public string GananciaPotencialTexto => GananciaPotencial.ToString("C0", Argentina);
         public string PromedioTexto => PromedioPorViaje.ToString("C0", Argentina);
+
+        // Lo que el conductor podria terminar ganando en el mes: lo ya entregado, lo aceptado
+        // que falta entregar y lo que todavia podria sumar.
+        public decimal PotencialTotal => GananciaEfectiva + GananciaComprometida + GananciaPotencial;
+        public string PotencialTotalTexto => PotencialTotal.ToString("C0", Argentina);
     }
 }
