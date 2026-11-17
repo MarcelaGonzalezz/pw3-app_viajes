@@ -189,6 +189,50 @@ namespace TpMiercoles.Tests.Servicios.Viajes {
             Assert.Null(mapa.GeometriaConEnvios);
         }
 
+        [Fact]
+        public async Task ObtenerAsync_CuandoElRecorridoConPaquetesEsEstimado_SumaElDesvioEstimadoALaDistanciaReal() {
+            Viaje viaje = ViajeTestData.CrearViaje(
+                id: 1,
+                usuarioId: UsuarioId,
+                asignaciones: [ViajeTestData.CrearAsignacion(id: 50, envioId: 7)]);
+            viaje.Ruta.GeometriaJson = GeometriaGuardada;
+            viaje.Ruta.DistanciaMetros = 10000;
+            ConfigurarViaje(viaje);
+
+            // Sin trazado = estimado por el mock. Primero se pide el recorrido con paquetes y después el habitual.
+            _rutasMock
+                .SetupSequence(r => r.CalcularRutaAsync(
+                    It.IsAny<Coordenada>(), It.IsAny<Coordenada>(),
+                    It.IsAny<IReadOnlyList<Coordenada>?>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ResultadoRuta(15000, 1500))
+                .ReturnsAsync(new ResultadoRuta(12000, 1200));
+
+            MapaViajeDTO mapa = (await _servicio.ObtenerAsync(1, UsuarioId))!;
+
+            // Desvío estimado: 15 - 12 = 3 km (mock contra mock), sumado a los 10 km reales.
+            Assert.True(mapa.DistanciasEstimadas);
+            Assert.Equal(10, mapa.DistanciaBaseKm);
+            Assert.Equal(13, mapa.DistanciaConEnviosKm);
+            Assert.Equal(3, mapa.DesvioKm);
+            Assert.Equal(GeometriaGuardada, mapa.GeometriaBase);
+        }
+
+        [Fact]
+        public async Task ObtenerAsync_CuandoOrsResponde_LasDistanciasNoSonEstimadas() {
+            Viaje viaje = ViajeTestData.CrearViaje(
+                id: 1,
+                usuarioId: UsuarioId,
+                asignaciones: [ViajeTestData.CrearAsignacion(id: 50, envioId: 7)]);
+            viaje.Ruta.GeometriaJson = GeometriaGuardada;
+            viaje.Ruta.DistanciaMetros = 10000;
+            ConfigurarViaje(viaje);
+            ConfigurarRutas(new ResultadoRuta(13500, 1200, GeometriaCalculada));
+
+            MapaViajeDTO mapa = (await _servicio.ObtenerAsync(1, UsuarioId))!;
+
+            Assert.False(mapa.DistanciasEstimadas);
+            Assert.Equal(10, mapa.DistanciaBaseKm);
+        }
         #endregion
 
         #region Helpers

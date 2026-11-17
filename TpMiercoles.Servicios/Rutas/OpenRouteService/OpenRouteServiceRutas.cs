@@ -41,7 +41,9 @@ namespace TpMiercoles.Servicios.Rutas.OpenRouteService {
 
                 if (!respuesta.IsSuccessStatusCode)
                     throw new RutaNoEncontradaException(
-                        $"OpenRouteService respondió con el código {(int)respuesta.StatusCode}.");
+                        $"OpenRouteService respondió con el código {(int)respuesta.StatusCode}.") {
+                        CodigoHttp = (int)respuesta.StatusCode
+                    };
 
                 await using var stream = await respuesta.Content.ReadAsStreamAsync(ct);
                 using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);

@@ -94,8 +94,9 @@ namespace TpMiercoles.Tests.Helpers
                 Id = id,
                 Origen = "Ramos Mejía",
                 Destino = "Ciudadela",
-                FechaDesde = new DateTime(2026, 3, 1),
-                FechaHasta = new DateTime(2026, 3, 20),
+                // Fechas relativas a hoy: si fueran fijas, con el tiempo los envíos pasarían a "Vencido".
+                FechaDesde = DateTime.Today.AddDays(-1),
+                FechaHasta = DateTime.Today.AddDays(30),
                 PesoKg = 2.5,
                 Tamanio = TamanioEnvio.Mediano,
                 Descripcion = "Zapatillas",

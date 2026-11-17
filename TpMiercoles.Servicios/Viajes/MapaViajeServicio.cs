@@ -14,7 +14,6 @@ namespace TpMiercoles.Servicios.Viajes {
 
     }
 
-
     public class MapaViajeServicio : IMapaViajeServicio {
         private readonly IViajeRepositorio _repositorio;
         private readonly IServicioRutas _rutas;
@@ -62,6 +61,18 @@ namespace TpMiercoles.Servicios.Viajes {
 
                     mapa.GeometriaConEnvios = conEnvios.GeometriaJson;
                     mapa.DistanciaConEnviosKm = Math.Round(conEnvios.DistanciaKm, 1);
+
+                    // Sin trazado = distancia estimada (ORS no disponible). Si el habitual es real, se mantiene:
+                    // el desvío se estima comparando mock con mock y se suma a la distancia real.
+                    if (string.IsNullOrWhiteSpace(conEnvios.GeometriaJson)
+                        && !mapa.DistanciasEstimadas
+                        && mapa.DistanciaBaseKm is double baseRealKm) {
+                        ResultadoRuta baseEstimada = await CalcularAsync(recorridoBase, ct);
+                        double desvioEstimadoKm = Math.Max(0, conEnvios.DistanciaKm - baseEstimada.DistanciaKm);
+
+                        mapa.DistanciaConEnviosKm = Math.Round(baseRealKm + desvioEstimadoKm, 1);
+                        mapa.DistanciasEstimadas = true;
+                    }
                 }
             } catch (RutaNoEncontradaException) {
                 // Sin servicio de rutas igual devolvemos los puntos: el mapa muestra los marcadores sin líneas.
@@ -69,6 +80,7 @@ namespace TpMiercoles.Servicios.Viajes {
 
             return mapa;
         }
+        // Reusa el trazado guardado en la ruta (ya calculado al crearla) para no gastar una consulta.
         // Reusa el trazado guardado en la ruta (ya calculado al crearla) para no gastar una consulta.
         private async Task CompletarRecorridoBaseAsync(
             MapaViajeDTO mapa, Ruta ruta, List<Coordenada> recorridoBase, CancellationToken ct) {
@@ -81,6 +93,7 @@ namespace TpMiercoles.Servicios.Viajes {
             ResultadoRuta resultado = await CalcularAsync(recorridoBase, ct);
             mapa.GeometriaBase = resultado.GeometriaJson;
             mapa.DistanciaBaseKm = Math.Round(resultado.DistanciaKm, 1);
+            mapa.DistanciasEstimadas = string.IsNullOrWhiteSpace(resultado.GeometriaJson);
         }
 
         // Mismo criterio que usa el optimizador: cada retiro/entrega va donde menos alarga el recorrido.
