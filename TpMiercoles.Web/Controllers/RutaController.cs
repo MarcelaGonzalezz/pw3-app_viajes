@@ -79,7 +79,63 @@ namespace TpMiercoles.Web.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid();
+                return NotFound();
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Editar(int id)
+        {
+            int usuarioId = _sesionWeb.UsuarioIdRequerido;
+
+            try
+            {
+                EditarRutaDTO dto = await _rutaServicio.ObtenerParaEditarAsync(id, usuarioId);
+                return View(_mapper.Map<EditarRutaViewModel>(dto));
+            }
+            catch (RutaNoEncontradaException)
+            {
+                return NotFound();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return NotFound();
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Editar(int id, EditarRutaViewModel ruta)
+        {
+            // El id de la ruta sale de la URL, no del formulario.
+            ruta.Id = id;
+
+            if (!ModelState.IsValid) return View(ruta);
+
+            int usuarioId = _sesionWeb.UsuarioIdRequerido;
+            EditarRutaDTO dto = _mapper.Map<EditarRutaDTO>(ruta);
+
+            try
+            {
+                ResultadoEdicionRutaDTO resultado = await _rutaServicio.EditarRutaAsync(usuarioId, id, dto);
+                TempData["Mensaje"] = "La ruta fue modificada correctamente.";
+                if (resultado.Avisos.Count > 0)
+                    TempData["Aviso"] = string.Join(" ", resultado.Avisos);
+
+                return RedirectToAction(nameof(Detalle), new { id });
+            }
+            catch (RutaNoEncontradaException)
+            {
+                return NotFound();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return NotFound();
+            }
+            catch (ValidacionRutaException e)
+            {
+                ModelState.AddModelError(string.Empty, e.Message);
+                return View(ruta);
             }
         }
 
@@ -99,7 +155,7 @@ namespace TpMiercoles.Web.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid();
+                return NotFound();
             }
 
             return volverADetalle
@@ -123,7 +179,7 @@ namespace TpMiercoles.Web.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid();
+                return NotFound();
             }
 
             return volverADetalle
