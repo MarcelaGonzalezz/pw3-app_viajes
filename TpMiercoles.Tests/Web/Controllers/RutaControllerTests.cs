@@ -254,7 +254,7 @@ public class RutaControllerTests
     }
 
     [Fact]
-    public async Task Desactivar_CuandoUsuarioNoTienePermisos_DevuelveForbid()
+    public async Task Desactivar_CuandoUsuarioNoTienePermisos_DevuelveNotFound()
     {
         const int rutaId = 10;
         _servicioMock
@@ -263,7 +263,7 @@ public class RutaControllerTests
 
         var resultado = await _controller.Desactivar(rutaId);
 
-        Assert.IsType<ForbidResult>(resultado);
+        Assert.IsType<NotFoundResult>(resultado);
         _servicioMock.Verify(s => s.DesactivarRutaAsync(rutaId, UsuarioId), Times.Once);
     }
 
@@ -322,7 +322,7 @@ public class RutaControllerTests
     }
 
     [Fact]
-    public async Task Editar_Get_CuandoLaRutaEsDeOtroUsuario_DevuelveForbid()
+    public async Task Editar_Get_CuandoLaRutaEsDeOtroUsuario_DevuelveNotFound()
     {
         _servicioMock
             .Setup(s => s.ObtenerParaEditarAsync(10, UsuarioId))
@@ -330,7 +330,7 @@ public class RutaControllerTests
 
         var resultado = await _controller.Editar(10);
 
-        Assert.IsType<ForbidResult>(resultado);
+        Assert.IsType<NotFoundResult>(resultado);
     }
 
     [Fact]
@@ -444,7 +444,7 @@ public class RutaControllerTests
     }
 
     [Fact]
-    public async Task Editar_Post_CuandoLaRutaEsDeOtroUsuario_DevuelveForbid()
+    public async Task Editar_Post_CuandoLaRutaEsDeOtroUsuario_DevuelveNotFound()
     {
         _servicioMock
             .Setup(s => s.EditarRutaAsync(UsuarioId, 10, It.IsAny<EditarRutaDTO>()))
@@ -452,7 +452,7 @@ public class RutaControllerTests
 
         var resultado = await _controller.Editar(10, CrearEditarRutaViewModelValido());
 
-        Assert.IsType<ForbidResult>(resultado);
+        Assert.IsType<NotFoundResult>(resultado);
     }
 
     [Fact]

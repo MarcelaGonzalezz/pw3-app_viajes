@@ -79,7 +79,7 @@ namespace TpMiercoles.Web.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid();
+                return NotFound();
             }
         }
 
@@ -99,7 +99,7 @@ namespace TpMiercoles.Web.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid();
+                return NotFound();
             }
         }
 
@@ -130,7 +130,7 @@ namespace TpMiercoles.Web.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid();
+                return NotFound();
             }
             catch (ValidacionRutaException e)
             {
@@ -155,7 +155,7 @@ namespace TpMiercoles.Web.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid();
+                return NotFound();
             }
 
             return volverADetalle
@@ -179,7 +179,7 @@ namespace TpMiercoles.Web.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid();
+                return NotFound();
             }
 
             return volverADetalle
