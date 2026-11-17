@@ -19,6 +19,10 @@ namespace TpMiercoles.Tests.Servicios {
         private readonly RutaServicio _servicio;
         private readonly Mock<IRecorridoServicio> _recorridoServicioMock;
 
+        // Fecha fija para los metodos que reciben la hora actual. Las rutas de estos tests
+        // no tienen fecha de fin, asi que no vencen.
+        private static readonly DateTime Ahora = new(2026, 11, 20, 8, 0, 0);
+
         public RutaServicioTests() {
             _rutaRepositorioMock = new Mock<IRutaRepositorio>();
             _usuarioRepositorioMock = new Mock<IUsuarioRepositorio>();
@@ -367,7 +371,7 @@ namespace TpMiercoles.Tests.Servicios {
                 .Setup(r => r.CalcularAsync(It.IsAny<RecorridoDTO>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ResultadoRuta(20000, 1500, geometria));
 
-            RutaDTO detalle = await _servicio.ObtenerDetalleAsync(7, UsuarioId);
+            RutaDTO detalle = await _servicio.ObtenerDetalleAsync(7, UsuarioId, Ahora);
 
             Assert.Equal(geometria, detalle.GeometriaJson);
             Assert.Equal(geometria, ruta.GeometriaJson);
@@ -383,7 +387,7 @@ namespace TpMiercoles.Tests.Servicios {
 
             _rutaRepositorioMock.Setup(r => r.ObtenerPorIdAsync(8)).ReturnsAsync(ruta);
 
-            await _servicio.ObtenerDetalleAsync(8, UsuarioId);
+            await _servicio.ObtenerDetalleAsync(8, UsuarioId, Ahora);
 
             _recorridoServicioMock.Verify(
                 r => r.CalcularAsync(It.IsAny<RecorridoDTO>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -399,7 +403,7 @@ namespace TpMiercoles.Tests.Servicios {
                 .Setup(r => r.CalcularAsync(It.IsAny<RecorridoDTO>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new RutaNoEncontradaException("ORS caído"));
 
-            RutaDTO detalle = await _servicio.ObtenerDetalleAsync(9, UsuarioId);
+            RutaDTO detalle = await _servicio.ObtenerDetalleAsync(9, UsuarioId, Ahora);
 
             Assert.Null(detalle.GeometriaJson);
             _rutaRepositorioMock.Verify(r => r.GuardarCambiosAsync(), Times.Never);
@@ -412,7 +416,7 @@ namespace TpMiercoles.Tests.Servicios {
             _rutaRepositorioMock.Setup(r => r.ObtenerPorIdAsync(10)).ReturnsAsync(ruta);
             // El constructor configura el mock sin geometría, como el MockServicioRutas.
 
-            await _servicio.ObtenerDetalleAsync(10, UsuarioId);
+            await _servicio.ObtenerDetalleAsync(10, UsuarioId, Ahora);
 
             Assert.Null(ruta.GeometriaJson);
             _rutaRepositorioMock.Verify(r => r.GuardarCambiosAsync(), Times.Never);
@@ -488,10 +492,70 @@ namespace TpMiercoles.Tests.Servicios {
                 .Setup(r => r.ObtenerPorIdParaModificarAsync(rutaId))
                 .ReturnsAsync(ruta);
 
-            await _servicio.ActivarRutaAsync(rutaId, UsuarioId);
+            await _servicio.ActivarRutaAsync(rutaId, UsuarioId, Ahora);
 
             Assert.Equal(EstadoRuta.ACTIVA, ruta.Estado);
             _rutaRepositorioMock.Verify(r => r.GuardarCambiosAsync(), Times.Once);
+        }
+
+        #endregion
+
+        #region Vencimiento
+
+        private static DateTime Noviembre(int dia, int hora, int minuto = 0)
+            => new(2026, 11, dia, hora, minuto, 0);
+
+        [Fact]
+        public async Task ActivarRutaAsync_CuandoLaRutaVencio_LanzaValidacionYNoLaActiva() {
+            var ruta = RutaTestData.CrearRuta(
+                id: 15,
+                usuarioId: UsuarioId,
+                estado: EstadoRuta.INACTIVA,
+                fechaFin: new DateTime(2026, 11, 19),
+                horaLlegada: new TimeOnly(9, 30));
+            _rutaRepositorioMock
+                .Setup(r => r.ObtenerPorIdParaModificarAsync(15))
+                .ReturnsAsync(ruta);
+
+            await Assert.ThrowsAsync<ValidacionRutaException>(
+                () => _servicio.ActivarRutaAsync(15, UsuarioId, Noviembre(20, 8)));
+
+            Assert.Equal(EstadoRuta.INACTIVA, ruta.Estado);
+            _rutaRepositorioMock.Verify(r => r.GuardarCambiosAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task ActivarRutaAsync_CuandoEsSuUltimoDiaYTodaviaNoLlego_LaActiva() {
+            var ruta = RutaTestData.CrearRuta(
+                id: 15,
+                usuarioId: UsuarioId,
+                estado: EstadoRuta.INACTIVA,
+                fechaFin: new DateTime(2026, 11, 20),
+                horaLlegada: new TimeOnly(9, 30));
+            _rutaRepositorioMock
+                .Setup(r => r.ObtenerPorIdParaModificarAsync(15))
+                .ReturnsAsync(ruta);
+
+            await _servicio.ActivarRutaAsync(15, UsuarioId, Noviembre(20, 9, 29));
+
+            Assert.Equal(EstadoRuta.ACTIVA, ruta.Estado);
+            _rutaRepositorioMock.Verify(r => r.GuardarCambiosAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task ObtenerRutasDeUnUsuarioAsync_MarcaComoVencidasSoloLasQueYaPasaronSuFechaHasta() {
+            var vencida = RutaTestData.CrearRuta(id: 1, estado: EstadoRuta.INACTIVA, fechaFin: new DateTime(2026, 11, 19));
+            var vigente = RutaTestData.CrearRuta(id: 2, fechaFin: new DateTime(2026, 11, 30));
+            var sinFin = RutaTestData.CrearRuta(id: 3, fechaFin: null);
+            _rutaRepositorioMock
+                .Setup(r => r.ObtenerRutasDeUnUsuarioAsync(UsuarioId))
+                .ReturnsAsync([vencida, vigente, sinFin]);
+
+            List<RutaDTO> rutas = await _servicio.ObtenerRutasDeUnUsuarioAsync(UsuarioId, Noviembre(20, 8));
+
+            Assert.True(rutas.Single(r => r.Id == 1).Vencida);
+            Assert.False(rutas.Single(r => r.Id == 2).Vencida);
+            Assert.False(rutas.Single(r => r.Id == 3).Vencida);
         }
 
         #endregion

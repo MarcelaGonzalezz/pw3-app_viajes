@@ -159,7 +159,7 @@ namespace TpMiercoles.Tests.Web.Controllers
         public async Task Detalle_CuandoElViajeNoExiste_DevuelveNotFound()
         {
             _servicioMock
-                .Setup(s => s.ObtenerDetalleAsync(10, UsuarioId))
+                .Setup(s => s.ObtenerDetalleAsync(10, UsuarioId, It.IsAny<DateTime>()))
                 .ReturnsAsync((ViajeDetalleDTO?)null);
 
             var resultado = await _controller.Detalle(10);
@@ -197,7 +197,7 @@ namespace TpMiercoles.Tests.Web.Controllers
                 ]
             };
             _servicioMock
-                .Setup(s => s.ObtenerDetalleAsync(10, UsuarioId))
+                .Setup(s => s.ObtenerDetalleAsync(10, UsuarioId, It.IsAny<DateTime>()))
                 .ReturnsAsync(dto);
 
             var resultado = await _controller.Detalle(10);
@@ -395,7 +395,7 @@ namespace TpMiercoles.Tests.Web.Controllers
         public async Task Activar_CuandoElViajeNoExiste_DevuelveNotFound()
         {
             _servicioMock
-                .Setup(s => s.ActivarAsync(10, UsuarioId))
+                .Setup(s => s.ActivarAsync(10, UsuarioId, It.IsAny<DateTime>()))
                 .ReturnsAsync(ResultadoOperacionViaje.NoExiste());
 
             var resultado = await _controller.Activar(10);
@@ -407,7 +407,7 @@ namespace TpMiercoles.Tests.Web.Controllers
         public async Task Activar_CuandoEsExitoso_InformaYRedirigeAlIndex()
         {
             _servicioMock
-                .Setup(s => s.ActivarAsync(10, UsuarioId))
+                .Setup(s => s.ActivarAsync(10, UsuarioId, It.IsAny<DateTime>()))
                 .ReturnsAsync(ResultadoOperacionViaje.Exitoso());
 
             var resultado = await _controller.Activar(10);

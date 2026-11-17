@@ -152,6 +152,7 @@ builder.Services.AddScoped<IRecorridoServicio, RecorridoServicio>();
 builder.Services.AddScoped<IMapaViajeServicio, MapaViajeServicio>();
 builder.Services.AddScoped<IOportunidadServicio, OportunidadServicio>();
 builder.Services.AddScoped<IMaterializadorDeViajes, MaterializadorDeViajes>();
+builder.Services.AddScoped<IVencedorDeViajesYRutas, VencedorDeViajesYRutas>();
 builder.Services.AddHostedService<MaterializacionDeViajesHostedService>();
 
 var app = builder.Build();

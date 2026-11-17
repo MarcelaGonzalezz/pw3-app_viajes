@@ -23,6 +23,10 @@
     {
         <div class="vl-aviso" role="status">@mensaje</div>
     }
+    @if (TempData["Error"] is string error)
+    {
+        <div class="vl-aviso vl-aviso--error" role="alert">@error</div>
+    }
 
     <nav class="vl-filtros" aria-label="Filtrar viajes">
         <a class="vl-filtro @(Model.Filtro is null ? "vl-filtro--on" : "")"
@@ -100,7 +104,7 @@
                                 <button type="submit" class="vl-btn vl-btn--peligro">Desactivar</button>
                             </form>
                         }
-                        else
+                        else if (viaje.PuedeActivarse)
                         {
                             <form asp-action="Activar" asp-route-id="@viaje.Id" method="post" class="vl-form-inline">
                                 <button type="submit" class="vl-btn">Activar</button>

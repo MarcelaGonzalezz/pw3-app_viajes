@@ -161,7 +161,7 @@ public class RutaControllerTests
         var rutasDTO = new List<RutaDTO> { CrearRutaDTOValida() };
 
         _servicioMock
-            .Setup(s => s.ObtenerRutasDeUnUsuarioAsync(UsuarioId))
+            .Setup(s => s.ObtenerRutasDeUnUsuarioAsync(UsuarioId, It.IsAny<DateTime>()))
             .ReturnsAsync(rutasDTO);
 
         var resultado = await _controller.Obtener();
@@ -190,7 +190,7 @@ public class RutaControllerTests
         Assert.Equal("Parada 1", parada.Direccion.Texto);
 
         _servicioMock.Verify(
-            s => s.ObtenerRutasDeUnUsuarioAsync(UsuarioId),
+            s => s.ObtenerRutasDeUnUsuarioAsync(UsuarioId, It.IsAny<DateTime>()),
             Times.Once);
     }
 
@@ -272,7 +272,7 @@ public class RutaControllerTests
     {
         const int rutaId = 10;
         _servicioMock
-            .Setup(s => s.ActivarRutaAsync(rutaId, UsuarioId))
+            .Setup(s => s.ActivarRutaAsync(rutaId, UsuarioId, It.IsAny<DateTime>()))
             .Returns(Task.CompletedTask);
 
         var resultado = await _controller.Activar(rutaId);
@@ -280,7 +280,7 @@ public class RutaControllerTests
         var redireccion = Assert.IsType<RedirectToActionResult>(resultado);
         Assert.Equal(nameof(RutaController.Obtener), redireccion.ActionName);
         Assert.Equal("La ruta fue reactivada correctamente y volverá a buscar oportunidades.", _controller.TempData["Mensaje"]);
-        _servicioMock.Verify(s => s.ActivarRutaAsync(rutaId, UsuarioId), Times.Once);
+        _servicioMock.Verify(s => s.ActivarRutaAsync(rutaId, UsuarioId, It.IsAny<DateTime>()), Times.Once);
     }
 
     [Fact]

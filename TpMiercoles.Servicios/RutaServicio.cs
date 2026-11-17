@@ -5,6 +5,7 @@ using TpMiercoles.Entidades.Excepciones;
 using TpMiercoles.Repositorios;
 using TpMiercoles.Servicios.Excepciones;
 using TpMiercoles.Servicios.Rutas;
+using TpMiercoles.Servicios.Viajes;
 using TpMiercoles.Servicios.DTOs.Direccion;
 using TpMiercoles.Servicios.DTOs.Ruta;
 
@@ -12,10 +13,12 @@ namespace TpMiercoles.Servicios {
     public interface IRutaServicio {
         Task CrearRutaAsync(int usuarioId, CrearRutaDTO rutaDTO);
         Task<List<RutaDTO>> ObtenerRutasActivasDeUnUsuarioAsync(int usuarioId);
-        Task<List<RutaDTO>> ObtenerRutasDeUnUsuarioAsync(int usuarioId);
-        Task<RutaDTO> ObtenerDetalleAsync(int rutaId, int usuarioId);
+        // ahora (la fecha y hora actual) se usa para marcar que rutas ya vencieron.
+        Task<List<RutaDTO>> ObtenerRutasDeUnUsuarioAsync(int usuarioId, DateTime ahora);
+        Task<RutaDTO> ObtenerDetalleAsync(int rutaId, int usuarioId, DateTime ahora);
         Task DesactivarRutaAsync(int rutaId, int usuarioId);
-        Task ActivarRutaAsync(int rutaId, int usuarioId);
+        // Una ruta vencida (ya paso su fecha hasta) no se puede reactivar.
+        Task ActivarRutaAsync(int rutaId, int usuarioId, DateTime ahora);
         Task<EditarRutaDTO> ObtenerParaEditarAsync(int rutaId, int usuarioId);
         Task<ResultadoEdicionRutaDTO> EditarRutaAsync(int usuarioId, int rutaId, EditarRutaDTO dto);
     }
@@ -34,7 +37,7 @@ namespace TpMiercoles.Servicios {
             _recorridoServicio = recorridoServicio;
         }
 
-        public async Task<RutaDTO> ObtenerDetalleAsync(int rutaId, int usuarioId) {
+        public async Task<RutaDTO> ObtenerDetalleAsync(int rutaId, int usuarioId, DateTime ahora) {
             Ruta? ruta = await _rutaRepositorio.ObtenerPorIdAsync(rutaId);
 
             if (ruta == null)
@@ -47,7 +50,7 @@ namespace TpMiercoles.Servicios {
             if (string.IsNullOrWhiteSpace(ruta.GeometriaJson))
                 await CompletarRecorridoFaltanteAsync(ruta);
 
-            return _mapper.Map<RutaDTO>(ruta);
+            return MapearConVencimiento([ruta], ahora).Single();
         }
 
         public async Task CrearRutaAsync(int usuarioId, CrearRutaDTO rutaDTO) {
@@ -67,9 +70,20 @@ namespace TpMiercoles.Servicios {
             return _mapper.Map<List<RutaDTO>>(rutas);
         }
 
-        public async Task<List<RutaDTO>> ObtenerRutasDeUnUsuarioAsync(int usuarioId) {
+        public async Task<List<RutaDTO>> ObtenerRutasDeUnUsuarioAsync(int usuarioId, DateTime ahora) {
             List<Ruta> rutas = await _rutaRepositorio.ObtenerRutasDeUnUsuarioAsync(usuarioId);
-            return _mapper.Map<List<RutaDTO>>(rutas);
+            return MapearConVencimiento(rutas, ahora);
+        }
+
+        // Mapea las rutas y marca cuales ya vencieron, para que la vista no ofrezca reactivarlas.
+        private List<RutaDTO> MapearConVencimiento(List<Ruta> rutas, DateTime ahora) {
+            return rutas
+                .Select(ruta => {
+                    RutaDTO dto = _mapper.Map<RutaDTO>(ruta);
+                    dto.Vencida = Vencimiento.EstaVencida(ruta, ahora);
+                    return dto;
+                })
+                .ToList();
         }
 
         public async Task DesactivarRutaAsync(int rutaId, int usuarioId) {
@@ -85,7 +99,7 @@ namespace TpMiercoles.Servicios {
             await _rutaRepositorio.GuardarCambiosAsync();
         }
 
-        public async Task ActivarRutaAsync(int rutaId, int usuarioId) {
+        public async Task ActivarRutaAsync(int rutaId, int usuarioId, DateTime ahora) {
             Ruta? ruta = await _rutaRepositorio.ObtenerPorIdParaModificarAsync(rutaId);
 
             if (ruta == null)
@@ -93,6 +107,11 @@ namespace TpMiercoles.Servicios {
 
             if (ruta.UsuarioId != usuarioId)
                 throw new UnauthorizedAccessException("No tienes permisos para modificar esta ruta.");
+
+            // Decision del grupo: lo vencido queda inactivo para siempre.
+            if (Vencimiento.EstaVencida(ruta, ahora))
+                throw new ValidacionRutaException(
+                    "La ruta ya venció (pasó su fecha hasta): no se puede volver a activar.");
 
             ruta.Estado = EstadoRuta.ACTIVA;
             await _rutaRepositorio.GuardarCambiosAsync();

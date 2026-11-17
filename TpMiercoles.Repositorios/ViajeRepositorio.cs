@@ -32,6 +32,10 @@ namespace TpMiercoles.Repositorios
         // la asignacion y el estado del envio.
         Task AgregarSinGuardarAsync(Viaje viaje);
 
+        // Viajes ACTIVOS que ya salieron (FechaSalida < ahora), con seguimiento,
+        // para que el proceso automatico los pase a INACTIVO si ya llegaron.
+        Task<List<Viaje>> ObtenerActivosQueYaSalieronAsync(DateTime ahora);
+
         Task GuardarCambiosAsync();
 
         Task<bool> ExisteAlgunoAsync();
@@ -127,6 +131,13 @@ namespace TpMiercoles.Repositorios
         public async Task AgregarSinGuardarAsync(Viaje viaje)
         {
             await _viajesDbContext.Viajes.AddAsync(viaje);
+        }
+
+        public async Task<List<Viaje>> ObtenerActivosQueYaSalieronAsync(DateTime ahora)
+        {
+            return await _viajesDbContext.Viajes
+                .Where(v => v.Estado == EstadoActividadViaje.ACTIVO && v.FechaSalida < ahora)
+                .ToListAsync();
         }
 
         public Task GuardarCambiosAsync() => _viajesDbContext.SaveChangesAsync();
