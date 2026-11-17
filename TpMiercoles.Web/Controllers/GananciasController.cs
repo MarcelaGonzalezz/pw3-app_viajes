@@ -15,22 +15,28 @@ namespace TpMiercoles.Web.Controllers
         private readonly ISesionWeb _sesionWeb;
         private readonly IMapper _mapper;
         private readonly TimeProvider _reloj;
+        private readonly IPreferenciasDeGanancias _preferencias;
 
         public GananciasController(
             IGananciasServicio servicio,
             ISesionWeb sesionWeb,
             IMapper mapper,
-            TimeProvider reloj)
+            TimeProvider reloj,
+            IPreferenciasDeGanancias preferencias)
         {
             _servicio = servicio;
             _sesionWeb = sesionWeb;
             _mapper = mapper;
             _reloj = reloj;
+            _preferencias = preferencias;
         }
 
         [HttpGet("/ganancias")]
-        public async Task<IActionResult> Index( int? anio, int? mes, CriterioOptimizacion criterio = CriterioOptimizacion.MayorGanancia,
-            bool limitarDesvio = false, CancellationToken ct = default)
+        // criterio y limitarDesvio son null cuando se entra sin tocar el formulario (desde el menu
+        // o el inicio): ahi se usa lo ultimo que eligio el usuario. Al enviar el formulario el
+        // criterio siempre viene, y el checkbox destildado no manda nada, asi que null = false.
+        public async Task<IActionResult> Index(int? anio, int? mes, CriterioOptimizacion? criterio = null,
+            bool? limitarDesvio = null, CancellationToken ct = default)
         {
             int? conductorId = _sesionWeb.UsuarioId;
             if (conductorId is null)
@@ -41,21 +47,33 @@ namespace TpMiercoles.Web.Controllers
             DateTimeOffset hoy = _reloj.GetLocalNow();
             string? error = null;
 
-            if (mes is < 1 or > 12 || anio is < 2000 or > 2100 || !Enum.IsDefined(criterio))
+            bool vieneDelFormulario = criterio is not null;
+            PreferenciaDeGanancias guardada = vieneDelFormulario
+                ? PreferenciaDeGanancias.PorDefecto
+                : _preferencias.Leer(conductorId.Value) ?? PreferenciaDeGanancias.PorDefecto;
+
+            CriterioOptimizacion criterioElegido = criterio ?? guardada.Criterio;
+            bool limitar = vieneDelFormulario ? limitarDesvio ?? false : limitarDesvio ?? guardada.LimitarDesvio;
+
+            if (mes is < 1 or > 12 || anio is < 2000 or > 2100 || !Enum.IsDefined(criterioElegido))
             {
                 error = "El mes, el año o el criterio no son válidos. Mostramos el mes actual con el criterio Mayor ganancia.";
                 anio = null;
                 mes = null;
-                criterio = CriterioOptimizacion.MayorGanancia;
+                criterioElegido = CriterioOptimizacion.MayorGanancia;
+            }
+            else if (vieneDelFormulario)
+            {
+                _preferencias.Guardar(conductorId.Value, new PreferenciaDeGanancias(criterioElegido, limitar));
             }
 
-            double? limite = limitarDesvio ? GananciasViewModel.DesvioDelSistemaKm : null;
+            double? limite = limitar ? GananciasViewModel.DesvioDelSistemaKm : null;
 
             GananciasMensualDTO ganancias = await _servicio.CalcularAsync(
                 conductorId.Value,
                 anio ?? hoy.Year,
                 mes ?? hoy.Month,
-                criterio,
+                criterioElegido,
                 limite,
                 ct);
 

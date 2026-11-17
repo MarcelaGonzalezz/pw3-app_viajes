@@ -55,7 +55,7 @@
                 <small class="text-success">Potencial del mes</small>
                 <div class="fs-3 fw-bold text-success">@(Model.PotencialMes?.ToString("C0", pesos) ?? "—")</div>
                 <small class="text-muted">
-                    @(Model.PotencialMes is null ? "No se pudo calcular ahora" : "Con mayor ganancia, sin límite de desvío")
+                    @(Model.PotencialMes is null ? "No se pudo calcular ahora" : Model.PotencialDetalle)
                 </small>
             </div>
         </a>

@@ -115,6 +115,17 @@
             }
         </section>
 
+        <section class="gn-bloque">
+            <div class="vd-dato gn-dato--total">
+                <span class="vd-dato-label">Potencial total del mes</span>
+                <span class="hs-numero">@Model.PotencialTotalTexto</span>
+                <span class="vd-dato-extra">
+                    Ya obtenido @Model.GananciaEfectivaTexto + comprometido @Model.GananciaComprometidaTexto
+                    + potencial @Model.GananciaPotencialTexto
+                </span>
+            </div>
+        </section>
+
     </div>
 
     @if (!Model.MesTerminado)
@@ -165,7 +176,7 @@
                         @Model.MejorRecorrido.Destino
                     </p>
                     <p class="hs-fila-sub">
-                        @Model.MejorRecorrido.FechaTexto ·
+                        <span class="gn-capital">@Model.MejorRecorrido.FechaTexto</span> ·
                         @Model.MejorRecorrido.OcupacionTexto ·
                         <span class="hs-monto hs-monto--ganancia">@Model.MejorRecorrido.GananciaTexto</span>
                     </p>
@@ -230,7 +241,7 @@
                                                     <li>
                                                         <a href="@($"/oportunidades/{salida.RutaId}/envios/{paquete.EnvioId}?fecha={salida.FechaSalida:yyyy-MM-dd}")"
                                                            title="Ver el envío y aceptarlo">@paquete.Descripcion</a>
-                                                        <span class="gn-paquete-dato">@paquete.PesoTexto · @paquete.MontoTexto</span>
+                                                        <span class="gn-paquete-dato">@($"Envío #{paquete.EnvioId}") · @paquete.PesoTexto · @paquete.MontoTexto</span>
                                                         <span class="gn-paquete-ruta">@paquete.Retiro &rarr; @paquete.Entrega</span>
                                                     </li>
                                                 }
