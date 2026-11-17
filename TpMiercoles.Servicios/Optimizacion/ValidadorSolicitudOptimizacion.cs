@@ -30,7 +30,11 @@ namespace TpMiercoles.Servicios.Optimizacion
                 errores.Add(
                     "El desvío máximo debe ser un número finito mayor o igual a cero.");
             }
-
+            if (solicitud.ViajeId.HasValue && solicitud.FechaSalida.HasValue)
+            {
+                errores.Add(
+                    "No se puede indicar un viaje y una fecha de salida al mismo tiempo.");
+            }
             return errores.AsReadOnly();
         }
     }

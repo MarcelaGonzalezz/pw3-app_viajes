@@ -12,12 +12,8 @@ namespace TpMiercoles.Servicios.Optimizacion
     public interface IOptimizadorServicio
     {
         Task<ResultadoOptimizacionDTO> CalcularAsync(
-            SolicitudOptimizacionDTO solicitud,
-            int conductorId,
-            CancellationToken ct = default);
-        Task<List<SalidaDeRutaDTO>> ListarSalidasAsync(
-    int conductorId,
-    CancellationToken ct = default);
+            SolicitudOptimizacionDTO solicitud, int conductorId, CancellationToken ct = default);
+        Task<List<SalidaDeRutaDTO>> ListarSalidasAsync( int conductorId, CancellationToken ct = default);
     }
     public sealed class OptimizadorServicio : IOptimizadorServicio
     {
@@ -44,11 +40,9 @@ namespace TpMiercoles.Servicios.Optimizacion
             EvaluadorDesvioCompromisos evaluadorDesvio,
             decimal proporcionMinimaIngreso = 0.80m)
         {
-            if (proporcionMinimaIngreso <= 0m
-                || proporcionMinimaIngreso > 1m)
+            if (proporcionMinimaIngreso <= 0m || proporcionMinimaIngreso > 1m)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(proporcionMinimaIngreso));
+                throw new ArgumentOutOfRangeException( nameof(proporcionMinimaIngreso));
             }
 
             _servicioRutas = servicioRutas;
@@ -78,11 +72,11 @@ namespace TpMiercoles.Servicios.Optimizacion
         }
 
         private async Task<ResultadoRuta> CalcularRutaCombinacionAsync(
-    IReadOnlyList<Coordenada> recorridoBase,
-    CompromisosSalida compromisos,
-    IReadOnlyDictionary<int, Envio> candidatosPorId,
-    IReadOnlyList<int> idsSeleccionados,
-    CancellationToken ct)
+                IReadOnlyList<Coordenada> recorridoBase,
+                CompromisosSalida compromisos,
+                IReadOnlyDictionary<int, Envio> candidatosPorId,
+                IReadOnlyList<int> idsSeleccionados,
+                CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
 
@@ -109,10 +103,7 @@ namespace TpMiercoles.Servicios.Optimizacion
                 enviosDelRecorrido.Add(envio);
             }
 
-            var recorrido = _constructorRecorrido.ConstruirConEnvios(
-                recorridoBase,
-                enviosDelRecorrido,
-                ct);
+            var recorrido = _constructorRecorrido.ConstruirConEnvios( recorridoBase, enviosDelRecorrido, ct);
 
             var paradas = recorrido
                 .Skip(1)
@@ -127,12 +118,12 @@ namespace TpMiercoles.Servicios.Optimizacion
         }
 
         private async Task<List<CombinacionEvaluada>> EvaluarCombinacionesAsync(
-    IReadOnlyList<Coordenada> recorridoBase,
-    ResultadoRuta rutaBase,
-    CompromisosSalida compromisos,
-    IReadOnlyList<Envio> candidatos,
-    double desvioMaximoKm,
-    CancellationToken ct)
+                IReadOnlyList<Coordenada> recorridoBase,
+                ResultadoRuta rutaBase,
+                CompromisosSalida compromisos,
+                IReadOnlyList<Envio> candidatos,
+                double desvioMaximoKm,
+                CancellationToken ct)
         {
             if (!double.IsFinite(desvioMaximoKm) || desvioMaximoKm < 0)
             {
@@ -148,8 +139,7 @@ namespace TpMiercoles.Servicios.Optimizacion
 
             var datosCandidatos = PrepararCandidatos(candidatos);
 
-            var candidatosPorId = candidatos.ToDictionary(
-                envio => envio.Id);
+            var candidatosPorId = candidatos.ToDictionary( envio => envio.Id);
 
             var combinaciones = _motor.GenerarCombinaciones(
                 datosCandidatos,
@@ -171,16 +161,13 @@ namespace TpMiercoles.Servicios.Optimizacion
                         idsSeleccionados,
                         ct);
 
-                if (!double.IsFinite(recorrido.DistanciaMetros)
-                    || recorrido.DistanciaMetros < 0)
+                if (!double.IsFinite(recorrido.DistanciaMetros) || recorrido.DistanciaMetros < 0)
                 {
                     throw new InvalidOperationException(
                         "El servicio de rutas devolvió una distancia inválida.");
                 }
 
-                double desvioKm = Math.Max(
-                    0,
-                    recorrido.DistanciaKm - rutaBase.DistanciaKm);
+                double desvioKm = Math.Max(0, recorrido.DistanciaKm - rutaBase.DistanciaKm);
 
                 if (desvioKm > desvioMaximoKm)
                 {
@@ -191,7 +178,7 @@ namespace TpMiercoles.Servicios.Optimizacion
                     envioId => candidatosPorId[envioId].Monto);
 
                 double pesoAdicionalKg = idsSeleccionados.Sum(
-                    envioId => candidatosPorId[envioId].Paquete.PesoKg);
+                    envioId => candidatosPorId[envioId].Paquete.PesoKg );
 
                 resultados.Add(new CombinacionEvaluada
                 {
@@ -206,21 +193,14 @@ namespace TpMiercoles.Servicios.Optimizacion
             return resultados;
         }
 
-        private static (
-    CombinacionEvaluada? MayorGanancia,
-    CombinacionEvaluada? MenorDesvio,
-    CombinacionEvaluada? Equilibrada)
-    SeleccionarAlternativas(
-        IReadOnlyList<CombinacionEvaluada> combinaciones,
-        decimal proporcionMinimaIngreso)
+        private static ( CombinacionEvaluada? MayorGanancia, CombinacionEvaluada? MenorDesvio, CombinacionEvaluada? Equilibrada) 
+        SeleccionarAlternativas( IReadOnlyList<CombinacionEvaluada> combinaciones, decimal proporcionMinimaIngreso)
         {
             ArgumentNullException.ThrowIfNull(combinaciones);
 
-            if (proporcionMinimaIngreso <= 0m
-                || proporcionMinimaIngreso > 1m)
+            if (proporcionMinimaIngreso <= 0m || proporcionMinimaIngreso > 1m)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(proporcionMinimaIngreso),
+                throw new ArgumentOutOfRangeException(nameof(proporcionMinimaIngreso),
                     "La proporción debe ser mayor a cero y menor o igual a uno.");
             }
 
@@ -253,23 +233,19 @@ namespace TpMiercoles.Servicios.Optimizacion
         }
 
         private static List<PropuestaOptimizacionDTO> ArmarPropuestas(
-    IReadOnlyList<CombinacionEvaluada> combinaciones,
-    CompromisosSalida compromisos,
-    decimal proporcionMinimaIngreso)
+            IReadOnlyList<CombinacionEvaluada> combinaciones,
+            CompromisosSalida compromisos,
+            decimal proporcionMinimaIngreso)
         {
             ArgumentNullException.ThrowIfNull(compromisos);
 
-            var alternativas = SeleccionarAlternativas(
-                combinaciones,
-                proporcionMinimaIngreso);
+            var alternativas = SeleccionarAlternativas( combinaciones, proporcionMinimaIngreso);
 
-            var opciones = new (
-                string Etiqueta,
-                CombinacionEvaluada? Combinacion)[]
+            var opciones = new (string Etiqueta, CombinacionEvaluada? Combinacion)[]
             {
-        ("Mayor ganancia", alternativas.MayorGanancia),
-        ("Menor desvío", alternativas.MenorDesvio),
-        ("Equilibrada", alternativas.Equilibrada)
+                ("Mayor ganancia", alternativas.MayorGanancia),
+                ("Menor desvío", alternativas.MenorDesvio),
+                ("Equilibrada", alternativas.Equilibrada)
             };
 
             var propuestas = new List<PropuestaOptimizacionDTO>();
@@ -286,15 +262,11 @@ namespace TpMiercoles.Servicios.Optimizacion
                     continue;
                 }
 
-                int[] idsOrdenados = combinacion.EnviosSeleccionados
-                    .OrderBy(id => id)
-                    .ToArray();
+                int[] idsOrdenados = combinacion.EnviosSeleccionados.OrderBy(id => id).ToArray();
 
                 string clave = string.Join(",", idsOrdenados);
 
-                if (propuestasPorCombinacion.TryGetValue(
-                    clave,
-                    out var existente))
+                if (propuestasPorCombinacion.TryGetValue(clave,out var existente))
                 {
                     existente.Etiquetas.Add(opcion.Etiqueta);
                     continue;
@@ -303,32 +275,15 @@ namespace TpMiercoles.Servicios.Optimizacion
                 var propuesta = new PropuestaOptimizacionDTO
                 {
                     Etiquetas = [opcion.Etiqueta],
-
                     EnviosNuevosIds = Array.AsReadOnly(idsOrdenados),
-
                     IngresoAdicional = combinacion.IngresoAdicional,
-
-                    IngresoTotal =
-                        compromisos.IngresoComprometido
-                        + combinacion.IngresoAdicional,
-
+                    IngresoTotal = compromisos.IngresoComprometido + combinacion.IngresoAdicional,
                     PesoAdicionalKg = combinacion.PesoAdicionalKg,
-
-                    PesoTotalKg =
-                        compromisos.PesoComprometidoKg
-                        + combinacion.PesoAdicionalKg,
-
-                    CantidadTotalPaquetes =
-                        compromisos.CantidadComprometidaPaquetes
-                        + idsOrdenados.Length,
-
+                    PesoTotalKg = compromisos.PesoComprometidoKg + combinacion.PesoAdicionalKg,
+                    CantidadTotalPaquetes = compromisos.CantidadComprometidaPaquetes + idsOrdenados.Length,
                     DesvioTotalKm = combinacion.DesvioKm,
-
-                    DistanciaTotalKm =
-                        combinacion.Recorrido.DistanciaKm,
-
-                    DuracionTotalMinutos =
-                        combinacion.Recorrido.DuracionMinutos
+                    DistanciaTotalKm = combinacion.Recorrido.DistanciaKm,
+                    DuracionTotalMinutos = combinacion.Recorrido.DuracionMinutos
                 };
 
                 propuestasPorCombinacion.Add(clave, propuesta);
@@ -339,9 +294,9 @@ namespace TpMiercoles.Servicios.Optimizacion
         }
 
         public async Task<ResultadoOptimizacionDTO> CalcularAsync(
-    SolicitudOptimizacionDTO solicitud,
-    int conductorId,
-    CancellationToken ct = default)
+            SolicitudOptimizacionDTO solicitud,
+            int conductorId,
+            CancellationToken ct = default)
         {
             ArgumentNullException.ThrowIfNull(solicitud);
 
@@ -351,7 +306,6 @@ namespace TpMiercoles.Servicios.Optimizacion
             }
 
             ct.ThrowIfCancellationRequested();
-
             var erroresSolicitud = _validadorSolicitud.Validar(solicitud);
 
             if (erroresSolicitud.Count > 0)
@@ -372,7 +326,13 @@ namespace TpMiercoles.Servicios.Optimizacion
                     viajeId,
                     conductorId);
             }
-            else
+            else if (solicitud.FechaSalida is DateTime fechaSalida)
+            {
+                salida = await _resolvedor.ResolverSalidaEnFechaAsync(
+                    solicitud.RutaId,
+                    fechaSalida,
+                    conductorId);
+            } else
             {
                 salida = await _resolvedor.ResolverProximaSalidaAsync(
                     solicitud.RutaId,
@@ -405,17 +365,15 @@ namespace TpMiercoles.Servicios.Optimizacion
             }
 
             var compromisos = _calculadorCompromisos.Calcular(salida);
-
-            var erroresCapacidad = _validadorSalida.ValidarCapacidad(
-                salida,
-                compromisos);
+            var erroresCapacidad = _validadorSalida.ValidarCapacidad(salida,compromisos);
 
             if (erroresCapacidad.Count > 0)
             {
                 return new ResultadoOptimizacionDTO
                 {
                     Estado = EstadoResultadoOptimizacion.SalidaNoHabilitada,
-                    Mensajes = erroresCapacidad
+                    Mensajes = erroresCapacidad,
+                    IngresoComprometido = compromisos.IngresoComprometido
                 };
             }
 
@@ -431,29 +389,27 @@ namespace TpMiercoles.Servicios.Optimizacion
             if (evaluacionDesvio.SuperaLimite)
             {
                 mensajes.Add(
-                    "El recorrido calculado para los envíos ya comprometidos "
-                    + "supera el desvío máximo ingresado.");
-            }
-            else if (compromisos.PesoDisponibleKg == 0
-                || compromisos.CantidadDisponiblePaquetes == 0)
+                    "El recorrido calculado para los envíos ya comprometidos supera el desvío máximo ingresado.");
+            }else if (compromisos.PesoDisponibleKg == 0 || compromisos.CantidadDisponiblePaquetes == 0)
             {
                 mensajes.Add(
                     "La salida no tiene capacidad disponible para nuevos envíos.");
-            }
-            else
+            }else
             {
-                var candidatos = await _buscadorCandidatos.BuscarAsync(
-                    salida,
-                    compromisos);
-
+                var candidatos = await _buscadorCandidatos.BuscarAsync(salida, compromisos);
                 ct.ThrowIfCancellationRequested();
+
+                if (solicitud.EnviosExcluidos is { Count: > 0 })
+                {
+                    HashSet<int> excluidos = [.. solicitud.EnviosExcluidos]; // el .. arma un HashSet<int> con todos los elementos de EnviosExcluidos
+                    candidatos = candidatos.Where(envio => !excluidos.Contains(envio.Id)).ToList();
+                }
 
                 if (candidatos.Count == 0)
                 {
                     mensajes.Add(
                         "No hay envíos candidatos para esta salida.");
-                }
-                else
+                }else
                 {
                     var recorridoBase =
                         _constructorRecorrido.ConstruirBase(salida);
@@ -474,8 +430,7 @@ namespace TpMiercoles.Servicios.Optimizacion
                     if (propuestas.Count == 0)
                     {
                         mensajes.Add(
-                            "Ninguna combinación evaluada cumple "
-                            + "todas las restricciones.");
+                            "Ninguna combinación evaluada cumple todas las restricciones.");
                     }
                 }
             }
@@ -488,14 +443,14 @@ namespace TpMiercoles.Servicios.Optimizacion
                 RutaId = salida.RutaId,
                 ViajeId = salida.ViajeId,
                 FechaSalidaProgramada = salida.FechaSalidaProgramada,
-                MomentoEvaluacion = salida.MomentoEvaluacion
+                MomentoEvaluacion = salida.MomentoEvaluacion,
+                IngresoComprometido = compromisos.IngresoComprometido
             };
-
-
         }
+
         public Task<List<SalidaDeRutaDTO>> ListarSalidasAsync(
-    int conductorId,
-    CancellationToken ct = default)
+            int conductorId,
+            CancellationToken ct = default)
         {
             return _resolvedor.ListarSalidasAsync(conductorId, ct);
         }
@@ -503,13 +458,9 @@ namespace TpMiercoles.Servicios.Optimizacion
         private sealed class CombinacionEvaluada
         {
             public required IReadOnlyList<int> EnviosSeleccionados { get; init; }
-
             public required decimal IngresoAdicional { get; init; }
-
             public required double PesoAdicionalKg { get; init; }
-
             public required double DesvioKm { get; init; }
-
             public required ResultadoRuta Recorrido { get; init; }
         }
     }

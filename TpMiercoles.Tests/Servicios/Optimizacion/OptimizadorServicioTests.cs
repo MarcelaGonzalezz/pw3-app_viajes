@@ -151,6 +151,75 @@ public class OptimizadorServicioTests
     }
 
     [Fact]
+    public async Task ViajeYFechaJuntos_SeRechazaSinConsultarMapas()
+    {
+        var caso = new Escenario();
+        var resultado = await caso.Servicio.CalcularAsync( new SolicitudOptimizacionDTO
+            {
+                RutaId = 1,
+                ViajeId = 20,
+                FechaSalida = new DateTime(2026, 11, 9, 8, 0, 0),
+                DesvioMaximoKm = 5
+            }, 7);
+
+        Assert.Equal(EstadoResultadoOptimizacion.SolicitudInvalida, resultado.Estado);
+        Assert.NotEmpty(resultado.Mensajes);
+        Assert.Empty(caso.Proveedor.Consultas);
+    }
+
+    [Fact]
+    public async Task EnviosExcluidos_NoAparecenEnNingunaPropuesta()
+    {
+        static Escenario Armar()
+        {
+            var caso = new Escenario();
+            caso.Agregar(1, 2, 10000, 0);
+            caso.Agregar(2, 2, 4000, 0);
+            caso.Proveedor.Desvios["1,2"] = 0;
+            return caso;
+        }
+
+        var sinExcluir = await Armar().Calcular(5);
+        Assert.Contains(sinExcluir.Propuestas, p => p.EnviosNuevosIds.Contains(1));
+
+        var resultado = await Armar().Servicio.CalcularAsync(SolicitudExcluyendo(5, 1), 7);
+
+        Assert.Equal(EstadoResultadoOptimizacion.Correcto, resultado.Estado);
+        Assert.NotEmpty(resultado.Propuestas);
+        Assert.All(resultado.Propuestas, p => Assert.DoesNotContain(1, p.EnviosNuevosIds));
+    }
+
+    [Fact]
+    public async Task TodosLosCandidatosExcluidos_DevuelveCorrectoSinPropuestas()
+    {
+        var caso = new Escenario();
+        caso.Agregar(1, 2, 10000, 0);
+
+        var resultado = await caso.Servicio.CalcularAsync(SolicitudExcluyendo(5, 1), 7);
+
+        Assert.Equal(EstadoResultadoOptimizacion.Correcto, resultado.Estado);
+        Assert.Empty(resultado.Propuestas);
+        Assert.Contains("No hay envíos candidatos para esta salida.", resultado.Mensajes);
+    }
+
+    [Fact]
+    public async Task SalidaLlena_InformaLoComprometidoAunqueNoHayaPropuestas()
+    {
+        var caso = new Escenario(peso: 10, cantidad: 1);
+        var comprometido = OptimizacionTestData.Envio(90, 2, 100000);
+        OptimizacionTestData.Asignar(caso.Viaje, comprometido);
+        caso.Proveedor.Envios.Add(comprometido);
+        caso.Proveedor.Desvios["90"] = 0;
+        caso.Agregar(1, 2, 5000, 0);
+
+        var resultado = await caso.Calcular(5);
+
+        Assert.Equal(EstadoResultadoOptimizacion.Correcto, resultado.Estado);
+        Assert.Empty(resultado.Propuestas);
+        Assert.Equal(100000m, resultado.IngresoComprometido);
+    }
+
+    [Fact]
     public async Task OtroConductor_NoObtienePropuestasNiConsultaMapas()
     {
         var caso = new Escenario();
@@ -246,6 +315,9 @@ public class OptimizadorServicioTests
     private static SolicitudOptimizacionDTO Solicitud(double desvio)
         => new() { RutaId = 1, ViajeId = 20, DesvioMaximoKm = desvio };
 
+    private static SolicitudOptimizacionDTO SolicitudExcluyendo(double desvio, params int[] excluidos)
+    => new() { RutaId = 1, ViajeId = 20, DesvioMaximoKm = desvio, EnviosExcluidos = excluidos };
+
     private static PropuestaOptimizacionDTO PorEtiqueta(ResultadoOptimizacionDTO resultado, string etiqueta)
         => Assert.Single(resultado.Propuestas, p => p.Etiquetas.Contains(etiqueta));
 
@@ -317,4 +389,5 @@ public class OptimizadorServicioTests
             return Task.FromResult(new ResultadoRuta(10000 + desvio, ids.Length == 0 ? 600 : 900));
         }
     }
+
 }

@@ -27,4 +27,8 @@
     <ProjectReference Include="..\TpMiercoles.Repositorios\TpMiercoles.Repositorios.csproj" />
   </ItemGroup>
 
+   <ItemGroup>
+    <InternalsVisibleTo Include="TpMiercoles.Tests" />
+   </ItemGroup>
+
 </Project>

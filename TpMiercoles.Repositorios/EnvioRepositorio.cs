@@ -19,6 +19,9 @@ namespace TpMiercoles.Repositorios {
 
         // se usa para el detalle de oportunidad y para aceptarla
         Task<Envio?> ObtenerParaOportunidadAsync(int envioId);
+
+        // datos de los envios que propone el potencial mensual (descripcion, peso, direcciones)
+        Task<List<Envio>> ListarPorIdsAsync(IReadOnlyCollection<int> ids);
     }
     public class EnvioRepositorio : IEnvioRepositorio {
         private readonly ViajesDbContext _viajesDbContext;
@@ -97,6 +100,21 @@ namespace TpMiercoles.Repositorios {
                 .Include(e => e.DireccionEntrega)
                 .Include(e => e.Asignaciones)
                 .FirstOrDefaultAsync(e => e.Id == envioId);
+        }
+
+        public async Task<List<Envio>> ListarPorIdsAsync(IReadOnlyCollection<int> ids)
+        {
+            if (ids.Count == 0)
+            {
+                return [];
+            }
+
+            return await _viajesDbContext.Envios
+                .AsNoTracking()
+                .Include(e => e.DireccionRetiro)
+                .Include(e => e.DireccionEntrega)
+                .Where(e => ids.Contains(e.Id))
+                .ToListAsync();
         }
 
         public Task GuardarCambiosAsync() => _viajesDbContext.SaveChangesAsync();

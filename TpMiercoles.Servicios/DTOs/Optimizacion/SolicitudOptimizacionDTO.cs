@@ -7,9 +7,9 @@ namespace TpMiercoles.Servicios.DTOs.Optimizacion
     public sealed class SolicitudOptimizacionDTO
     {
         public required int RutaId { get; init; }
-
         public int? ViajeId { get; init; }
-
+        public DateTime? FechaSalida { get; init; }
         public required double DesvioMaximoKm { get; init; }
+        public IReadOnlyList<int>? EnviosExcluidos { get; init; }
     }
 }

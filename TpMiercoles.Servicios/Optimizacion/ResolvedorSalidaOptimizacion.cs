@@ -20,6 +20,7 @@ namespace TpMiercoles.Servicios.Optimizacion
         Task<List<SalidaDeRutaDTO>> ListarSalidasAsync(
     int conductorId,
     CancellationToken ct = default);
+        Task<SalidaOptimizacion?> ResolverSalidaEnFechaAsync(int rutaId, DateTime fechaSalida, int conductorId);
     }
 
     public sealed class ResolvedorSalidaOptimizacion : IResolvedorSalidaOptimizacion
@@ -237,8 +238,40 @@ namespace TpMiercoles.Servicios.Optimizacion
                 .ThenBy(salida => salida.ViajeId)
                 .ToList();
         }
+
+        public async Task<SalidaOptimizacion?> ResolverSalidaEnFechaAsync(int rutaId, DateTime fechaSalida, int conductorId)
+        {
+            var ruta = await _rutaRepositorio.ObtenerPorIdAsync(rutaId);
+
+            if (ruta is null || ruta.UsuarioId != conductorId)
+            {
+                return null;
+            }
+
+            if (!CalendarioDeSalidas.EsSalidaValida(ruta, fechaSalida))
+            {
+                return null;
+            }
+
+            var viaje = await _viajeRepositorio.ObtenerPorRutaYFechaAsync(ruta.Id, fechaSalida);
+
+            // si esa salida ya se materializó hay que optimizar sobre el viaje, es el que conoce los envios ya aceptados
+            if (viaje is not null)
+            {
+                return await ResolverViajeAsync(ruta.Id, viaje.Id, conductorId);
+            }else
+            {
+                DateTime ahora = TimeZoneInfo.ConvertTime(_reloj.GetUtcNow(),ZonaArgentina).DateTime;
+                DateTime momentoEvaluacion = ReferenciaTemporalOptimizacion.DeterminarMomentoEvaluacion( fechaSalida, ahora);
+
+                return new SalidaOptimizacion
+                {
+                    Ruta = ruta,
+                    FechaSalidaProgramada = fechaSalida,
+                    MomentoEvaluacion = momentoEvaluacion
+                };
+            }
+
+        }
     }
-
-
-
 }

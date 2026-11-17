@@ -8,7 +8,8 @@ namespace TpMiercoles.Web.Models
         public int ProximosViajes { get; set; }
         public int EnviosPendientes { get; set; }
         public int Oportunidades { get; set; }
-        public decimal PotencialMes { get; set; }
+        // null si no se pudo calcular
+        public decimal? PotencialMes { get; set; }
         public List<EnvioListadoViewModel> EnviosPendientesLista { get; set; } = [];
         public List<SalidaDeRutaViewModel> ProximosViajesLista { get; set; } = [];
     }
