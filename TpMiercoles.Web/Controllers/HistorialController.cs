@@ -58,7 +58,6 @@ namespace TpMiercoles.Web.Controllers
                 GananciaEfectiva = historial.GananciaEfectiva,
                 TotalOperaciones = historial.TotalOperaciones,
                 TotalEnviosEntregados = historial.TotalEnviosEntregados,
-                TotalEnviosCancelados = historial.TotalEnviosCancelados,
                 Items = historial.Items.Select(_mapper.Map<HistorialItemViewModel>).ToList()
             };
 

@@ -22,23 +22,17 @@ namespace TpMiercoles.Web.Models
         {
             TipoOperacionHistorial.ViajeRealizado => "Viaje realizado",
             TipoOperacionHistorial.EnvioEntregado => "Envío entregado",
-            TipoOperacionHistorial.EnvioCancelado => "Envío cancelado",
             _ => Tipo.ToString()
         };
 
-        // Clases de color reutilizadas de detalle.css (vd-chip--*).
-        public string ChipClase => Tipo switch
-        {
-            TipoOperacionHistorial.ViajeRealizado => "vd-chip--confirmado",
-            TipoOperacionHistorial.EnvioEntregado => "vd-chip--confirmado",
-            _ => "vd-chip--cancelado"
-        };
+        // Clase de color reutilizada de detalle.css: todo lo que figura en el historial se completó.
+        public string ChipClase => "vd-chip--confirmado";
 
         // Viaje:  "octubre 2026 · 3 paquetes"
-        // Envio:  "Entregado · Repuesto · 12/10/2026"
+        // Envio:  "Enviaste: Repuesto · 12/10/2026"
         public string Subtitulo => EsViaje
-        ? $"{Fecha.ToString("MMMM yyyy", Argentina)} · {CantidadPaquetes} {(CantidadPaquetes == 1 ? "paquete" : "paquetes")}"
-        : $"Enviaste: {Descripcion} · {Fecha:dd/MM/yyyy}";
+            ? $"{Fecha.ToString("MMMM yyyy", Argentina)} · {CantidadPaquetes} {(CantidadPaquetes == 1 ? "paquete" : "paquetes")}"
+            : $"Enviaste: {Descripcion} · {Fecha:dd/MM/yyyy}";
 
         public string MontoTexto => Monto.ToString("C0", Argentina);
     }

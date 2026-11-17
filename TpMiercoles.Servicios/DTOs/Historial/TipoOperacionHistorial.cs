@@ -7,9 +7,6 @@ namespace TpMiercoles.Servicios.DTOs.Historial
         ViajeRealizado = 0,
 
         // Envio que publique y llego a destino.
-        EnvioEntregado = 1,
-
-        // Envio que publique y cancele.
-        EnvioCancelado = 2
+        EnvioEntregado = 1
     }
 }

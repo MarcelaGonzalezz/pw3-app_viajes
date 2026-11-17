@@ -7,10 +7,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using TpMiercoles.Entidades;
 using TpMiercoles.Servicios;
-using TpMiercoles.Servicios.Viajes;
 using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Servicios.DTOs.Ganancias;
-using TpMiercoles.Servicios.Viajes;
+using TpMiercoles.Servicios.DTOs.Oportunidades;
 using TpMiercoles.Web.Infraestructura;
 using TpMiercoles.Web.Models;
 
@@ -19,7 +18,6 @@ namespace TpMiercoles.Web.Controllers
     public class HomeController : Controller
     {
         private readonly IEnvioServicio _envioServicio;
-        private readonly IViajeServicio _viajeServicio;
         private readonly IOportunidadServicio _oportunidadServicio;
         private readonly IGananciasServicio _gananciasServicio;
         private readonly ISesionWeb _sesionWeb;
@@ -29,7 +27,6 @@ namespace TpMiercoles.Web.Controllers
 
         public HomeController(
             IEnvioServicio envioServicio,
-            IViajeServicio viajeServicio,
             IOportunidadServicio oportunidadServicio,
             IGananciasServicio gananciasServicio,
             ISesionWeb sesionWeb,
@@ -38,7 +35,6 @@ namespace TpMiercoles.Web.Controllers
             ILogger<HomeController> logger)
         {
             _envioServicio = envioServicio;
-            _viajeServicio = viajeServicio;
             _oportunidadServicio = oportunidadServicio;
             _gananciasServicio = gananciasServicio;
             _sesionWeb = sesionWeb;
@@ -66,13 +62,8 @@ namespace TpMiercoles.Web.Controllers
                 .OrderByDescending(e => e.Id)
                 .ToList();
 
-            List<ViajeListadoDTO> viajesActivos =
-                await _viajeServicio.ListarAsync(usuarioId.Value, EstadoActividadViaje.ACTIVO);
-
-            var proximosViajes = viajesActivos
-                .Where(v => v.FechaSalida >= DateTime.Now)
-                .OrderBy(v => v.FechaSalida)
-                .ToList();
+            // Recorridos activos con su proxima salida, ordenados por fecha.
+            List<SalidaDeRutaDTO> salidas = await _oportunidadServicio.ListarSalidasAsync(usuarioId.Value);
 
             int oportunidades = await _oportunidadServicio.ContarDisponiblesAsync(usuarioId.Value);
 
@@ -83,8 +74,8 @@ namespace TpMiercoles.Web.Controllers
                 NombreUsuario = User.Identity?.Name ?? string.Empty,
                 EnviosPendientes = pendientes.Count,
                 EnviosPendientesLista = pendientes,
-                ProximosViajes = proximosViajes.Count,
-                ProximosViajesLista = proximosViajes.Take(5).Select(_mapper.Map<ViajeListadoViewModel>).ToList(),
+                ProximosViajes = salidas.Count,
+                ProximosViajesLista = salidas.Take(5).Select(_mapper.Map<SalidaDeRutaViewModel>).ToList(),
                 Oportunidades = oportunidades,
                 PotencialMes = potencialMes
             };

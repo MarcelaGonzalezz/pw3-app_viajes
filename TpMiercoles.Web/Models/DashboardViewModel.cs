@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 
-namespace TpMiercoles.Web.Models {
-    public class DashboardViewModel {
+namespace TpMiercoles.Web.Models
+{
+    public class DashboardViewModel
+    {
         public string NombreUsuario { get; set; } = string.Empty;
         public int ProximosViajes { get; set; }
         public int EnviosPendientes { get; set; }
@@ -9,6 +11,6 @@ namespace TpMiercoles.Web.Models {
         // null si no se pudo calcular
         public decimal? PotencialMes { get; set; }
         public List<EnvioListadoViewModel> EnviosPendientesLista { get; set; } = [];
-        public List<ViajeListadoViewModel> ProximosViajesLista { get; set; } = [];
+        public List<SalidaDeRutaViewModel> ProximosViajesLista { get; set; } = [];
     }
 }

@@ -10,7 +10,6 @@ namespace TpMiercoles.Servicios.DTOs.Historial
         // ---- Cantidades para los chips de filtro ----
         public int TotalOperaciones { get; set; }
         public int TotalEnviosEntregados { get; set; }
-        public int TotalEnviosCancelados { get; set; }
 
         public List<HistorialItemDTO> Items { get; set; } = [];
     }

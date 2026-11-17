@@ -9,9 +9,8 @@ namespace TpMiercoles.Repositorios
         // al menos un paquete. Trae asignaciones y envios para poder sumar la ganancia.
         Task<List<Viaje>> ListarViajesRealizadosAsync(int usuarioId, DateTime ahora);
 
-        // Envios publicados por el usuario (como remitente) que ya terminaron:
-        // entregados o cancelados.
-        Task<List<Envio>> ListarEnviosFinalizadosAsync(int usuarioId);
+        // Envios publicados por el usuario (como remitente) que ya fueron entregados.
+        Task<List<Envio>> ListarEnviosEntregadosAsync(int usuarioId);
     }
 
     public class HistorialRepositorio : IHistorialRepositorio
@@ -39,15 +38,14 @@ namespace TpMiercoles.Repositorios
                 .ToListAsync();
         }
 
-        public async Task<List<Envio>> ListarEnviosFinalizadosAsync(int usuarioId)
+        public async Task<List<Envio>> ListarEnviosEntregadosAsync(int usuarioId)
         {
             return await _viajesDbContext.Envios
                 .AsNoTracking()
                 .Include(e => e.DireccionRetiro)
                 .Include(e => e.DireccionEntrega)
                 .Include(e => e.Asignaciones)
-                .Where(e => e.UsuarioId == usuarioId
-                            && (e.Estado == EstadoEnvio.Entregado || e.Estado == EstadoEnvio.Cancelado))
+                .Where(e => e.UsuarioId == usuarioId && e.Estado == EstadoEnvio.Entregado)
                 .OrderByDescending(e => e.Id)
                 .ToListAsync();
         }
