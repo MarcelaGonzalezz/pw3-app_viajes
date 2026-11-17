@@ -24,6 +24,7 @@ namespace TpMiercoles.Web.Controllers
         private readonly IMapper _mapper;
         private readonly TimeProvider _reloj;
         private readonly ILogger<HomeController> _logger;
+        private readonly IPreferenciasDeGanancias _preferencias;
 
         public HomeController(
             IEnvioServicio envioServicio,
@@ -32,7 +33,8 @@ namespace TpMiercoles.Web.Controllers
             ISesionWeb sesionWeb,
             IMapper mapper,
             TimeProvider reloj,
-            ILogger<HomeController> logger)
+            ILogger<HomeController> logger,
+            IPreferenciasDeGanancias preferencias)
         {
             _envioServicio = envioServicio;
             _oportunidadServicio = oportunidadServicio;
@@ -41,6 +43,7 @@ namespace TpMiercoles.Web.Controllers
             _mapper = mapper;
             _reloj = reloj;
             _logger = logger;
+            _preferencias = preferencias;
         }
 
         [Authorize]
@@ -67,7 +70,9 @@ namespace TpMiercoles.Web.Controllers
 
             int oportunidades = await _oportunidadServicio.ContarDisponiblesAsync(usuarioId.Value);
 
-            decimal? potencialMes = await CalcularPotencialDelMesAsync(usuarioId.Value, ct);
+            PreferenciaDeGanancias preferencia =
+                _preferencias.Leer(usuarioId.Value) ?? PreferenciaDeGanancias.PorDefecto;
+            decimal? potencialMes = await CalcularPotencialDelMesAsync(usuarioId.Value, preferencia, ct);
 
             var modelo = new DashboardViewModel
             {
@@ -77,23 +82,26 @@ namespace TpMiercoles.Web.Controllers
                 ProximosViajes = salidas.Count,
                 ProximosViajesLista = salidas.Take(5).Select(_mapper.Map<SalidaDeRutaViewModel>).ToList(),
                 Oportunidades = oportunidades,
-                PotencialMes = potencialMes
+                PotencialMes = potencialMes,
+                PotencialDetalle = preferencia.Descripcion
             };
 
             return View(modelo);
         }
 
-        // Mismo calculo que la pantalla de Potencial de ganancias, con los valores por defecto
-        // (mes actual, Mayor ganancia, sin limite de desvio). Si falla (por ejemplo, el servicio
-        // de rutas no responde) el inicio igual carga y la tarjeta muestra un guion.
-        private async Task<decimal?> CalcularPotencialDelMesAsync(int usuarioId, CancellationToken ct)
+        // Mismo calculo que la pantalla de Potencial de ganancias para el mes actual, con el criterio
+        // y el limite de desvio que el usuario eligio ahi por ultima vez (o Mayor ganancia sin
+        // limite si nunca eligio). Si falla (por ejemplo, el servicio de rutas no responde)
+        // el inicio igual carga y la tarjeta muestra un guion.
+        private async Task<decimal?> CalcularPotencialDelMesAsync(
+            int usuarioId, PreferenciaDeGanancias preferencia, CancellationToken ct)
         {
             DateTimeOffset hoy = _reloj.GetLocalNow();
 
             try
             {
                 GananciasMensualDTO ganancias = await _gananciasServicio.CalcularAsync(
-                    usuarioId, hoy.Year, hoy.Month, CriterioOptimizacion.MayorGanancia, null, ct);
+                    usuarioId, hoy.Year, hoy.Month, preferencia.Criterio, preferencia.DesvioMaximoKm, ct);
 
                 return ganancias.GananciaPotencial;
             }

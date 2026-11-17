@@ -124,9 +124,19 @@
         font-variant-numeric: tabular-nums;
     }
 
+/* Solo la primera letra en mayúscula: "Lun 23/11", no "16/11 Al 22/11" */
 .gn-capital {
-    text-transform: capitalize;
     white-space: nowrap;
+}
+
+    .gn-capital::first-letter {
+        text-transform: uppercase;
+    }
+
+/* historial.css pone capitalize en .hs-fila-sub y en el mejor recorrido quedaba "4 De 4 Paquetes".
+   La fecha va en un .gn-capital, que le pone mayuscula solo a la primera letra. */
+.gn-mejor .hs-fila-sub {
+    text-transform: none;
 }
 
 .gn-fila--vacia td {
@@ -185,9 +195,20 @@
         border-left: 2px solid var(--app-med-blue);
     }
 
+    /* Mismo estilo que el boton "Cancelar" de Crear ruta (.btn-cancelar en ruta-crear.css) */
     .gn-paquetes a {
         font-weight: 600;
+        color: var(--app-title, #3a5e77);
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition: border-color 0.2s ease, color 0.2s ease;
     }
+
+        .gn-paquetes a:hover,
+        .gn-paquetes a:focus-visible {
+            color: #2b4658;
+            border-bottom-color: currentColor;
+        }
 
 .gn-paquete-dato {
     font-size: .85rem;

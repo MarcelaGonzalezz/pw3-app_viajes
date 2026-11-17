@@ -18,6 +18,7 @@ namespace TpMiercoles.Tests.Web.Controllers
 
         private readonly Mock<IGananciasServicio> _servicioMock = new();
         private readonly Mock<ISesionWeb> _sesionMock = new();
+        private readonly Mock<IPreferenciasDeGanancias> _preferenciasMock = new();
         private readonly GananciasController _controller;
 
         public GananciasControllerTests()
@@ -34,7 +35,8 @@ namespace TpMiercoles.Tests.Web.Controllers
                 _servicioMock.Object,
                 _sesionMock.Object,
                 MapperFactory.Crear(),
-                new RelojFijo(MediadosDeNoviembre));
+                new RelojFijo(MediadosDeNoviembre),
+                _preferenciasMock.Object);
         }
 
         [Fact]
@@ -118,6 +120,40 @@ namespace TpMiercoles.Tests.Web.Controllers
             GananciasViewModel modelo =
                 Assert.IsType<GananciasViewModel>(Assert.IsType<ViewResult>(resultado).Model);
             Assert.Null(modelo.Error);
+        }
+
+        [Fact]
+        public async Task Index_SinTocarElFormulario_UsaLoUltimoQueEligioElUsuario()
+        {
+            _preferenciasMock
+                .Setup(p => p.Leer(UsuarioId))
+                .Returns(new PreferenciaDeGanancias(CriterioOptimizacion.Equilibrada, true));
+
+            await _controller.Index(null, null);
+
+            _servicioMock.Verify(s => s.CalcularAsync(
+                UsuarioId, 2026, 11, CriterioOptimizacion.Equilibrada,
+                GananciasViewModel.DesvioDelSistemaKm, It.IsAny<CancellationToken>()),
+                Times.Once);
+            _preferenciasMock.Verify(p => p.Guardar(It.IsAny<int>(), It.IsAny<PreferenciaDeGanancias>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Index_AlEnviarElFormulario_GuardaLaEleccion()
+        {
+            await _controller.Index(null, null, CriterioOptimizacion.MenorDesvio, limitarDesvio: null);
+
+            _preferenciasMock.Verify(p => p.Guardar(
+                UsuarioId, new PreferenciaDeGanancias(CriterioOptimizacion.MenorDesvio, false)),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task Index_ConDatosInvalidos_NoGuardaLaEleccion()
+        {
+            await _controller.Index(2026, 13, CriterioOptimizacion.MenorDesvio);
+
+            _preferenciasMock.Verify(p => p.Guardar(It.IsAny<int>(), It.IsAny<PreferenciaDeGanancias>()), Times.Never);
         }
 
         private static GananciasMensualDTO Resultado(int anio, int mes, CriterioOptimizacion criterio)

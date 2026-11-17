@@ -46,6 +46,7 @@ builder.Services.AddScoped<IViajeServicio, ViajeServicio>();
 builder.Services.AddScoped<IViajeRepositorio, ViajeRepositorio>();
 builder.Services.AddScoped<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 builder.Services.AddScoped<ISesionWeb, SesionWeb>();
+builder.Services.AddScoped<IPreferenciasDeGanancias, PreferenciasDeGananciasEnCookie>();
 builder.Services.AddScoped<IEnvioServicio, EnvioServicio>();
 builder.Services.AddScoped<IEnvioRepositorio, EnvioRepositorio>();
 builder.Services.AddScoped<ISeedDeDesarrollo, SeedDeDesarrollo>();
@@ -57,6 +58,7 @@ builder.Services.AddScoped<ISeedDeGanancias, SeedDeGanancias>();
 builder.Services.AddScoped<ITransporteRepositorio, TransporteRepositorio>();
 builder.Services.AddScoped<ITransporteServicio, TransporteServicio>();
 builder.Services.AddScoped<ISeedDeTransportes, SeedDeTransportes>();
+builder.Services.AddScoped<ISeedDeEnviosUnicos, SeedDeEnviosUnicos>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IResolvedorSalidaOptimizacion,ResolvedorSalidaOptimizacion>();
 builder.Services.AddScoped<IBuscadorCandidatosOptimizacion,BuscadorCandidatosOptimizacion>();
@@ -162,6 +164,8 @@ if (app.Environment.IsDevelopment())
     await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeOportunidades>().SembrarAsync();
     await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeGanancias>().SembrarAsync();
     await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeTransportes>().SembrarAsync();
+    // Va ultimo: renombra los envios repetidos que hayan dejado los seeds anteriores.
+    await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeEnviosUnicos>().SembrarAsync();
 }
 
 if (!app.Environment.IsDevelopment())
