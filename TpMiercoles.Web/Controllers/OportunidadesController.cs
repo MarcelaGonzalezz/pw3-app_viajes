@@ -1,7 +1,6 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TpMiercoles.Entidades;
 using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.DTOs.Oportunidades;
 using TpMiercoles.Servicios.Excepciones;
@@ -51,7 +50,7 @@ namespace TpMiercoles.Web.Controllers
                 RutaId = rutaId,
                 Fecha = fecha,
                 Orden = orden,
-                DesvioMaximoKm = desvioMaximoKm
+                DesvioMaximoKm = desvioMaximoKm ?? OportunidadServicio.DESVIO_MAXIMO_POR_DEFECTO_KM
             };
 
             // si entro desde el sidebar (todavia no se eligio una ruta, no se calcula nada)

@@ -41,6 +41,7 @@ namespace TpMiercoles.Servicios
 
         // por debajo de esto, el envio es ruido del calculo de rutas y no se considera desvio
         private const double DESVIO_DESPRECIABLE_KM = 0.1;
+        public const double DESVIO_MAXIMO_POR_DEFECTO_KM = 10;
 
         private readonly IRutaRepositorio _rutaRepositorio;
         private readonly IViajeRepositorio _viajeRepositorio;
@@ -127,6 +128,8 @@ namespace TpMiercoles.Servicios
             resultado.DistanciaHabitualKm = Redondear(habitual.DistanciaKm);
             resultado.TiempoHabitualMin = Redondear(habitual.DuracionMinutos);
 
+            double limite = desvioMaximoKm ?? DESVIO_MAXIMO_POR_DEFECTO_KM; // si no se envia desvioMaximoKm por parametro, por defecto es 10km
+
             foreach (Envio envio in candidatos)
             {
                 // fecha, peso y capacidad se chequean antes de pedir la ruta (son gratis)
@@ -148,10 +151,7 @@ namespace TpMiercoles.Servicios
 
                 OportunidadDTO oportunidad = Completar(new OportunidadDTO(), envio, habitual, conEnvio);
 
-                if (desvioMaximoKm is not null && oportunidad.DesvioKm > desvioMaximoKm.Value)
-                {
-                    continue;
-                }
+                if (oportunidad.DesvioKm > limite) { continue; }
 
                 resultado.Oportunidades.Add(oportunidad);
             }
