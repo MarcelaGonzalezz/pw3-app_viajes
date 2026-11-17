@@ -7,6 +7,7 @@ namespace TpMiercoles.Web.Models
         public int Id { get; set; }
         public int RutaId { get; set; }
         public EstadoActividadViaje Estado { get; set; }
+        public bool Vencido { get; set; }
         public string DireccionOrigen { get; set; } = string.Empty;
         public string DireccionDestino { get; set; } = string.Empty;
         public DateTime FechaSalida { get; set; }
@@ -20,6 +21,7 @@ namespace TpMiercoles.Web.Models
         public List<PaqueteAsignadoViewModel> Paquetes { get; set; } = [];
 
         public bool EstaActivo => Estado == EstadoActividadViaje.ACTIVO;
+        public bool PuedeActivarse => !EstaActivo && !Vencido;
         public string EstadoTexto => EstaActivo ? "Activo" : "Inactivo";
     }
 }

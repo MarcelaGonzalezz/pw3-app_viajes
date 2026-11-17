@@ -58,7 +58,7 @@ namespace TpMiercoles.Web.Controllers
         {
             int usuarioId = _sesionWeb.UsuarioIdRequerido;
             string nombreUsuario = User.Identity?.Name;
-            var rutasDTO = await _rutaServicio.ObtenerRutasDeUnUsuarioAsync(usuarioId);
+            var rutasDTO = await _rutaServicio.ObtenerRutasDeUnUsuarioAsync(usuarioId, DateTime.Now);
             var rutasVm = _mapper.Map<List<RutaViewModel>>(rutasDTO);
             return View(new ObtenerRutasViewModel { Rutas = rutasVm, NombreUsuario = nombreUsuario });
         }
@@ -70,7 +70,7 @@ namespace TpMiercoles.Web.Controllers
 
             try
             {
-                var rutaDto = await _rutaServicio.ObtenerDetalleAsync(id, usuarioId);
+                var rutaDto = await _rutaServicio.ObtenerDetalleAsync(id, usuarioId, DateTime.Now);
                 return View(rutaDto);
             }
             catch (RutaNoEncontradaException)
@@ -170,7 +170,7 @@ namespace TpMiercoles.Web.Controllers
             int usuarioId = _sesionWeb.UsuarioIdRequerido;
             try
             {
-                await _rutaServicio.ActivarRutaAsync(id, usuarioId);
+                await _rutaServicio.ActivarRutaAsync(id, usuarioId, DateTime.Now);
                 TempData["Mensaje"] = "La ruta fue reactivada correctamente y volverá a buscar oportunidades.";
             }
             catch (RutaNoEncontradaException)
@@ -180,6 +180,11 @@ namespace TpMiercoles.Web.Controllers
             catch (UnauthorizedAccessException)
             {
                 return NotFound();
+            }
+            catch (ValidacionRutaException e)
+            {
+                // Por ejemplo, una ruta vencida: no se puede reactivar.
+                TempData["Error"] = e.Message;
             }
 
             return volverADetalle

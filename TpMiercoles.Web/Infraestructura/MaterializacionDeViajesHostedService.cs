@@ -2,8 +2,10 @@ using TpMiercoles.Servicios.Viajes;
 
 namespace TpMiercoles.Web.Infraestructura
 {
-    // Materializa el viaje de una salida cuando llega la hora, aunque no se haya
-    // aceptado ningun envio. Se ejecuta periodicamente mientras la app esta levantada.
+    // Proceso que corre cada minuto mientras la app esta levantada:
+    //  1. Materializa el viaje de una salida cuando llega la hora, aunque no se haya
+    //     aceptado ningun envio.
+    //  2. Pasa a inactivos los viajes y rutas que ya vencieron.
     public class MaterializacionDeViajesHostedService : BackgroundService
     {
         private static readonly TimeSpan Intervalo = TimeSpan.FromMinutes(1);
@@ -38,6 +40,20 @@ namespace TpMiercoles.Web.Infraestructura
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error al materializar viajes automaticamente.");
+                }
+
+                // Va en su propio try: si falla la materializacion, el vencimiento corre igual.
+                try
+                {
+                    using IServiceScope scope = _scopeFactory.CreateScope();
+                    IVencedorDeViajesYRutas vencedor =
+                        scope.ServiceProvider.GetRequiredService<IVencedorDeViajesYRutas>();
+
+                    await vencedor.VencerAsync(DateTime.Now);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error al vencer viajes y rutas automaticamente.");
                 }
 
                 try

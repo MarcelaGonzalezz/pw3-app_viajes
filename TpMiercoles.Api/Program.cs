@@ -38,6 +38,7 @@ builder.Services.AddScoped<ITransporteRepositorio, TransporteRepositorio>();
 builder.Services.AddScoped<IEnvioRepositorio, EnvioRepositorio>();
 builder.Services.AddScoped<IOportunidadServicio, OportunidadServicio>();
 builder.Services.AddScoped<IMaterializadorDeViajes, MaterializadorDeViajes>();
+builder.Services.AddScoped<IVencedorDeViajesYRutas, VencedorDeViajesYRutas>();
 builder.Services.AddHostedService<MaterializacionDeViajesHostedService>();
 
 // con API key usa OpenRouteService, sin key usa el mock

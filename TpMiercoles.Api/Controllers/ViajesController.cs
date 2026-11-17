@@ -41,7 +41,7 @@ namespace TpMiercoles.Api.Controllers
                 return Unauthorized();
             }
 
-            List<ViajeListadoDTO> viajes = await _viajeServicio.ListarAsync(usuarioId, estado);
+            List<ViajeListadoDTO> viajes = await _viajeServicio.ListarAsync(usuarioId, estado, DateTime.Now);
             return Ok(viajes);
         }
 
@@ -64,7 +64,7 @@ namespace TpMiercoles.Api.Controllers
                 return Unauthorized();
             }
 
-            ViajeDetalleDTO? viaje = await _viajeServicio.ObtenerDetalleAsync(id, usuarioId);
+            ViajeDetalleDTO? viaje = await _viajeServicio.ObtenerDetalleAsync(id, usuarioId, DateTime.Now);
 
             // 404 tanto si no existe como si es de otro usuario: no delatamos que existe.
             return viaje is null ? NotFound() : Ok(viaje);
@@ -155,10 +155,12 @@ namespace TpMiercoles.Api.Controllers
         /// </summary>
         /// <param name="id">Id del viaje.</param>
         /// <response code="200">Viaje activado.</response>
+        /// <response code="400">El viaje ya venció (pasó su hora de llegada) y no se puede reactivar.</response>
         /// <response code="404">El viaje no existe o pertenece a otro usuario.</response>
         /// <response code="401">No hay sesión iniciada.</response>
         [HttpPost("{id:int}/activar")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Activar(int id)
@@ -168,11 +170,16 @@ namespace TpMiercoles.Api.Controllers
                 return Unauthorized();
             }
 
-            ResultadoOperacionViaje resultado = await _viajeServicio.ActivarAsync(id, usuarioId);
+            ResultadoOperacionViaje resultado = await _viajeServicio.ActivarAsync(id, usuarioId, DateTime.Now);
 
             if (resultado.NoEncontrado)
             {
                 return NotFound();
+            }
+
+            if (!resultado.EsExitoso)
+            {
+                return BadRequest(new { errores = resultado.Errores });
             }
 
             return Ok(new
