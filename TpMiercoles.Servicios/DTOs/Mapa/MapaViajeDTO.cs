@@ -19,6 +19,9 @@ namespace TpMiercoles.Servicios.DTOs.Mapa {
         public double? DistanciaBaseKm { get; set; }
         public double? DistanciaConEnviosKm { get; set; }
 
+        // true si las distancias son estimadas (servicio de rutas no disponible): el JS lo aclara en el resumen.
+        public bool DistanciasEstimadas { get; set; }
+
         public double? DesvioKm =>
             DistanciaBaseKm is double baseKm && DistanciaConEnviosKm is double conEnviosKm
                 ? Math.Round(conEnviosKm - baseKm, 1)
