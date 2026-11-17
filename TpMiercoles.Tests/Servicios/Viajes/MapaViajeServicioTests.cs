@@ -190,7 +190,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes {
         }
 
         [Fact]
-        public async Task ObtenerAsync_CuandoElRecorridoConPaquetesEsEstimado_CalculaElHabitualEstimadoParaCompararIgual() {
+        public async Task ObtenerAsync_CuandoElRecorridoConPaquetesEsEstimado_SumaElDesvioEstimadoALaDistanciaReal() {
             Viaje viaje = ViajeTestData.CrearViaje(
                 id: 1,
                 usuarioId: UsuarioId,
@@ -209,11 +209,11 @@ namespace TpMiercoles.Tests.Servicios.Viajes {
 
             MapaViajeDTO mapa = (await _servicio.ObtenerAsync(1, UsuarioId))!;
 
+            // Desvío estimado: 15 - 12 = 3 km (mock contra mock), sumado a los 10 km reales.
             Assert.True(mapa.DistanciasEstimadas);
-            Assert.Equal(12, mapa.DistanciaBaseKm);
-            Assert.Equal(15, mapa.DistanciaConEnviosKm);
+            Assert.Equal(10, mapa.DistanciaBaseKm);
+            Assert.Equal(13, mapa.DistanciaConEnviosKm);
             Assert.Equal(3, mapa.DesvioKm);
-            // La línea azul sigue siendo la real guardada: solo cambian los números.
             Assert.Equal(GeometriaGuardada, mapa.GeometriaBase);
         }
 
