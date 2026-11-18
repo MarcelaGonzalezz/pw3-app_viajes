@@ -43,6 +43,10 @@
     <div class="vd-cols">
         <section class="vd-card" aria-label="Comparación de rutas">
             <h2 class="vd-card-titulo">Ruta habitual vs. con el envío</h2>
+            @if (Model.DistanciasEstimadas)
+            {
+                <p class="vl-aviso" role="status">Kilómetros estimados (en línea recta, ajustados por calles): no se pudieron calcular con rutas reales.</p>
+            }
             <table class="op-comparacion">
                 <tr><th>Distancia habitual</th><td class="op-num">@Model.DistanciaHabitualKm km</td></tr>
                 <tr><th>Distancia con el envío</th><td class="op-num">@Model.DistanciaConEnvioKm km</td></tr>

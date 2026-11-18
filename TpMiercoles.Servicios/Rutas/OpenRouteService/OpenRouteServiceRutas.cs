@@ -51,7 +51,8 @@ namespace TpMiercoles.Servicios.Rutas.OpenRouteService {
                 // 3. Al usar /geojson, la respuesta viene en un arreglo "features"
                 var features = doc.RootElement.GetProperty("features");
                 if (features.GetArrayLength() == 0)
-                    throw new RutaNoEncontradaException("OpenRouteService no devolvió ninguna ruta.");
+                    // es lo mismo que un 404: no hay camino posible entre esos puntos
+                    throw new RutaNoEncontradaException("OpenRouteService no devolvió ninguna ruta.") { CodigoHttp = 404 };
 
                 var primeraFeature = features[0];
                 var resumen = primeraFeature.GetProperty("properties").GetProperty("summary");
@@ -63,6 +64,11 @@ namespace TpMiercoles.Servicios.Rutas.OpenRouteService {
                     resumen.GetProperty("duration").GetDouble(), geometriaJson); 
             } catch (HttpRequestException ex) {
                 throw new RutaNoEncontradaException("No se pudo conectar con OpenRouteService.", ex);
+            } catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException) {
+                // se agoto la espera del HttpClient (no la cancelo el usuario): se informa como falla de ORS
+                throw new RutaNoEncontradaException("OpenRouteService no respondió a tiempo.", ex);
+            } catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException) {
+                throw new RutaNoEncontradaException("OpenRouteService devolvió una respuesta inesperada.", ex);
             }
         }
         private static double[] Par(Coordenada c) => [(double)c.Longitud, (double)c.Latitud];

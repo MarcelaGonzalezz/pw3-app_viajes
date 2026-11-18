@@ -39,5 +39,6 @@ namespace TpMiercoles.Web.Models
         public double TiempoHabitualMin { get; set; }
         public List<string> AvisosDeLaSalida { get; set; } = [];
         public List<OportunidadViewModel> Oportunidades { get; set; } = [];
+        public bool DistanciasEstimadas { get; set; }
     }
 }

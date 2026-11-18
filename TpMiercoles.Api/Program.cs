@@ -45,12 +45,19 @@ builder.Services.AddHostedService<MaterializacionDeViajesHostedService>();
 var rutasOpts = builder.Configuration.GetSection(RutasOptions.Seccion).Get<RutasOptions>() ?? new();
 builder.Services.AddSingleton(rutasOpts);
 
-if (rutasOpts.UsarOpenRouteService) {
-    builder.Services.AddHttpClient<OpenRouteServiceRutas>(c =>
-        c.BaseAddress = new Uri(rutasOpts.OrsBaseUrl));
+// El estimador (mock) siempre existe: Oportunidades evalua todos los envios con el y
+// con ORS confirma solo los mejores.
+builder.Services.AddSingleton<MockServicioRutas>();
+builder.Services.AddSingleton<IEstimadorDeRutas>(sp => sp.GetRequiredService<MockServicioRutas>());
 
-    // Plan B: si ORS agota la cuota (403) o se pasa del límite por minuto (429), se calcula con el mock.
-    builder.Services.AddSingleton<MockServicioRutas>();
+if (rutasOpts.UsarOpenRouteService) {
+    builder.Services.AddHttpClient<OpenRouteServiceRutas>(c => {
+        c.BaseAddress = new Uri(rutasOpts.OrsBaseUrl);
+        c.Timeout = TimeSpan.FromSeconds(rutasOpts.OrsTiempoMaximoSegundos);
+    });
+
+    // Plan B: si ORS agota la cuota (403), se pasa del límite por minuto (429), no responde a tiempo
+    // o falla (5xx, red, clave invalida), se calcula con el mock.
     builder.Services.AddSingleton<EstadoCuotaRutas>();
     builder.Services.AddTransient<IServicioRutas>(sp => new ServicioRutasConRespaldo(
         sp.GetRequiredService<OpenRouteServiceRutas>(),
@@ -60,7 +67,7 @@ if (rutasOpts.UsarOpenRouteService) {
         sp.GetRequiredService<ILogger<ServicioRutasConRespaldo>>()));
 } else{
     // en modo mock, sin API key, para poder probar la app sin gastar llamadas a ORS
-    builder.Services.AddSingleton<IServicioRutas, MockServicioRutas>();
+    builder.Services.AddSingleton<IServicioRutas>(sp => sp.GetRequiredService<MockServicioRutas>());
 }
 
 builder.Services.AddSingleton(TimeProvider.System);

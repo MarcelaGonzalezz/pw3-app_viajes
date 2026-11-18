@@ -23,5 +23,8 @@ namespace TpMiercoles.Servicios.DTOs.Oportunidades
         // y no se buscan envios
         public List<string> AvisosDeLaSalida { get; set; } = [];
         public List<OportunidadDTO> Oportunidades { get; set; } = [];
+
+        // true si los km son estimados (no se confirmaron con rutas reales)
+        public bool DistanciasEstimadas { get; set; }
     }
 }
