@@ -32,9 +32,12 @@ namespace TpMiercoles.Web.Controllers {
             try {
                 ResultadoRuta resultado = await _recorridoServicio.CalcularAsync(recorrido, ct);
 
+                // geometria: el camino de OpenRouteService en GeoJSON, para dibujarlo en el mapa.
+                // Con el mock viene en null y el mapa dibuja una curva aproximada.
                 return Ok(new {
                     distanciaKm = Math.Round(resultado.DistanciaKm, 1),
-                    duracionMinutos = Math.Round(resultado.DuracionMinutos)
+                    duracionMinutos = Math.Round(resultado.DuracionMinutos),
+                    geometria = resultado.GeometriaJson
                 });
             } catch (RutaNoEncontradaException) {
                 return StatusCode(StatusCodes.Status502BadGateway,

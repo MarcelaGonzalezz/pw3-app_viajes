@@ -501,16 +501,14 @@
         padding: 0 0.8rem;
     }
 
-    /* Botones centrados debajo de las dos columnas */
+    /* Los botones van al final de la columna derecha, en el lugar libre al lado del mapa. */
     .acciones {
-        justify-content: center;
-        margin-top: 1rem;
-        padding-top: 1.25rem;
-        border-top: 2px solid var(--light-blue);
+        justify-content: flex-end;
+        margin-top: 0.5rem;
     }
 
     .ruta-form .btn-guardar {
-        flex: 0 0 360px;
+        flex: 1;
         height: 50px;
     }
 }

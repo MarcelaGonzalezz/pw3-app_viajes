@@ -130,6 +130,11 @@ if (panel && contenido) {
             }
 
             mostrarResumen(datos.distanciaKm, datos.duracionMinutos);
+            // Avisa a quien le interese (el mapa de "Nueva ruta") que hay un recorrido nuevo.
+            // Así el mapa no tiene que volver a consultar /api/recorrido.
+            document.dispatchEvent(new CustomEvent('recorrido:calculado', {
+                detail: { geometria: datos.geometria }
+            }));
         } catch (error) {
             if (error.name === 'AbortError') return; // el usuario cambió algo: llega un cálculo nuevo
             ultimaFirma = null;
