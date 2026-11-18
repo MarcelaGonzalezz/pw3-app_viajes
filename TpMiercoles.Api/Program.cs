@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using TpMiercoles.Entidades;
 using TpMiercoles.Repositorios;
 using TpMiercoles.Servicios;
-using TpMiercoles.Api.Infraestructura;
 using TpMiercoles.Servicios.Rutas;
 using TpMiercoles.Servicios.Rutas.OpenRouteService;
 using TpMiercoles.Servicios.Viajes;
@@ -37,9 +36,6 @@ builder.Services.AddScoped<ITransporteServicio, TransporteServicio>();
 builder.Services.AddScoped<ITransporteRepositorio, TransporteRepositorio>();
 builder.Services.AddScoped<IEnvioRepositorio, EnvioRepositorio>();
 builder.Services.AddScoped<IOportunidadServicio, OportunidadServicio>();
-builder.Services.AddScoped<IMaterializadorDeViajes, MaterializadorDeViajes>();
-builder.Services.AddScoped<IVencedorDeViajesYRutas, VencedorDeViajesYRutas>();
-builder.Services.AddHostedService<MaterializacionDeViajesHostedService>();
 
 // con API key usa OpenRouteService, sin key usa el mock
 var rutasOpts = builder.Configuration.GetSection(RutasOptions.Seccion).Get<RutasOptions>() ?? new();
