@@ -176,6 +176,24 @@ En Visual Studio también podés hacer clic derecho en el proyecto → **Adminis
   }
 }
 ```
+
+### Plan B: si OpenRouteService falla o se queda sin cuota
+
+La versión gratuita de OpenRouteService tiene un límite de pedidos por día y por minuto. Para que la aplicación siga funcionando aunque se alcance ese límite, OpenRouteService se usa a través de `ServicioRutasConRespaldo`:
+
+- **Si ORS responde bien**, se usan las distancias y los tiempos reales.
+- **Si ORS falla**, se responde con el mock (estimación en línea recta ajustada por calles) y se deja de consultar a ORS por un tiempo, para no seguir gastando pedidos. Ese estado lo guarda `EstadoCuotaRutas`, que es compartido por toda la aplicación:
+  - **401 / 403** (API key inválida o cuota diaria agotada): se pausa **1 hora**.
+  - **429** (demasiados pedidos por minuto), **5xx**, error de red o *timeout*: se pausa **1 minuto**.
+  - **400 / 404** no pausan: significan que no existe un camino entre esos puntos, y se informan como error.
+
+Para gastar menos cuota, el optimizador y la búsqueda de oportunidades trabajan **en dos pasos**:
+
+1. Evalúan **todas** las combinaciones con el mock, que no consume pedidos, usando un margen sobre el desvío máximo.
+2. Confirman con OpenRouteService **solo las 5 mejores**, y ahí aplican el límite de desvío exacto.
+
+Si alguna de esas confirmaciones vuelve estimada (porque ORS dejó de responder en el medio), **toda la salida** se calcula con el mock: nunca se mezclan distancias reales con estimadas en un mismo resultado. En ese caso, la pantalla avisa que los kilómetros son estimados.
+El potencial de ganancias mensual, que analiza muchas salidas a la vez, usa directamente las estimaciones.
  
 ## 7. Documentación de la API (Swagger)
 
