@@ -19,5 +19,6 @@ namespace TpMiercoles.Web.Models
         public TimeOnly HoraSalida { get; set; }
         public TimeOnly HoraLlegada { get; set; }
         public EstadoRuta Estado { get; set; } 
+        public bool Vencida { get; set; }
     }
 }

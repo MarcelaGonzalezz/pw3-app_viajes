@@ -92,7 +92,7 @@ namespace TpMiercoles.Web.Controllers
                 return Challenge();
             }
 
-            ViajeDetalleDTO? viaje = await _viajeServicio.ObtenerDetalleAsync(id, usuarioId.Value);
+            ViajeDetalleDTO? viaje = await _viajeServicio.ObtenerDetalleAsync(id, usuarioId.Value, DateTime.Now);
 
             // El servicio devuelve null tanto si el viaje no existe como si no es
             // del usuario: respondemos 404 en los dos casos para no delatar que existe.
@@ -174,14 +174,22 @@ namespace TpMiercoles.Web.Controllers
                 return Challenge();
             }
 
-            ResultadoOperacionViaje resultado = await _viajeServicio.ActivarAsync(id, usuarioId.Value);
+            ResultadoOperacionViaje resultado = await _viajeServicio.ActivarAsync(id, usuarioId.Value, DateTime.Now);
 
             if (resultado.NoEncontrado)
             {
                 return NotFound();
             }
 
-            TempData["Mensaje"] = $"El viaje #{id} volvió a estar activo y busca oportunidades de nuevo.";
+            if (!resultado.EsExitoso)
+            {
+                // Por ejemplo, un viaje vencido: no se puede reactivar.
+                TempData["Error"] = string.Join(" ", resultado.Errores);
+            }
+            else
+            {
+                TempData["Mensaje"] = $"El viaje #{id} volvió a estar activo y busca oportunidades de nuevo.";
+            }
 
             return volverADetalle
                 ? RedirectToAction(nameof(Detalle), new { id })

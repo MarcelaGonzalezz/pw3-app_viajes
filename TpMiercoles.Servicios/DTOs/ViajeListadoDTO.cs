@@ -7,6 +7,8 @@ namespace TpMiercoles.Servicios.DTOs
         public int Id { get; set; }
         public int RutaId { get; set; }
         public EstadoActividadViaje Estado { get; set; }
+        // true si ya paso su hora de llegada: queda inactivo y no se puede reactivar.
+        public bool Vencido { get; set; }
         public string DireccionOrigen { get; set; } = string.Empty;
         public string DireccionDestino { get; set; } = string.Empty;
         public DateTime FechaSalida { get; set; }

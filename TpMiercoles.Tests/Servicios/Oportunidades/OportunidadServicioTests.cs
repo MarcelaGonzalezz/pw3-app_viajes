@@ -128,6 +128,56 @@ namespace TpMiercoles.Tests.Servicios.Oportunidades
         }
 
         [Fact]
+        public async Task ListarAsync_SinDesvioMaximo_DescartaEnviosQueDesvianMasDelDefault()
+        {
+            PrepararSalidaConUnEnvio();
+            ConDistanciaConEnvio(123); // habitual 10 km --> desvio 113 km
+
+            OportunidadesDeRutaDTO? resultado = await _servicio.ListarAsync(1, 1);
+
+            Assert.NotNull(resultado);
+            Assert.Empty(resultado!.Oportunidades);
+        }
+
+        [Fact]
+        public async Task ListarAsync_SinDesvioMaximo_IncluyeEnviosDentroDelDefault()
+        {
+            PrepararSalidaConUnEnvio();
+            ConDistanciaConEnvio(15); // desvio 5 km
+
+            OportunidadesDeRutaDTO? resultado = await _servicio.ListarAsync(1, 1);
+
+            Assert.NotNull(resultado);
+            OportunidadDTO oportunidad = Assert.Single(resultado!.Oportunidades);
+            Assert.Equal(5, oportunidad.DesvioKm);
+        }
+
+        [Fact]
+        public async Task ListarAsync_ConDesvioMaximoExplicito_IncluyeEnviosQueSuperanElDefault()
+        {
+            PrepararSalidaConUnEnvio();
+            ConDistanciaConEnvio(123); // desvio 113 km
+
+            OportunidadesDeRutaDTO? resultado = await _servicio.ListarAsync(1, 1, desvioMaximoKm: 150);
+
+            Assert.NotNull(resultado);
+            OportunidadDTO oportunidad = Assert.Single(resultado!.Oportunidades);
+            Assert.Equal(113, oportunidad.DesvioKm);
+        }
+
+        [Fact]
+        public async Task ListarAsync_ConDesvioIgualAlMaximo_LoIncluye()
+        {
+            PrepararSalidaConUnEnvio();
+            ConDistanciaConEnvio(20); // desvio exactamente 10 km (el filtro es '>' estricto)
+
+            OportunidadesDeRutaDTO? resultado = await _servicio.ListarAsync(1, 1);
+
+            Assert.NotNull(resultado);
+            Assert.Single(resultado!.Oportunidades);
+        }
+
+        [Fact]
         public async Task AceptarAsync_SinViaje_CreaElViajeComoSnapshotYLaAsignacion()
         {
             Ruta ruta = CrearRutaDelLunes();
@@ -256,5 +306,25 @@ namespace TpMiercoles.Tests.Servicios.Oportunidades
             DireccionEntregaId = 301,
             DireccionEntrega = RutaTestData.CrearDireccion(301, "Entrega")
         };
+
+        private void PrepararSalidaConUnEnvio()
+        {
+            Ruta ruta = CrearRutaDelLunes();
+            _rutas.Setup(r => r.ObtenerPorIdAsync(1)).ReturnsAsync(ruta);
+            _viajes.Setup(v => v.ObtenerPorRutaYFechaAsync(1, SalidaDelLunes)).ReturnsAsync((Viaje?)null);
+            _envios.Setup(e => e.ListarDisponiblesAsync(SalidaDelLunes, 1)).ReturnsAsync([CrearEnvio()]);
+        }
+
+        // la ruta habitual tiene 2 paradas; con el envio (retiro + entrega) pasan a ser 4
+        private void ConDistanciaConEnvio(double km)
+        {
+            _servicioRutas
+                .Setup(s => s.CalcularRutaAsync(
+                    It.IsAny<Coordenada>(),
+                    It.IsAny<Coordenada>(),
+                    It.Is<IReadOnlyList<Coordenada>?>(p => p != null && p.Count > 2),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ResultadoRuta(km * 1000, 900));
+        }
     }
 }

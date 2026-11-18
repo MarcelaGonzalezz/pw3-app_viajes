@@ -130,12 +130,20 @@ builder.Services.AddAuthorization(); //Hace funcionar [Authorize]
 var rutasOpts = builder.Configuration.GetSection(RutasOptions.Seccion).Get<RutasOptions>() ?? new();
 builder.Services.AddSingleton(rutasOpts);
 
-if (rutasOpts.UsarOpenRouteService)
-{
-    builder.Services.AddHttpClient<IServicioRutas, OpenRouteServiceRutas>(c =>
+if (rutasOpts.UsarOpenRouteService) {
+    builder.Services.AddHttpClient<OpenRouteServiceRutas>(c =>
         c.BaseAddress = new Uri(rutasOpts.OrsBaseUrl));
-} else
-{
+
+    // Plan B: si ORS agota la cuota (403) o se pasa del límite por minuto (429), se calcula con el mock.
+    builder.Services.AddSingleton<MockServicioRutas>();
+    builder.Services.AddSingleton<EstadoCuotaRutas>();
+    builder.Services.AddTransient<IServicioRutas>(sp => new ServicioRutasConRespaldo(
+        sp.GetRequiredService<OpenRouteServiceRutas>(),
+        sp.GetRequiredService<MockServicioRutas>(),
+        sp.GetRequiredService<EstadoCuotaRutas>(),
+        sp.GetRequiredService<TimeProvider>(),
+        sp.GetRequiredService<ILogger<ServicioRutasConRespaldo>>()));
+} else{
     // en modo mock, sin API key, para poder probar la app sin gastar llamadas a ORS
     builder.Services.AddSingleton<IServicioRutas, MockServicioRutas>();
 }
@@ -144,6 +152,7 @@ builder.Services.AddScoped<IRecorridoServicio, RecorridoServicio>();
 builder.Services.AddScoped<IMapaViajeServicio, MapaViajeServicio>();
 builder.Services.AddScoped<IOportunidadServicio, OportunidadServicio>();
 builder.Services.AddScoped<IMaterializadorDeViajes, MaterializadorDeViajes>();
+builder.Services.AddScoped<IVencedorDeViajesYRutas, VencedorDeViajesYRutas>();
 builder.Services.AddHostedService<MaterializacionDeViajesHostedService>();
 
 var app = builder.Build();

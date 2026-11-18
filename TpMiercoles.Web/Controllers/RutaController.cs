@@ -58,7 +58,7 @@ namespace TpMiercoles.Web.Controllers
         {
             int usuarioId = _sesionWeb.UsuarioIdRequerido;
             string nombreUsuario = User.Identity?.Name;
-            var rutasDTO = await _rutaServicio.ObtenerRutasDeUnUsuarioAsync(usuarioId);
+            var rutasDTO = await _rutaServicio.ObtenerRutasDeUnUsuarioAsync(usuarioId, DateTime.Now);
             var rutasVm = _mapper.Map<List<RutaViewModel>>(rutasDTO);
             return View(new ObtenerRutasViewModel { Rutas = rutasVm, NombreUsuario = nombreUsuario });
         }
@@ -70,7 +70,7 @@ namespace TpMiercoles.Web.Controllers
 
             try
             {
-                var rutaDto = await _rutaServicio.ObtenerDetalleAsync(id, usuarioId);
+                var rutaDto = await _rutaServicio.ObtenerDetalleAsync(id, usuarioId, DateTime.Now);
                 return View(rutaDto);
             }
             catch (RutaNoEncontradaException)
@@ -79,7 +79,63 @@ namespace TpMiercoles.Web.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid();
+                return NotFound();
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Editar(int id)
+        {
+            int usuarioId = _sesionWeb.UsuarioIdRequerido;
+
+            try
+            {
+                EditarRutaDTO dto = await _rutaServicio.ObtenerParaEditarAsync(id, usuarioId);
+                return View(_mapper.Map<EditarRutaViewModel>(dto));
+            }
+            catch (RutaNoEncontradaException)
+            {
+                return NotFound();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return NotFound();
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Editar(int id, EditarRutaViewModel ruta)
+        {
+            // El id de la ruta sale de la URL, no del formulario.
+            ruta.Id = id;
+
+            if (!ModelState.IsValid) return View(ruta);
+
+            int usuarioId = _sesionWeb.UsuarioIdRequerido;
+            EditarRutaDTO dto = _mapper.Map<EditarRutaDTO>(ruta);
+
+            try
+            {
+                ResultadoEdicionRutaDTO resultado = await _rutaServicio.EditarRutaAsync(usuarioId, id, dto);
+                TempData["Mensaje"] = "La ruta fue modificada correctamente.";
+                if (resultado.Avisos.Count > 0)
+                    TempData["Aviso"] = string.Join(" ", resultado.Avisos);
+
+                return RedirectToAction(nameof(Detalle), new { id });
+            }
+            catch (RutaNoEncontradaException)
+            {
+                return NotFound();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return NotFound();
+            }
+            catch (ValidacionRutaException e)
+            {
+                ModelState.AddModelError(string.Empty, e.Message);
+                return View(ruta);
             }
         }
 
@@ -99,7 +155,7 @@ namespace TpMiercoles.Web.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid();
+                return NotFound();
             }
 
             return volverADetalle
@@ -114,7 +170,7 @@ namespace TpMiercoles.Web.Controllers
             int usuarioId = _sesionWeb.UsuarioIdRequerido;
             try
             {
-                await _rutaServicio.ActivarRutaAsync(id, usuarioId);
+                await _rutaServicio.ActivarRutaAsync(id, usuarioId, DateTime.Now);
                 TempData["Mensaje"] = "La ruta fue reactivada correctamente y volverá a buscar oportunidades.";
             }
             catch (RutaNoEncontradaException)
@@ -123,7 +179,12 @@ namespace TpMiercoles.Web.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid();
+                return NotFound();
+            }
+            catch (ValidacionRutaException e)
+            {
+                // Por ejemplo, una ruta vencida: no se puede reactivar.
+                TempData["Error"] = e.Message;
             }
 
             return volverADetalle

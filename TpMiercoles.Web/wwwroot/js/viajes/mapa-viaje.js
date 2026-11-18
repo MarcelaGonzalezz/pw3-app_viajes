@@ -106,7 +106,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         sugerido.addTo(mapa);
         L.control.layers(null, { 'Mostrar recorrido sugerido': sugerido }, { collapsed: false }).addTo(mapa);
     }
+    // Sin recorrido real (sin key de ORS o con la cuota agotada): curvas punteadas aproximadas.
+    const aLatLng = punto => [Number(punto.latitud), Number(punto.longitud)];
+    let hayAproximado = false;
 
+    if (!habitual) {
+        // Recorrido habitual: origen → paradas → destino.
+        const recorridoHabitual = datos.puntos
+            .filter(p => p.tipo === 'Origen' || p.tipo === 'Parada' || p.tipo === 'Destino')
+            .map(aLatLng);
+        if (CurvasAproximadas.dibujar(mapa, recorridoHabitual, { color: LINEAS.habitual.relleno })) {
+            hayAproximado = true;
+        }
+    }
+
+    if (!sugerido) {
+        // Un tramo retiro → entrega por cada paquete.
+        for (const retiro of datos.puntos.filter(p => p.tipo === 'Retiro')) {
+            const entrega = datos.puntos.find(p => p.tipo === 'Entrega' && p.envioId === retiro.envioId);
+            if (entrega) {
+                CurvasAproximadas.dibujar(mapa, [aLatLng(retiro), aLatLng(entrega)],
+                    { color: LINEAS.sugerido.relleno, grosor: 3 });
+                hayAproximado = true;
+            }
+        }
+    }
     /* --------------------------- Marcadores --------------------------- */
 
 
@@ -155,8 +179,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     /* ----------------------------- Textos ----------------------------- */
 
-    if (!habitual && !sugerido) {
-        mostrarAviso('No se pudo calcular el recorrido en este momento: se muestran solo los puntos.');
+    if (hayAproximado) {
+        mostrarAviso('Recorrido aproximado (líneas punteadas): el servicio de rutas no está disponible en este momento.');
     }
 
     if (resumen && datos.distanciaBaseKm != null) {
@@ -165,6 +189,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             partes.push(`Con paquetes: ${formatearKm(datos.distanciaConEnviosKm)} km`);
             partes.push(`Desvío: +${formatearKm(Math.max(0, datos.desvioKm ?? 0))} km`);
         }
-        resumen.textContent = partes.join(' · ');
+        resumen.textContent = partes.join('\n') + (datos.distanciasEstimadas ? ' (estimado)' : '');
     }
 });

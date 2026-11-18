@@ -33,7 +33,7 @@ namespace TpMiercoles.Api.Controllers
         /// <param name="rutaId">Id de la ruta del conductor.</param>
         /// <param name="fecha">Salida a evaluar. Si no se envía, se usa la próxima salida de la ruta.</param>
         /// <param name="orden">Criterio de orden: Ganancia (por defecto), Desvio o Compatibilidad.</param>
-        /// <param name="desvioMaximoKm">Opcional: descarta los envíos que desvían más que estos kilómetros.</param>
+        /// <param name="desvioMaximoKm">Opcional. Por defecto 10 km.</param>
         /// <response code="200">Salida evaluada y lista de oportunidades (puede estar vacía).</response>
         /// <response code="400">El desvío máximo es negativo.</response>
         /// <response code="404">La ruta no existe, es de otro usuario o no tiene una salida válida en esa fecha.</response>
