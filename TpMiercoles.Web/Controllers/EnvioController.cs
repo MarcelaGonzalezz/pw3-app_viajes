@@ -12,6 +12,7 @@ using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Web.Infraestructura;
 using TpMiercoles.Web.Models;
+using System.Globalization;
 
 namespace TpMiercoles.Web.Controllers
 {
@@ -30,7 +31,7 @@ namespace TpMiercoles.Web.Controllers
         }
 
         [HttpGet("/envios")]
-        public async Task<IActionResult> Index(EstadoEnvio? estado, bool vencidos = false)
+        public async Task<IActionResult> Index(EstadoEnvio? estado, bool vencidos = false, string? texto = null, DateTime? desde = null, DateTime? hasta = null)
         {
             int? usuarioId = _sesionWeb.UsuarioId;
             if (usuarioId is null)
@@ -42,17 +43,37 @@ namespace TpMiercoles.Web.Controllers
                 .Select(_mapper.Map<EnvioListadoViewModel>)
                 .ToList();
 
-            List<EnvioListadoViewModel> filtrados = vencidos
-                ? todos.Where(e => e.EstaVencido).ToList()
+            IEnumerable<EnvioListadoViewModel> filtrados = vencidos
+                ? todos.Where(e => e.EstaVencido)
                 : estado is null
                     ? todos
-                    : todos.Where(e => e.Estado == estado.Value && !e.EstaVencido).ToList();
+                    : todos.Where(e => e.Estado == estado.Value && !e.EstaVencido);
+
+            string? busqueda = texto?.Trim();
+            if (!string.IsNullOrEmpty(busqueda))
+            {
+                filtrados = filtrados.Where(e => Contiene(e.Origen, busqueda) || Contiene(e.Destino, busqueda));
+            }
+
+            // el envio entra si su rango [FechaDesde, FechaHasta] se solapa con el pedido
+            if (desde is not null)
+            {
+                filtrados = filtrados.Where(e => e.FechaHasta.Date >= desde.Value.Date);
+            }
+
+            if (hasta is not null)
+            {
+                filtrados = filtrados.Where(e => e.FechaDesde.Date <= hasta.Value.Date);
+            }
 
             var modelo = new MisEnviosViewModel
             {
                 Filtro = estado,
                 SoloVencidos = vencidos,
-                Envios = filtrados,
+                Texto = busqueda,
+                Desde = desde,
+                Hasta = hasta,
+                Envios = filtrados.ToList(),
                 TotalTodos = todos.Count,
                 TotalBuscando = todos.Count(e => e.Estado == EstadoEnvio.BuscandoConductor && !e.EstaVencido),
                 TotalVencidos = todos.Count(e => e.EstaVencido),
@@ -144,5 +165,9 @@ namespace TpMiercoles.Web.Controllers
             TempData["Mensaje"] = "Envío publicado correctamente";
             return RedirectToAction(nameof(Index));
         }
+
+        // sin importar mayusculas ni tildes ("moron" encuentra "Morón")
+        private static bool Contiene(string texto, string busqueda)
+            => CultureInfo.InvariantCulture.CompareInfo.IndexOf(texto, busqueda, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0;
     }
 }
