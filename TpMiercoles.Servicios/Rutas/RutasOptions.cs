@@ -10,6 +10,9 @@ namespace TpMiercoles.Servicios.Rutas {
 
         public string OrsBaseUrl { get; set; } = "https://api.openrouteservice.org/";
 
+        // cuanto se espera a ORS antes de darlo por caido y pasar al mock (el HttpClient espera 100 s por defecto)
+        public int OrsTiempoMaximoSegundos { get; set; } = 10;
+
         public double MockFactorCalle { get; set; } = 1.3;//el mock calcula en linea recta, por calle se le agrega un 30% mas
 
         public double MockVelocidadKmh { get; set; } = 40;//velocidad mock promedio para calcular la duracion estimada del viaje

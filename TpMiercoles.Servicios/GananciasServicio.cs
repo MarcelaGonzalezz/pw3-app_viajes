@@ -152,7 +152,10 @@ namespace TpMiercoles.Servicios
                 RutaId = ruta.Id,
                 FechaSalida = salida,
                 DesvioMaximoKm = desvioMaximoKm ?? SinLimite,
-                EnviosExcluidos = [.. yaUsados]
+                EnviosExcluidos = [.. yaUsados],
+                // Son unas 12 salidas por carga: con rutas reales se pasaria del limite por minuto
+                // de ORS. Como es una estimacion del mes, se calcula todo con distancias estimadas.
+                SoloEstimado = true
             };
 
             ResultadoOptimizacionDTO resultado =
@@ -179,7 +182,8 @@ namespace TpMiercoles.Servicios
                 GananciaComprometida = resultado.IngresoComprometido,
 
                 PesoKg = propuesta?.PesoAdicionalKg ?? 0,
-                DesvioKm = propuesta?.DesvioTotalKm ?? 0,
+                // solo lo que agregan los paquetes propuestos, no el desvio de los ya aceptados
+                DesvioKm = propuesta?.DesvioAdicionalKm ?? 0,
                 DistanciaKm = propuesta?.DistanciaTotalKm ?? (ruta.DistanciaMetros ?? 0) / 1000,
                 DuracionMinutos = propuesta?.DuracionTotalMinutos ?? (ruta.DuracionSegundos ?? 0) / 60,
 

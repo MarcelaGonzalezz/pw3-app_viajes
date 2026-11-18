@@ -83,6 +83,14 @@
             }
         </p>
 
+        @if (r.Oportunidades.Count > 0 && r.DistanciasEstimadas)
+        {
+            <div class="vl-aviso" role="status">
+                Los kilómetros son estimados (en línea recta, ajustados por calles):
+                no se pudieron confirmar con rutas reales.
+            </div>
+        }
+
         @foreach (var aviso in r.AvisosDeLaSalida)
         {
             <div class="vl-aviso vl-aviso--error" role="status">@aviso</div>

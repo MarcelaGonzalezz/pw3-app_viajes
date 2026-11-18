@@ -116,6 +116,7 @@ public class OptimizadorServicioTests
         Assert.Equal(8, equilibrada.PesoAdicionalKg);
         Assert.Equal(2, equilibrada.CantidadTotalPaquetes);
         Assert.Equal(3, equilibrada.DesvioTotalKm);
+        Assert.Equal(2, equilibrada.DesvioAdicionalKm, 3); // 13 km con todo - 11 km con el ya aceptado
         Assert.Equal(13, equilibrada.DistanciaTotalKm);
         Assert.Equal(15, equilibrada.DuracionTotalMinutos);
         Assert.All(caso.Proveedor.Consultas.Where(c => c.Length > 1), ids => Assert.Contains(90, ids));
@@ -312,6 +313,124 @@ public class OptimizadorServicioTests
         Assert.Empty(caso.Proveedor.Consultas);
     }
 
+    // ---------- Busqueda en dos pasos (estimador + rutas reales) ----------
+
+    [Fact]
+    public async Task DosPasos_SoloLasFinalistasSeConsultanConRutasReales()
+    {
+        var caso = new Escenario(cantidad: 1, conEstimador: true);
+        for (int id = 1; id <= 8; id++) caso.Agregar(id, 1, 1000 * id, 500 * id);
+
+        var resultado = await caso.Calcular(10);
+
+        Assert.False(resultado.DistanciasEstimadas);
+        Assert.Equal(9, caso.Estimador!.Consultas.Count); // recorrido habitual + las 8 combinaciones
+        Assert.Equal(6, caso.Proveedor.Consultas.Count);  // recorrido habitual + 5 finalistas
+        Assert.Equal(new[] { 8 }, PorEtiqueta(resultado, "Mayor ganancia").EnviosNuevosIds);
+        Assert.Equal(new[] { 1 }, PorEtiqueta(resultado, "Menor desvío").EnviosNuevosIds);
+    }
+
+    [Fact]
+    public async Task DosPasos_ElMargenNoPierdeUnaCombinacionQueConRutasRealesCumple()
+    {
+        var caso = new Escenario(cantidad: 1, conEstimador: true);
+        caso.Agregar(1, 2, 5000, 4800);
+        caso.Estimador!.Desvios["1"] = 5500; // estimado 5,5 km: se pasa de 5, pero entra en el margen (6 km)
+
+        var resultado = await caso.Calcular(5);
+
+        Assert.False(resultado.DistanciasEstimadas);
+        Assert.Equal(4.8, Assert.Single(resultado.Propuestas).DesvioTotalKm, 3);
+    }
+
+    [Fact]
+    public async Task DosPasos_LaFinalistaQueSePasaConRutasRealesSeDescartaYQuedaLaSiguiente()
+    {
+        var caso = new Escenario(cantidad: 1, conEstimador: true);
+        caso.Agregar(1, 2, 10000, 7000); // real: 7 km
+        caso.Agregar(2, 2, 8000, 2000);
+        caso.Estimador!.Desvios["1"] = 1000; // estimado: 1 km, parecia la mejor
+
+        var resultado = await caso.Calcular(5);
+
+        Assert.False(resultado.DistanciasEstimadas);
+        Assert.All(resultado.Propuestas, p => Assert.DoesNotContain(1, p.EnviosNuevosIds));
+        Assert.Equal(new[] { 2 }, PorEtiqueta(resultado, "Mayor ganancia").EnviosNuevosIds);
+    }
+
+    [Fact]
+    public async Task DosPasos_SiUnaConfirmacionVieneSinTrazado_TodaLaSalidaQuedaEstimada()
+    {
+        var caso = new Escenario(cantidad: 1, conEstimador: true);
+        caso.Agregar(1, 2, 5000, 3000);
+        caso.Estimador!.Desvios["1"] = 1000;
+        caso.Proveedor.ConTrazado = false; // el plan B respondio con el mock
+
+        var resultado = await caso.Calcular(5);
+
+        Assert.True(resultado.DistanciasEstimadas);
+        Assert.Equal(1, Assert.Single(resultado.Propuestas).DesvioTotalKm, 3); // valor del paso 1
+    }
+
+    [Fact]
+    public async Task DosPasos_SinConfirmar_ElLimiteExactoSeAplicaSobreLoEstimado()
+    {
+        var caso = new Escenario(cantidad: 1, conEstimador: true);
+        caso.Agregar(1, 2, 5000, 4800);
+        caso.Estimador!.Desvios["1"] = 5500;
+        caso.Proveedor.ConTrazado = false;
+
+        var resultado = await caso.Calcular(5);
+
+        Assert.True(resultado.DistanciasEstimadas);
+        Assert.Empty(resultado.Propuestas);
+    }
+
+    [Fact]
+    public async Task DosPasos_UnaFinalistaSinCaminoPosible_SeDescartaYQuedaLaSiguiente()
+    {
+        var caso = new Escenario(cantidad: 1, conEstimador: true);
+        caso.Agregar(1, 2, 10000, 1000);
+        caso.Agregar(2, 2, 8000, 2000);
+        caso.Proveedor.ErroresHttp["1"] = 404;
+
+        var resultado = await caso.Calcular(5);
+
+        Assert.False(resultado.DistanciasEstimadas);
+        Assert.All(resultado.Propuestas, p => Assert.DoesNotContain(1, p.EnviosNuevosIds));
+    }
+
+    [Theory]
+    [InlineData("", 500)]  // falla el recorrido habitual
+    [InlineData("1", 500)] // falla una finalista
+    [InlineData("1", 400)]
+    public async Task DosPasos_SiOrsFallaPorOtroMotivo_UsaElPaso1Completo(string combinacion, int codigo)
+    {
+        var caso = new Escenario(cantidad: 1, conEstimador: true);
+        caso.Agregar(1, 2, 10000, 3000);
+        caso.Estimador!.Desvios["1"] = 1000;
+        caso.Proveedor.ErroresHttp[combinacion] = codigo;
+
+        var resultado = await caso.Calcular(5);
+
+        Assert.True(resultado.DistanciasEstimadas);
+        Assert.Equal(1, Assert.Single(resultado.Propuestas).DesvioTotalKm, 3); // valor del paso 1
+    }
+
+    [Fact]
+    public async Task SoloEstimado_NoConsultaRutasReales()
+    {
+        var caso = new Escenario(cantidad: 1, conEstimador: true);
+        caso.Agregar(1, 2, 5000, 1000);
+
+        var resultado = await caso.Servicio.CalcularAsync(
+            new SolicitudOptimizacionDTO { RutaId = 1, ViajeId = 20, DesvioMaximoKm = 5, SoloEstimado = true }, 7);
+
+        Assert.True(resultado.DistanciasEstimadas);
+        Assert.Single(resultado.Propuestas);
+        Assert.Empty(caso.Proveedor.Consultas);
+    }
+
     private static SolicitudOptimizacionDTO Solicitud(double desvio)
         => new() { RutaId = 1, ViajeId = 20, DesvioMaximoKm = desvio };
 
@@ -330,10 +449,12 @@ public class OptimizadorServicioTests
         internal Mock<IViajeRepositorio> Viajes { get; } = new();
         internal Mock<IEnvioRepositorio> Envios { get; } = new();
         internal ProveedorControlado Proveedor { get; } = new();
+        internal EstimadorControlado? Estimador { get; }
         internal OptimizadorServicio Servicio { get; }
 
-        internal Escenario(double peso = 10, int cantidad = 3, decimal proporcion = 0.8m)
+        internal Escenario(double peso = 10, int cantidad = 3, decimal proporcion = 0.8m, bool conEstimador = false)
         {
+            Estimador = conEstimador ? new EstimadorControlado() : null;
             Ruta = OptimizacionTestData.Ruta(peso, cantidad);
             Viaje = OptimizacionTestData.Viaje(Ruta);
             var rutas = new Mock<IRutaRepositorio>();
@@ -346,7 +467,7 @@ public class OptimizadorServicioTests
                 new ResolvedorSalidaOptimizacion(Viajes.Object, reloj, rutas.Object),
                 new ValidadorSolicitudOptimizacion(), new ValidadorSalidaOptimizacion(),
                 new CalculadorCompromisosSalida(), new BuscadorCandidatosOptimizacion(Envios.Object),
-                new EvaluadorDesvioCompromisos(Proveedor, constructor), proporcion);
+                new EvaluadorDesvioCompromisos(Proveedor, constructor), proporcion, Estimador);
         }
 
         internal void Agregar(int id, double peso, decimal pago, double desvioMetros)
@@ -355,18 +476,27 @@ public class OptimizadorServicioTests
             Candidatos.Add(envio);
             Proveedor.Envios.Add(envio);
             Proveedor.Desvios[id.ToString()] = desvioMetros;
+            if (Estimador is not null)
+            {
+                Estimador.Envios.Add(envio);
+                Estimador.Desvios[id.ToString()] = desvioMetros;
+            }
         }
 
         internal Task<ResultadoOptimizacionDTO> Calcular(double desvio)
             => Servicio.CalcularAsync(Solicitud(desvio), 7);
     }
 
-    private sealed class ProveedorControlado : IServicioRutas
+    private class ProveedorControlado : IServicioRutas
     {
+        // true: responde con trazado, como ORS. El mock y el plan B responden sin trazado.
+        internal bool ConTrazado { get; set; } = true;
         internal List<Envio> Envios { get; } = [];
         internal Dictionary<string, double> Desvios { get; } = new();
         internal List<int[]> Consultas { get; } = [];
         internal Exception? Error { get; set; }
+        // error por combinacion ("" = recorrido habitual), con el codigo HTTP que responderia ORS
+        internal Dictionary<string, int> ErroresHttp { get; } = new();
 
         public Task<ResultadoRuta> CalcularRutaAsync(Coordenada origen, Coordenada destino,
             IReadOnlyList<Coordenada>? paradas = null, CancellationToken ct = default)
@@ -385,9 +515,17 @@ public class OptimizadorServicioTests
             Assert.Equal(new Coordenada(0, 0), origen);
             Assert.Equal(new Coordenada(0, 10), destino);
             Consultas.Add(ids);
+            if (ErroresHttp.TryGetValue(string.Join(",", ids), out int codigo))
+                throw new RutaNoEncontradaException($"ORS respondió {codigo}.") { CodigoHttp = codigo };
             double desvio = ids.Length == 0 ? 0 : Desvios[string.Join(",", ids)];
-            return Task.FromResult(new ResultadoRuta(10000 + desvio, ids.Length == 0 ? 600 : 900));
+            return Task.FromResult(new ResultadoRuta(10000 + desvio, ids.Length == 0 ? 600 : 900, ConTrazado ? "{}" : null));
         }
+    }
+
+    // Hace de MockServicioRutas: mismas reglas, sin trazado.
+    private sealed class EstimadorControlado : ProveedorControlado, IEstimadorDeRutas
+    {
+        internal EstimadorControlado() => ConTrazado = false;
     }
 
 }

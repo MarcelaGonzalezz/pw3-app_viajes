@@ -161,6 +161,29 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
+        public async Task ElDesvioDeCadaSalidaEsSoloElQueSumanLosPaquetesNuevos()
+        {
+            ConfigurarOptimizador(5000m, (1, 5000m));
+
+            GananciasMensualDTO dto = await _servicio.CalcularAsync(
+                ConductorId, 2026, 11, CriterioOptimizacion.MayorGanancia);
+
+            // la propuesta tiene 3 km de desvio total (con los aceptados) y 1 km adicional
+            Assert.Equal(1, dto.Salidas.First(s => s.TuvoEnvios).DesvioKm);
+        }
+
+        [Fact]
+        public async Task SeCalculaTodoConDistanciasEstimadas()
+        {
+            List<SolicitudOptimizacionDTO> recibidas = ConfigurarOptimizador(0m, (1, 5000m));
+
+            await _servicio.CalcularAsync(ConductorId, 2026, 11, CriterioOptimizacion.MayorGanancia);
+
+            Assert.NotEmpty(recibidas);
+            Assert.All(recibidas, s => Assert.True(s.SoloEstimado));
+        }
+
+        [Fact]
         public async Task CadaSalidaInformaQuePaquetesHayQueAceptar()
         {
             ConfigurarOptimizador(0m, (1, 5000m), (2, 3000m));
@@ -260,7 +283,8 @@ namespace TpMiercoles.Tests.Servicios
                 PesoAdicionalKg = 2,
                 PesoTotalKg = 2,
                 CantidadTotalPaquetes = 1,
-                DesvioTotalKm = 1,
+                DesvioTotalKm = 3,
+                DesvioAdicionalKm = 1,
                 DistanciaTotalKm = 10,
                 DuracionTotalMinutos = 20
             };

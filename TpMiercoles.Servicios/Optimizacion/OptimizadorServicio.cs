@@ -27,6 +27,18 @@ namespace TpMiercoles.Servicios.Optimizacion
         private readonly IBuscadorCandidatosOptimizacion _buscadorCandidatos;
         private readonly EvaluadorDesvioCompromisos _evaluadorDesvio;
         private readonly decimal _proporcionMinimaIngreso;
+        private readonly IEstimadorDeRutas? _estimador;
+
+        // Busqueda en dos pasos para no gastar la cuota de OpenRouteService:
+        //  1) todas las combinaciones con el estimador (gratis), filtrando con un margen sobre el
+        //     desvio maximo, porque lo estimado puede dar un poco mas que lo real;
+        //  2) solo las mejores se confirman con rutas reales y ahi se aplica el limite exacto.
+        // Si alguna confirmacion vuelve sin trazado (el plan B ya respondio con el mock), se usa
+        // el paso 1 completo y el resultado se marca como estimado: nunca se mezclan fuentes.
+        private const double MargenDelPaso1 = 1.2;
+        private const int CantidadDeFinalistas = 5;
+        private const string MensajeCompromisosSuperanDesvio =
+            "El recorrido calculado para los envíos ya comprometidos supera el desvío máximo ingresado.";
 
         public OptimizadorServicio(
             IServicioRutas servicioRutas,
@@ -38,7 +50,8 @@ namespace TpMiercoles.Servicios.Optimizacion
             CalculadorCompromisosSalida calculadorCompromisos,
             IBuscadorCandidatosOptimizacion buscadorCandidatos,
             EvaluadorDesvioCompromisos evaluadorDesvio,
-            decimal proporcionMinimaIngreso = 0.80m)
+            decimal proporcionMinimaIngreso = 0.80m,
+            IEstimadorDeRutas? estimador = null)
         {
             if (proporcionMinimaIngreso <= 0m || proporcionMinimaIngreso > 1m)
             {
@@ -55,6 +68,7 @@ namespace TpMiercoles.Servicios.Optimizacion
             _buscadorCandidatos = buscadorCandidatos;
             _evaluadorDesvio = evaluadorDesvio;
             _proporcionMinimaIngreso = proporcionMinimaIngreso;
+            _estimador = estimador;
         }
         private static List<(int EnvioId, double PesoKg, decimal Pago)> PrepararCandidatos(
                 IReadOnlyList<Envio> candidatos)
@@ -71,7 +85,9 @@ namespace TpMiercoles.Servicios.Optimizacion
                 .ToList();
         }
 
-        private async Task<ResultadoRuta> CalcularRutaCombinacionAsync(
+        private static async Task<ResultadoRuta> CalcularRutaCombinacionAsync(
+                IServicioRutas servicioRutas,
+                ConstructorRecorridoOptimizacion constructorRecorrido,
                 IReadOnlyList<Coordenada> recorridoBase,
                 CompromisosSalida compromisos,
                 IReadOnlyDictionary<int, Envio> candidatosPorId,
@@ -103,21 +119,58 @@ namespace TpMiercoles.Servicios.Optimizacion
                 enviosDelRecorrido.Add(envio);
             }
 
-            var recorrido = _constructorRecorrido.ConstruirConEnvios( recorridoBase, enviosDelRecorrido, ct);
+            var recorrido = constructorRecorrido.ConstruirConEnvios( recorridoBase, enviosDelRecorrido, ct);
 
             var paradas = recorrido
                 .Skip(1)
                 .Take(recorrido.Count - 2)
                 .ToList();
 
-            return await _servicioRutas.CalcularRutaAsync(
+            return await servicioRutas.CalcularRutaAsync(
                 recorrido[0],
                 recorrido[^1],
                 paradas,
                 ct);
         }
 
+        // Calcula el recorrido de una combinacion y su desvio respecto del recorrido base.
+        private async Task<CombinacionEvaluada> EvaluarCombinacionAsync(
+                IServicioRutas servicioRutas,
+                IReadOnlyList<Coordenada> recorridoBase,
+                ResultadoRuta rutaBase,
+                CompromisosSalida compromisos,
+                IReadOnlyDictionary<int, Envio> candidatosPorId,
+                IReadOnlyList<int> idsSeleccionados,
+                CancellationToken ct)
+        {
+            ResultadoRuta recorrido =
+                await CalcularRutaCombinacionAsync(
+                    servicioRutas,
+                    _constructorRecorrido,
+                    recorridoBase,
+                    compromisos,
+                    candidatosPorId,
+                    idsSeleccionados,
+                    ct);
+
+            if (!double.IsFinite(recorrido.DistanciaMetros) || recorrido.DistanciaMetros < 0)
+            {
+                throw new InvalidOperationException(
+                    "El servicio de rutas devolvió una distancia inválida.");
+            }
+
+            return new CombinacionEvaluada
+            {
+                EnviosSeleccionados = idsSeleccionados,
+                IngresoAdicional = idsSeleccionados.Sum(envioId => candidatosPorId[envioId].Monto),
+                PesoAdicionalKg = idsSeleccionados.Sum(envioId => candidatosPorId[envioId].Paquete.PesoKg),
+                DesvioKm = Math.Max(0, recorrido.DistanciaKm - rutaBase.DistanciaKm),
+                Recorrido = recorrido
+            };
+        }
+
         private async Task<List<CombinacionEvaluada>> EvaluarCombinacionesAsync(
+                IServicioRutas servicioRutas,
                 IReadOnlyList<Coordenada> recorridoBase,
                 ResultadoRuta rutaBase,
                 CompromisosSalida compromisos,
@@ -153,41 +206,21 @@ namespace TpMiercoles.Servicios.Optimizacion
             {
                 ct.ThrowIfCancellationRequested();
 
-                ResultadoRuta recorrido =
-                    await CalcularRutaCombinacionAsync(
-                        recorridoBase,
-                        compromisos,
-                        candidatosPorId,
-                        idsSeleccionados,
-                        ct);
+                CombinacionEvaluada evaluada = await EvaluarCombinacionAsync(
+                    servicioRutas,
+                    recorridoBase,
+                    rutaBase,
+                    compromisos,
+                    candidatosPorId,
+                    idsSeleccionados,
+                    ct);
 
-                if (!double.IsFinite(recorrido.DistanciaMetros) || recorrido.DistanciaMetros < 0)
-                {
-                    throw new InvalidOperationException(
-                        "El servicio de rutas devolvió una distancia inválida.");
-                }
-
-                double desvioKm = Math.Max(0, recorrido.DistanciaKm - rutaBase.DistanciaKm);
-
-                if (desvioKm > desvioMaximoKm)
+                if (evaluada.DesvioKm > desvioMaximoKm)
                 {
                     continue;
                 }
 
-                decimal ingresoAdicional = idsSeleccionados.Sum(
-                    envioId => candidatosPorId[envioId].Monto);
-
-                double pesoAdicionalKg = idsSeleccionados.Sum(
-                    envioId => candidatosPorId[envioId].Paquete.PesoKg );
-
-                resultados.Add(new CombinacionEvaluada
-                {
-                    EnviosSeleccionados = idsSeleccionados,
-                    IngresoAdicional = ingresoAdicional,
-                    PesoAdicionalKg = pesoAdicionalKg,
-                    DesvioKm = desvioKm,
-                    Recorrido = recorrido
-                });
+                resultados.Add(evaluada);
             }
 
             return resultados;
@@ -235,7 +268,8 @@ namespace TpMiercoles.Servicios.Optimizacion
         private static List<PropuestaOptimizacionDTO> ArmarPropuestas(
             IReadOnlyList<CombinacionEvaluada> combinaciones,
             CompromisosSalida compromisos,
-            decimal proporcionMinimaIngreso)
+            decimal proporcionMinimaIngreso,
+            double distanciaConCompromisosKm)
         {
             ArgumentNullException.ThrowIfNull(compromisos);
 
@@ -282,6 +316,7 @@ namespace TpMiercoles.Servicios.Optimizacion
                     PesoTotalKg = compromisos.PesoComprometidoKg + combinacion.PesoAdicionalKg,
                     CantidadTotalPaquetes = compromisos.CantidadComprometidaPaquetes + idsOrdenados.Length,
                     DesvioTotalKm = combinacion.DesvioKm,
+                    DesvioAdicionalKm = Math.Max(0, combinacion.Recorrido.DistanciaKm - distanciaConCompromisosKm),
                     DistanciaTotalKm = combinacion.Recorrido.DistanciaKm,
                     DuracionTotalMinutos = combinacion.Recorrido.DuracionMinutos
                 };
@@ -377,19 +412,32 @@ namespace TpMiercoles.Servicios.Optimizacion
                 };
             }
 
+            // Con un solo servicio de rutas (modo mock, o sin estimador) hay un solo paso.
+            bool dosPasos = !solicitud.SoloEstimado
+                && _estimador is not null
+                && _servicioRutas is not IEstimadorDeRutas;
+
+            IServicioRutas rutasPaso1 = (IServicioRutas?)_estimador ?? _servicioRutas;
+            double limiteExacto = solicitud.DesvioMaximoKm;
+            double limitePaso1 = dosPasos ? ConMargen(limiteExacto) : limiteExacto;
+
             var evaluacionDesvio = await _evaluadorDesvio.EvaluarAsync(
                 salida,
                 compromisos,
-                solicitud.DesvioMaximoKm,
+                limitePaso1,
+                rutasPaso1,
                 ct);
 
             var mensajes = new List<string>();
             var propuestas = new List<PropuestaOptimizacionDTO>();
+            bool distanciasEstimadas = true;
+
+            // recorrido con los envios ya aceptados, de la misma fuente que las combinaciones
+            ResultadoRuta rutaConCompromisos = evaluacionDesvio.RutaConEnvios;
 
             if (evaluacionDesvio.SuperaLimite)
             {
-                mensajes.Add(
-                    "El recorrido calculado para los envíos ya comprometidos supera el desvío máximo ingresado.");
+                mensajes.Add(MensajeCompromisosSuperanDesvio);
             }else if (compromisos.PesoDisponibleKg == 0 || compromisos.CantidadDisponiblePaquetes == 0)
             {
                 mensajes.Add(
@@ -414,23 +462,69 @@ namespace TpMiercoles.Servicios.Optimizacion
                     var recorridoBase =
                         _constructorRecorrido.ConstruirBase(salida);
 
+                    // Paso 1: todas las combinaciones con el estimador.
                     var combinaciones = await EvaluarCombinacionesAsync(
+                        rutasPaso1,
                         recorridoBase,
                         evaluacionDesvio.RutaBase,
                         compromisos,
                         candidatos,
-                        solicitud.DesvioMaximoKm,
+                        limitePaso1,
                         ct);
 
-                    propuestas = ArmarPropuestas(
-                        combinaciones,
-                        compromisos,
-                        _proporcionMinimaIngreso);
-
-                    if (propuestas.Count == 0)
+                    // Paso 2: las finalistas, con rutas reales.
+                    if (dosPasos && combinaciones.Count > 0)
                     {
-                        mensajes.Add(
-                            "Ninguna combinación evaluada cumple todas las restricciones.");
+                        var confirmadas = await ConfirmarConRutasRealesAsync(
+                            salida,
+                            compromisos,
+                            recorridoBase,
+                            candidatos.ToDictionary(envio => envio.Id),
+                            combinaciones,
+                            limiteExacto,
+                            ct);
+
+                        if (confirmadas is not null)
+                        {
+                            distanciasEstimadas = false;
+                            combinaciones = confirmadas.Combinaciones;
+                            rutaConCompromisos = confirmadas.RutaConCompromisos ?? rutaConCompromisos;
+
+                            if (confirmadas.CompromisosSuperanDesvio)
+                            {
+                                mensajes.Add(MensajeCompromisosSuperanDesvio);
+                            }
+                        }
+                    }
+
+                    // Sin confirmar con rutas reales: el limite exacto se aplica sobre lo estimado.
+                    if (distanciasEstimadas)
+                    {
+                        if (evaluacionDesvio.DesvioKm > limiteExacto)
+                        {
+                            mensajes.Add(MensajeCompromisosSuperanDesvio);
+                            combinaciones = [];
+                        }else
+                        {
+                            combinaciones = combinaciones
+                                .Where(combinacion => combinacion.DesvioKm <= limiteExacto)
+                                .ToList();
+                        }
+                    }
+
+                    if (mensajes.Count == 0)
+                    {
+                        propuestas = ArmarPropuestas(
+                            combinaciones,
+                            compromisos,
+                            _proporcionMinimaIngreso,
+                            rutaConCompromisos.DistanciaKm);
+
+                        if (propuestas.Count == 0)
+                        {
+                            mensajes.Add(
+                                "Ninguna combinación evaluada cumple todas las restricciones.");
+                        }
                     }
                 }
             }
@@ -444,8 +538,148 @@ namespace TpMiercoles.Servicios.Optimizacion
                 ViajeId = salida.ViajeId,
                 FechaSalidaProgramada = salida.FechaSalidaProgramada,
                 MomentoEvaluacion = salida.MomentoEvaluacion,
-                IngresoComprometido = compromisos.IngresoComprometido
+                IngresoComprometido = compromisos.IngresoComprometido,
+                DistanciasEstimadas = distanciasEstimadas
             };
+        }
+
+        // Paso 2. Devuelve null si alguna respuesta vino sin trazado (estimada por el plan B) o si
+        // ORS fallo por algo que no sea "no hay camino" (404): se descarta todo lo real y se usa el paso 1.
+        private async Task<ConfirmacionConRutasReales?> ConfirmarConRutasRealesAsync(
+                SalidaOptimizacion salida,
+                CompromisosSalida compromisos,
+                IReadOnlyList<Coordenada> recorridoBase,
+                IReadOnlyDictionary<int, Envio> candidatosPorId,
+                IReadOnlyList<CombinacionEvaluada> estimadas,
+                double limiteExacto,
+                CancellationToken ct)
+        {
+            EvaluacionDesvio evaluacionReal;
+            try
+            {
+                evaluacionReal = await _evaluadorDesvio.EvaluarAsync(
+                    salida,
+                    compromisos,
+                    limiteExacto,
+                    _servicioRutas,
+                    ct);
+            }
+            catch (RutaNoEncontradaException)
+            {
+                return null;
+            }
+
+            if (!TieneTrazado(evaluacionReal.RutaBase) || !TieneTrazado(evaluacionReal.RutaConEnvios))
+            {
+                return null;
+            }
+
+            if (evaluacionReal.SuperaLimite)
+            {
+                return new ConfirmacionConRutasReales { CompromisosSuperanDesvio = true };
+            }
+
+            var confirmadas = new List<CombinacionEvaluada>();
+
+            foreach (var estimada in ElegirFinalistas(estimadas, CantidadDeFinalistas, _proporcionMinimaIngreso))
+            {
+                CombinacionEvaluada real;
+                try
+                {
+                    real = await EvaluarCombinacionAsync(
+                        _servicioRutas,
+                        recorridoBase,
+                        evaluacionReal.RutaBase,
+                        compromisos,
+                        candidatosPorId,
+                        estimada.EnviosSeleccionados,
+                        ct);
+                }
+                catch (RutaNoEncontradaException ex) when (ex.CodigoHttp == 404)
+                {
+                    // no hay camino pasando por esos envios: se descarta y queda la siguiente
+                    continue;
+                }
+                catch (RutaNoEncontradaException)
+                {
+                    return null;
+                }
+
+                if (!TieneTrazado(real.Recorrido))
+                {
+                    return null;
+                }
+
+                // Si con los km reales se pasa del limite, se descarta y queda la siguiente.
+                if (real.DesvioKm <= limiteExacto)
+                {
+                    confirmadas.Add(real);
+                }
+            }
+
+            return new ConfirmacionConRutasReales
+            {
+                Combinaciones = confirmadas,
+                RutaConCompromisos = evaluacionReal.RutaConEnvios
+            };
+        }
+
+        // Las mejores de cada criterio, intercaladas (1a de mayor ganancia, 1a de menor desvio,
+        // 1a equilibrada, 2a de mayor ganancia...), sin repetir, hasta completar la cantidad.
+        private static List<CombinacionEvaluada> ElegirFinalistas(
+                IReadOnlyList<CombinacionEvaluada> combinaciones,
+                int cantidad,
+                decimal proporcionMinimaIngreso)
+        {
+            decimal ingresoMaximo = combinaciones.Max(combinacion => combinacion.IngresoAdicional);
+
+            List<CombinacionEvaluada>[] listas =
+            [
+                combinaciones
+                    .OrderByDescending(combinacion => combinacion.IngresoAdicional)
+                    .ThenBy(combinacion => combinacion.DesvioKm)
+                    .ToList(),
+                combinaciones
+                    .OrderBy(combinacion => combinacion.DesvioKm)
+                    .ThenByDescending(combinacion => combinacion.IngresoAdicional)
+                    .ToList(),
+                combinaciones
+                    .Where(combinacion => combinacion.IngresoAdicional >= ingresoMaximo * proporcionMinimaIngreso)
+                    .OrderBy(combinacion => combinacion.DesvioKm)
+                    .ThenByDescending(combinacion => combinacion.IngresoAdicional)
+                    .ToList()
+            ];
+
+            var finalistas = new List<CombinacionEvaluada>();
+
+            for (int posicion = 0; finalistas.Count < cantidad && listas.Any(lista => posicion < lista.Count); posicion++)
+            {
+                foreach (var lista in listas)
+                {
+                    if (finalistas.Count < cantidad && posicion < lista.Count && !finalistas.Contains(lista[posicion]))
+                    {
+                        finalistas.Add(lista[posicion]);
+                    }
+                }
+            }
+
+            return finalistas;
+        }
+
+        private static bool TieneTrazado(ResultadoRuta ruta) => !string.IsNullOrEmpty(ruta.GeometriaJson);
+
+        // Limite del paso 1 con margen, sin pasarse del maximo de double (Potencial usa double.MaxValue).
+        private static double ConMargen(double desvioMaximoKm)
+        {
+            double conMargen = desvioMaximoKm * MargenDelPaso1;
+            return double.IsFinite(conMargen) ? conMargen : double.MaxValue;
+        }
+
+        private sealed class ConfirmacionConRutasReales
+        {
+            public List<CombinacionEvaluada> Combinaciones { get; init; } = [];
+            public bool CompromisosSuperanDesvio { get; init; }
+            public ResultadoRuta? RutaConCompromisos { get; init; }
         }
 
         public Task<List<SalidaDeRutaDTO>> ListarSalidasAsync(

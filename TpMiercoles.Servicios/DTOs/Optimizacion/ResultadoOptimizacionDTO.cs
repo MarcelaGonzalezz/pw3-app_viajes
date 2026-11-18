@@ -33,5 +33,8 @@ namespace TpMiercoles.Servicios.DTOs.Optimizacion
         public DateTime? MomentoEvaluacion { get; init; }
 
         public decimal IngresoComprometido { get; init; }
+
+        // true si los km de las propuestas son estimados (no se confirmaron con rutas reales).
+        public bool DistanciasEstimadas { get; init; }
     }
 }

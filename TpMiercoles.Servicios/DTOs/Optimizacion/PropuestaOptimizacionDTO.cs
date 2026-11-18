@@ -22,6 +22,9 @@ namespace TpMiercoles.Servicios.DTOs.Optimizacion
 
         public required double DesvioTotalKm { get; init; }
 
+        // km que suman solo los envios nuevos al recorrido que ya tenia la salida (con los aceptados)
+        public required double DesvioAdicionalKm { get; init; }
+
         public required double DistanciaTotalKm { get; init; }
 
         public required double DuracionTotalMinutos { get; init; }

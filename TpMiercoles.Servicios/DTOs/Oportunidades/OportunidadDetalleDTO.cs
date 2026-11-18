@@ -27,5 +27,8 @@ namespace TpMiercoles.Servicios.DTOs.Oportunidades
         // por que no se puede aceptar (vacio = se puede aceptar)
         public List<string> Motivos { get; set; } = [];
         public bool EsAceptable => Motivos.Count == 0;
+
+        // true si los km son estimados (no se pudieron calcular con rutas reales)
+        public bool DistanciasEstimadas { get; set; }
     }
 }

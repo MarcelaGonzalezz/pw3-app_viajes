@@ -56,10 +56,45 @@ namespace TpMiercoles.Tests.Servicios.Rutas {
         }
 
         [Theory]
+        [InlineData(401)]
+        [InlineData(500)]
+        [InlineData(502)]
+        [InlineData(503)]
+        public async Task CalcularRutaAsync_CuandoOrsFalla_DevuelveLaRutaEstimada(int codigo) {
+            ConfigurarOrsConError(codigo);
+
+            ResultadoRuta resultado = await _servicio.CalcularRutaAsync(Origen, Destino);
+
+            Assert.Same(RutaEstimada, resultado);
+        }
+
+        [Fact]
+        public async Task CalcularRutaAsync_SinConexionOSinRespuestaATiempo_DevuelveLaRutaEstimada() {
+            // sin codigo HTTP: falla de red, tiempo de espera agotado o respuesta inesperada
+            _ors.Setup(o => o.CalcularRutaAsync(Origen, Destino, null, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new RutaNoEncontradaException("OpenRouteService no respondió a tiempo."));
+
+            ResultadoRuta resultado = await _servicio.CalcularRutaAsync(Origen, Destino);
+
+            Assert.Same(RutaEstimada, resultado);
+        }
+
+        [Fact]
+        public async Task CalcularRutaAsync_DespuesDeUnaFalla_VuelveAConsultarOrsAlMinuto() {
+            ConfigurarOrsConError(500);
+            await _servicio.CalcularRutaAsync(Origen, Destino);
+
+            ConfigurarOrs(RutaReal);
+            _reloj.Fijar(_reloj.GetUtcNow().AddMinutes(2));
+            ResultadoRuta resultado = await _servicio.CalcularRutaAsync(Origen, Destino);
+
+            Assert.Same(RutaReal, resultado);
+        }
+
+        [Theory]
         [InlineData(400)]
         [InlineData(404)]
-        [InlineData(500)]
-        public async Task CalcularRutaAsync_CuandoOrsFallaPorOtroMotivo_SigueInformandoElError(int codigo) {
+        public async Task CalcularRutaAsync_CuandoElPedidoEsInvalidoONoHayCamino_SigueInformandoElError(int codigo) {
             ConfigurarOrsConError(codigo);
 
             var error = await Assert.ThrowsAsync<RutaNoEncontradaException>(
@@ -111,6 +146,20 @@ namespace TpMiercoles.Tests.Servicios.Rutas {
                 () => ors.CalcularRutaAsync(Origen, Destino));
 
             Assert.Equal(codigoEsperado, error.CodigoHttp);
+        }
+
+        [Fact]
+        public async Task OpenRouteServiceRutas_SiNoRespondeATiempo_LoInformaComoFallaDeOrs() {
+            using var handler = new StubHttpMessageHandler(_ =>
+                throw new TaskCanceledException("Timeout", new TimeoutException()));
+            using var cliente = new HttpClient(handler) { BaseAddress = new Uri("https://ors.test/") };
+            var ors = new OpenRouteServiceRutas(cliente, new RutasOptions { OrsApiKey = "clave-ficticia" });
+
+            var error = await Assert.ThrowsAsync<RutaNoEncontradaException>(
+                () => ors.CalcularRutaAsync(Origen, Destino));
+
+            Assert.Null(error.CodigoHttp);
+            Assert.IsType<TaskCanceledException>(error.InnerException);
         }
 
         #endregion

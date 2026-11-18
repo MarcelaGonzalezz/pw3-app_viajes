@@ -18,11 +18,20 @@ namespace TpMiercoles.Servicios.Optimizacion
             _constructor = constructor;
         }
 
-        public async Task<EvaluacionDesvio> EvaluarAsync(
+        public Task<EvaluacionDesvio> EvaluarAsync(
             SalidaOptimizacion salida,
             CompromisosSalida compromisos,
             double desvioMaximoKm,
             CancellationToken ct = default)
+            => EvaluarAsync(salida, compromisos, desvioMaximoKm, _servicioRutas, ct);
+
+        // Igual, pero con el servicio de rutas que se indique (el estimado o el real).
+        public async Task<EvaluacionDesvio> EvaluarAsync(
+            SalidaOptimizacion salida,
+            CompromisosSalida compromisos,
+            double desvioMaximoKm,
+            IServicioRutas servicioRutas,
+            CancellationToken ct)
         {
             ArgumentNullException.ThrowIfNull(salida);
             ArgumentNullException.ThrowIfNull(compromisos);
@@ -37,7 +46,7 @@ namespace TpMiercoles.Servicios.Optimizacion
             var recorridoBase = _constructor.ConstruirBase(salida);
 
             ResultadoRuta rutaBase =
-                await _servicioRutas.CalcularRutaAsync(
+                await servicioRutas.CalcularRutaAsync(
                     recorridoBase[0],
                     recorridoBase[^1],
                     recorridoBase
@@ -57,7 +66,7 @@ namespace TpMiercoles.Servicios.Optimizacion
                         ct);
 
                 rutaConEnvios =
-                    await _servicioRutas.CalcularRutaAsync(
+                    await servicioRutas.CalcularRutaAsync(
                         recorridoComprometido[0],
                         recorridoComprometido[^1],
                         recorridoComprometido

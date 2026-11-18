@@ -16,5 +16,6 @@ namespace TpMiercoles.Web.Models
         public List<string> Motivos { get; set; } = [];
 
         public bool EsAceptable => Motivos.Count == 0;
+        public bool DistanciasEstimadas { get; set; }
     }
 }

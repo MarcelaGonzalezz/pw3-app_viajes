@@ -43,19 +43,29 @@ namespace TpMiercoles.Servicios
         private const double DESVIO_DESPRECIABLE_KM = 0.1;
         public const double DESVIO_MAXIMO_POR_DEFECTO_KM = 10;
 
+        // Busqueda en dos pasos, igual que el optimizador, para no gastar la cuota de ORS:
+        //  1) todos los envios con el estimador, filtrando con un margen sobre el desvio maximo;
+        //  2) los mejores segun el orden elegido se confirman con rutas reales y ahi se aplica
+        //     el limite exacto. Si alguna respuesta vuelve sin trazado (plan B), se usa el paso 1
+        //     completo y se marca como estimado: nunca se mezclan fuentes en una misma salida.
+        private const double MARGEN_DEL_PASO_1 = 1.2;
+        public const int CANTIDAD_DE_FINALISTAS = 5;
+
         private readonly IRutaRepositorio _rutaRepositorio;
         private readonly IViajeRepositorio _viajeRepositorio;
         private readonly IEnvioRepositorio _envioRepositorio;
         private readonly IServicioRutas _servicioRutas;
         private readonly TimeProvider _reloj;
+        private readonly IEstimadorDeRutas? _estimador;
 
-        public OportunidadServicio(IRutaRepositorio rutaRepositorio, IViajeRepositorio viajeRepositorio, IEnvioRepositorio envioRepositorio, IServicioRutas servicioRutas, TimeProvider reloj)
+        public OportunidadServicio(IRutaRepositorio rutaRepositorio, IViajeRepositorio viajeRepositorio, IEnvioRepositorio envioRepositorio, IServicioRutas servicioRutas, TimeProvider reloj, IEstimadorDeRutas? estimador = null)
         {
             _rutaRepositorio = rutaRepositorio;
             _viajeRepositorio = viajeRepositorio;
             _envioRepositorio = envioRepositorio;
             _servicioRutas = servicioRutas;
             _reloj = reloj;
+            _estimador = estimador;
         }
 
         public async Task<List<SalidaDeRutaDTO>> ListarSalidasAsync(int conductorId, CancellationToken ct = default)
@@ -124,37 +134,43 @@ namespace TpMiercoles.Servicios
                 return resultado;
             }
 
-            ResultadoRuta habitual = await CalcularHabitualAsync(salida, ct);
-            resultado.DistanciaHabitualKm = Redondear(habitual.DistanciaKm);
-            resultado.TiempoHabitualMin = Redondear(habitual.DuracionMinutos);
-
             double limite = desvioMaximoKm ?? DESVIO_MAXIMO_POR_DEFECTO_KM; // si no se envia desvioMaximoKm por parametro, por defecto es 10km
 
-            foreach (Envio envio in candidatos)
+            // Con un solo servicio de rutas (modo mock, o sin estimador) hay un solo paso.
+            bool dosPasos = _estimador is not null && _servicioRutas is not IEstimadorDeRutas;
+            IServicioRutas rutasPaso1 = (IServicioRutas?)_estimador ?? _servicioRutas;
+
+            // Paso 1: todos los envios con el estimador.
+            var (habitual, estimadas) = await EvaluarEnviosAsync(
+                salida, candidatos, conductorId, rutasPaso1, dosPasos ? limite * MARGEN_DEL_PASO_1 : limite, ct);
+
+            // Paso 2: los mejores, con rutas reales.
+            if (dosPasos && estimadas.Count > 0)
             {
-                // fecha, peso y capacidad se chequean antes de pedir la ruta (son gratis)
-                if (MotivosDelEnvio(salida, envio, conductorId).Count > 0)
+                Dictionary<int, Envio> enviosPorId = candidatos.ToDictionary(envio => envio.Id);
+
+                List<Envio> finalistas = Ordenar(estimadas, orden)
+                    .Take(CANTIDAD_DE_FINALISTAS)
+                    .Select(oportunidad => enviosPorId[oportunidad.EnvioId])
+                    .ToList();
+
+                var confirmacion = await ConfirmarConRutasRealesAsync(salida, finalistas, limite, ct);
+
+                if (confirmacion is { } real)
                 {
-                    continue;
+                    resultado.DistanciaHabitualKm = Redondear(real.Habitual.DistanciaKm);
+                    resultado.TiempoHabitualMin = Redondear(real.Habitual.DuracionMinutos);
+                    resultado.Oportunidades = Ordenar(real.Oportunidades, orden);
+                    resultado.DistanciasEstimadas = false;
+                    return resultado;
                 }
-
-                ResultadoRuta conEnvio;
-                try
-                {
-                    conEnvio = await CalcularConEnvioAsync(salida, envio, ct);
-                }
-                catch (RutaNoEncontradaException)
-                {
-                    // si no hay camino posible pasando por el retiro y la entrega, no es oportunidad
-                    continue;
-                }
-
-                OportunidadDTO oportunidad = Completar(new OportunidadDTO(), envio, habitual, conEnvio);
-
-                if (oportunidad.DesvioKm > limite) { continue; }
-
-                resultado.Oportunidades.Add(oportunidad);
             }
+
+            // Sin confirmar con rutas reales: el limite exacto se aplica sobre lo estimado.
+            resultado.DistanciaHabitualKm = Redondear(habitual.DistanciaKm);
+            resultado.TiempoHabitualMin = Redondear(habitual.DuracionMinutos);
+            resultado.Oportunidades = estimadas.Where(oportunidad => oportunidad.DesvioKm <= limite).ToList();
+            resultado.DistanciasEstimadas = !TieneTrazado(habitual);
 
             resultado.Oportunidades = Ordenar(resultado.Oportunidades, orden);
             return resultado;
@@ -205,8 +221,16 @@ namespace TpMiercoles.Servicios
                 return null;
             }
 
-            ResultadoRuta habitual = await CalcularHabitualAsync(salida, ct);
-            ResultadoRuta conEnvio = await CalcularConEnvioAsync(salida, envio, ct);
+            ResultadoRuta habitual = await CalcularHabitualAsync(_servicioRutas, salida, ct);
+            ResultadoRuta conEnvio = await CalcularConEnvioAsync(_servicioRutas, salida, envio, ct);
+            bool estimadas = !TieneTrazado(habitual) || !TieneTrazado(conEnvio);
+
+            // si una vino real y la otra estimada (plan B a mitad de camino), las dos con el estimador
+            if (estimadas && _estimador is not null && (TieneTrazado(habitual) || TieneTrazado(conEnvio)))
+            {
+                habitual = await CalcularHabitualAsync(_estimador, salida, ct);
+                conEnvio = await CalcularConEnvioAsync(_estimador, salida, envio, ct);
+            }
 
             OportunidadDetalleDTO detalle = Completar(new OportunidadDetalleDTO(), envio, habitual, conEnvio);
 
@@ -222,6 +246,7 @@ namespace TpMiercoles.Servicios
             detalle.CapacidadRestante = CapacidadRestante(salida);
             detalle.PesoRestanteKg = PesoRestante(salida);
             detalle.Motivos = Motivos(salida, envio, conductorId);
+            detalle.DistanciasEstimadas = estimadas;
 
             return detalle;
         }
@@ -558,17 +583,111 @@ namespace TpMiercoles.Servicios
         #endregion
 
         #region Rutas
-        private Task<ResultadoRuta> CalcularHabitualAsync(Salida salida, CancellationToken ct)
-            => _servicioRutas.CalcularRutaAsync(ACoordenada(salida.Origen), ACoordenada(salida.Destino), Paradas(salida), ct);
+        // Paso 1 (o paso unico): recorrido habitual y una oportunidad por envio, con el servicio indicado.
+        private async Task<(ResultadoRuta Habitual, List<OportunidadDTO> Oportunidades)> EvaluarEnviosAsync(
+            Salida salida, IEnumerable<Envio> envios, int conductorId, IServicioRutas servicioRutas, double limite, CancellationToken ct)
+        {
+            ResultadoRuta habitual = await CalcularHabitualAsync(servicioRutas, salida, ct);
+            List<OportunidadDTO> oportunidades = [];
 
-        private Task<ResultadoRuta> CalcularConEnvioAsync(Salida salida, Envio envio, CancellationToken ct)
+            foreach (Envio envio in envios)
+            {
+                // fecha, peso y capacidad se chequean antes de pedir la ruta (son gratis)
+                if (MotivosDelEnvio(salida, envio, conductorId).Count > 0)
+                {
+                    continue;
+                }
+
+                ResultadoRuta conEnvio;
+                try
+                {
+                    conEnvio = await CalcularConEnvioAsync(servicioRutas, salida, envio, ct);
+                }
+                catch (RutaNoEncontradaException)
+                {
+                    // si no hay camino posible pasando por el retiro y la entrega, no es oportunidad
+                    continue;
+                }
+
+                OportunidadDTO oportunidad = Completar(new OportunidadDTO(), envio, habitual, conEnvio);
+
+                if (oportunidad.DesvioKm > limite) { continue; }
+
+                oportunidades.Add(oportunidad);
+            }
+
+            return (habitual, oportunidades);
+        }
+
+        // Paso 2. null si alguna respuesta vino sin trazado (estimada por el plan B) o si ORS fallo
+        // por algo que no sea "no hay camino" (404): en ese caso se usa el paso 1 completo.
+        private async Task<(ResultadoRuta Habitual, List<OportunidadDTO> Oportunidades)?> ConfirmarConRutasRealesAsync(
+            Salida salida, IReadOnlyList<Envio> finalistas, double limite, CancellationToken ct)
+        {
+            ResultadoRuta habitual;
+            try
+            {
+                habitual = await CalcularHabitualAsync(_servicioRutas, salida, ct);
+            }
+            catch (RutaNoEncontradaException)
+            {
+                return null;
+            }
+
+            if (!TieneTrazado(habitual))
+            {
+                return null;
+            }
+
+            List<OportunidadDTO> confirmadas = [];
+
+            foreach (Envio envio in finalistas)
+            {
+                ResultadoRuta conEnvio;
+                try
+                {
+                    conEnvio = await CalcularConEnvioAsync(_servicioRutas, salida, envio, ct);
+                }
+                catch (RutaNoEncontradaException ex) when (ex.CodigoHttp == 404)
+                {
+                    // no hay camino pasando por el retiro y la entrega: no es oportunidad
+                    continue;
+                }
+                catch (RutaNoEncontradaException)
+                {
+                    return null;
+                }
+
+                if (!TieneTrazado(conEnvio))
+                {
+                    return null;
+                }
+
+                OportunidadDTO oportunidad = Completar(new OportunidadDTO(), envio, habitual, conEnvio);
+
+                // si con los km reales se pasa del limite, se descarta
+                if (oportunidad.DesvioKm <= limite)
+                {
+                    confirmadas.Add(oportunidad);
+                }
+            }
+
+            return (habitual, confirmadas);
+        }
+
+        private static bool TieneTrazado(ResultadoRuta ruta) => !string.IsNullOrEmpty(ruta.GeometriaJson);
+
+        private static Task<ResultadoRuta> CalcularHabitualAsync(IServicioRutas servicioRutas, Salida salida, CancellationToken ct)
+            => servicioRutas.CalcularRutaAsync(ACoordenada(salida.Origen), ACoordenada(salida.Destino), Paradas(salida), ct);
+
+        private static Task<ResultadoRuta> CalcularConEnvioAsync(IServicioRutas servicioRutas, Salida salida, Envio envio, CancellationToken ct)
         {
             List<Coordenada> recorrido = [ACoordenada(salida.Origen), .. Paradas(salida), ACoordenada(salida.Destino)];
 
             List<Coordenada> conEnvio = PlanificadorDeRecorrido.InsertarEnvio(recorrido, ACoordenada(envio.DireccionRetiro), ACoordenada(envio.DireccionEntrega));
 
             // el primero y el ultimo siguen siendo origen y destino. lo del medio son paradas
-            return _servicioRutas.CalcularRutaAsync(conEnvio[0], conEnvio[^1], conEnvio.GetRange(1, conEnvio.Count - 2), ct);
+            return servicioRutas.CalcularRutaAsync(conEnvio[0], conEnvio[^1], conEnvio.GetRange(1, conEnvio.Count - 2), ct);
         }
 
         private static List<Coordenada> Paradas(Salida salida)

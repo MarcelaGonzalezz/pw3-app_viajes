@@ -5,14 +5,17 @@ using System.Text;
 using TpMiercoles.Servicios.Excepciones;
 
 namespace TpMiercoles.Servicios.Rutas {
-    // Plan B: usa OpenRouteService y, si se agotó la cuota, calcula con el mock en lugar de fallar.
+    // Plan B: usa OpenRouteService y, si no puede, calcula con el mock en lugar de fallar.
     //  - 403: se terminó la cuota del día → se deja de consultar ORS durante una hora.
+    //  - 401: la clave no es válida → tampoco se arregla sola: una hora.
     //  - 429: demasiados pedidos por minuto → se deja de consultar ORS durante un minuto.
+    //  - 5xx, sin conexión, sin respuesta a tiempo o respuesta inesperada → un minuto.
     // Mientras dura la pausa, las distancias son estimadas (línea recta × factor de calle) y sin trazado.
-    // Cualquier otro error de ORS se sigue informando como antes.
+    // 400 y 404 (pedido inválido, no hay camino posible) se siguen informando: el mock no los arregla.
     public class ServicioRutasConRespaldo : IServicioRutas {
         private static readonly TimeSpan PausaPorCuotaDiaria = TimeSpan.FromHours(1);
         private static readonly TimeSpan PausaPorLimitePorMinuto = TimeSpan.FromMinutes(1);
+        private static readonly TimeSpan PausaPorFalla = TimeSpan.FromMinutes(1);
 
         //Implementa IServicioRutas, la misma interfaz que ORS y el mock
         private readonly IServicioRutas _principal;//ORS
@@ -47,14 +50,18 @@ namespace TpMiercoles.Servicios.Rutas {
 
             try {
                 return await _principal.CalcularRutaAsync(origen, destino, paradas, ct);
-                //el when hace que solo se atrapen esos dos códigos. Cualquier otro error pasa de largo y se informa como antes.
-            } catch (RutaNoEncontradaException ex) when (ex.CodigoHttp is 403 or 429) {
-                TimeSpan pausa = ex.CodigoHttp == 429 ? PausaPorLimitePorMinuto : PausaPorCuotaDiaria;
+                //el when deja pasar 400 y 404: son errores del pedido, no de ORS, y se informan como antes.
+            } catch (RutaNoEncontradaException ex) when (ex.CodigoHttp is not (400 or 404)) {
+                TimeSpan pausa = ex.CodigoHttp switch {
+                    403 or 401 => PausaPorCuotaDiaria,
+                    429 => PausaPorLimitePorMinuto,
+                    _ => PausaPorFalla
+                };
                 _estado.PausarHasta(ahora + pausa);
 
-                _logger.LogWarning( //LogWarning deja un aviso en la ventana de Salida de Visual Studio.
-                    "OpenRouteService respondió {Codigo}: se usan distancias estimadas hasta {Hasta}.",
-                    ex.CodigoHttp, ahora + pausa);
+                _logger.LogWarning(ex, //LogWarning deja un aviso en la ventana de Salida de Visual Studio.
+                    "OpenRouteService falló ({Codigo}): se usan distancias estimadas hasta {Hasta}.",
+                    ex.CodigoHttp?.ToString() ?? ex.Message, ahora + pausa);
 
                 return await _respaldo.CalcularRutaAsync(origen, destino, paradas, ct);
             }

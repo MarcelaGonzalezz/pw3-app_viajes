@@ -3,6 +3,7 @@ using TpMiercoles.Entidades;
 using TpMiercoles.Repositorios;
 using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.DTOs.Oportunidades;
+using TpMiercoles.Servicios.Excepciones;
 using TpMiercoles.Servicios.Rutas;
 using TpMiercoles.Tests.Helpers;
 
@@ -252,6 +253,133 @@ namespace TpMiercoles.Tests.Servicios.Oportunidades
 
             Assert.True(resultado.NoEncontrado);
             _viajes.Verify(v => v.GuardarCambiosAsync(), Times.Never);
+        }
+
+        // ---------- Busqueda en dos pasos (estimador + rutas reales) ----------
+
+        [Fact]
+        public async Task ListarAsync_DosPasos_ElMargenNoPierdeUnEnvioQueConRutasRealesCumple()
+        {
+            PrepararSalidaConUnEnvio();
+            var estimador = RutasQueResponden<IEstimadorDeRutas>(kmConEnvio: 21, conTrazado: false); // 11 km: entra en el margen (12)
+            var reales = RutasQueResponden<IServicioRutas>(kmConEnvio: 19, conTrazado: true);       // 9 km
+
+            OportunidadesDeRutaDTO? resultado = await ServicioEnDosPasos(reales, estimador).ListarAsync(1, 1);
+
+            OportunidadDTO oportunidad = Assert.Single(resultado!.Oportunidades);
+            Assert.Equal(9, oportunidad.DesvioKm);
+            Assert.False(resultado.DistanciasEstimadas);
+        }
+
+        [Fact]
+        public async Task ListarAsync_DosPasos_SiLaConfirmacionVieneSinTrazado_TodoQuedaEstimado()
+        {
+            PrepararSalidaConUnEnvio();
+            var estimador = RutasQueResponden<IEstimadorDeRutas>(kmConEnvio: 15, conTrazado: false);
+            var reales = RutasQueResponden<IServicioRutas>(kmConEnvio: 18, conTrazado: false); // el plan B respondio con el mock
+
+            OportunidadesDeRutaDTO? resultado = await ServicioEnDosPasos(reales, estimador).ListarAsync(1, 1);
+
+            OportunidadDTO oportunidad = Assert.Single(resultado!.Oportunidades);
+            Assert.Equal(5, oportunidad.DesvioKm); // valor del paso 1
+            Assert.True(resultado.DistanciasEstimadas);
+        }
+
+        [Fact]
+        public async Task ListarAsync_DosPasos_SoloConfirmaLosCincoMejores()
+        {
+            Ruta ruta = CrearRutaDelLunes();
+            _rutas.Setup(r => r.ObtenerPorIdAsync(1)).ReturnsAsync(ruta);
+            _viajes.Setup(v => v.ObtenerPorRutaYFechaAsync(1, SalidaDelLunes)).ReturnsAsync((Viaje?)null);
+            List<Envio> envios = Enumerable.Range(1, 7).Select(i => CrearEnvio(10 + i, 1000m * i)).ToList();
+            _envios.Setup(e => e.ListarDisponiblesAsync(SalidaDelLunes, 1)).ReturnsAsync(envios);
+            var estimador = RutasQueResponden<IEstimadorDeRutas>(kmConEnvio: 15, conTrazado: false);
+            var reales = RutasQueResponden<IServicioRutas>(kmConEnvio: 13, conTrazado: true);
+
+            OportunidadesDeRutaDTO? resultado = await ServicioEnDosPasos(reales, estimador).ListarAsync(1, 1);
+
+            Assert.Equal(new[] { 17, 16, 15, 14, 13 }, resultado!.Oportunidades.Select(o => o.EnvioId));
+            Assert.False(resultado.DistanciasEstimadas);
+            // recorrido habitual + 5 finalistas
+            reales.Verify(s => s.CalcularRutaAsync(
+                It.IsAny<Coordenada>(), It.IsAny<Coordenada>(),
+                It.IsAny<IReadOnlyList<Coordenada>?>(), It.IsAny<CancellationToken>()), Times.Exactly(6));
+        }
+
+        [Fact]
+        public async Task ListarAsync_DosPasos_EnvioSinCaminoPosible_SeDescarta()
+        {
+            PrepararSalidaConUnEnvio();
+            var estimador = RutasQueResponden<IEstimadorDeRutas>(kmConEnvio: 15, conTrazado: false);
+            var reales = RutasQueResponden<IServicioRutas>(kmConEnvio: 15, conTrazado: true);
+            ConError(reales, 404);
+
+            OportunidadesDeRutaDTO? resultado = await ServicioEnDosPasos(reales, estimador).ListarAsync(1, 1);
+
+            Assert.Empty(resultado!.Oportunidades);
+            Assert.False(resultado.DistanciasEstimadas);
+        }
+
+        [Theory]
+        [InlineData(400)]
+        [InlineData(500)]
+        public async Task ListarAsync_DosPasos_SiOrsFallaPorOtroMotivo_UsaElPaso1Completo(int codigo)
+        {
+            PrepararSalidaConUnEnvio();
+            var estimador = RutasQueResponden<IEstimadorDeRutas>(kmConEnvio: 15, conTrazado: false);
+            var reales = RutasQueResponden<IServicioRutas>(kmConEnvio: 18, conTrazado: true);
+            ConError(reales, codigo);
+
+            OportunidadesDeRutaDTO? resultado = await ServicioEnDosPasos(reales, estimador).ListarAsync(1, 1);
+
+            OportunidadDTO oportunidad = Assert.Single(resultado!.Oportunidades);
+            Assert.Equal(5, oportunidad.DesvioKm); // valor del paso 1
+            Assert.True(resultado.DistanciasEstimadas);
+        }
+
+        // la ruta con el envio responde con ese error
+        private static void ConError(Mock<IServicioRutas> rutas, int codigo)
+        {
+            rutas.Setup(s => s.CalcularRutaAsync(
+                    It.IsAny<Coordenada>(),
+                    It.IsAny<Coordenada>(),
+                    It.Is<IReadOnlyList<Coordenada>?>(p => p != null && p.Count > 2),
+                    It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new RutaNoEncontradaException($"ORS respondió {codigo}.") { CodigoHttp = codigo });
+        }
+
+        private OportunidadServicio ServicioEnDosPasos(Mock<IServicioRutas> reales, Mock<IEstimadorDeRutas> estimador)
+            => new(_rutas.Object, _viajes.Object, _envios.Object, reales.Object, new RelojFijo(Ahora), estimador.Object);
+
+        // habitual 10 km; con el envio (mas de 2 paradas) los km indicados
+        private static Mock<T> RutasQueResponden<T>(double kmConEnvio, bool conTrazado) where T : class, IServicioRutas
+        {
+            string? trazado = conTrazado ? "{}" : null;
+            var rutas = new Mock<T>();
+
+            rutas.Setup(s => s.CalcularRutaAsync(
+                    It.IsAny<Coordenada>(),
+                    It.IsAny<Coordenada>(),
+                    It.Is<IReadOnlyList<Coordenada>?>(p => p == null || p.Count <= 2),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ResultadoRuta(10_000, 900, trazado));
+
+            rutas.Setup(s => s.CalcularRutaAsync(
+                    It.IsAny<Coordenada>(),
+                    It.IsAny<Coordenada>(),
+                    It.Is<IReadOnlyList<Coordenada>?>(p => p != null && p.Count > 2),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ResultadoRuta(kmConEnvio * 1000, 900, trazado));
+
+            return rutas;
+        }
+
+        private static Envio CrearEnvio(int id, decimal monto)
+        {
+            Envio envio = CrearEnvio();
+            envio.Id = id;
+            envio.Monto = monto;
+            return envio;
         }
 
         private static Ruta CrearRutaDelLunes(

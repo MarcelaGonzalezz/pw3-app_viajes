@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace TpMiercoles.Servicios.Rutas {
-    public class MockServicioRutas : IServicioRutas {
+    public class MockServicioRutas : IEstimadorDeRutas {
 
         private readonly RutasOptions _opciones;
 

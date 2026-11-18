@@ -152,6 +152,7 @@
         <p class="gn-nota">
             Criterio: <strong>@TextoCriterio(Model.Criterio)</strong> ·
             desvío máximo por viaje: <strong>@Model.DesvioMaximoTexto</strong>.
+            Los kilómetros son <strong>estimados</strong> (en línea recta, ajustados por calles), sin consultar rutas reales.
             @if (Model.SalidasDescartadas > 0) //solo aparece si es mayor que cero
             {
                 <text>@Model.SalidasDescartadas salidas no se pudieron analizar.</text>

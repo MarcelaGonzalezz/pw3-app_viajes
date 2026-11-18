@@ -191,6 +191,14 @@
                 </div>
             }
 
+            @if (resultado.Propuestas.Count > 0 && resultado.DistanciasEstimadas)
+            {
+                <div class="op-aviso" role="status">
+                    Los kilómetros son estimados (en línea recta, ajustados por calles):
+                    no se pudieron confirmar con rutas reales.
+                </div>
+            }
+
             @if (resultado.Propuestas.Count > 0)
             {
                 <p class="op-ayuda">
