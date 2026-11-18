@@ -143,7 +143,7 @@ namespace TpMiercoles.Tests.Servicios
         }
 
         [Fact]
-        public async Task ElLimiteDeDesvioLlegaAlOptimizadorSoloSiSePide()
+        public async Task SinPedirLimite_UsaElTopeDeDiezKm()
         {
             List<SolicitudOptimizacionDTO> recibidas = ConfigurarOptimizador(0m, (1, 5000m));
 
@@ -152,12 +152,25 @@ namespace TpMiercoles.Tests.Servicios
             GananciasMensualDTO conLimite = await _servicio.CalcularAsync(
                 ConductorId, 2026, 11, CriterioOptimizacion.MayorGanancia, 5);
 
-            Assert.Null(sinLimite.DesvioMaximoKm);
-            Assert.Equal(5, conLimite.DesvioMaximoKm);
+            Assert.Equal(10.0, sinLimite.DesvioMaximoKm);
+            Assert.Equal(5.0, conLimite.DesvioMaximoKm);
 
             Assert.Equal(10, recibidas.Count);
-            Assert.All(recibidas.Take(5), s => Assert.Equal(double.MaxValue, s.DesvioMaximoKm));
-            Assert.All(recibidas.Skip(5), s => Assert.Equal(5, s.DesvioMaximoKm));
+            Assert.All(recibidas.Take(5), s => Assert.Equal(10.0, s.DesvioMaximoKm));
+            Assert.All(recibidas.Skip(5), s => Assert.Equal(5.0, s.DesvioMaximoKm));
+        }
+
+        [Fact]
+        public async Task UnLimiteMayorAlTope_SeRecortaADiezKm()
+        {
+            List<SolicitudOptimizacionDTO> recibidas = ConfigurarOptimizador(0m, (1, 5000m));
+
+            GananciasMensualDTO dto = await _servicio.CalcularAsync(
+                ConductorId, 2026, 11, CriterioOptimizacion.MayorGanancia, 50);
+
+            Assert.Equal(10.0, dto.DesvioMaximoKm);
+            Assert.NotEmpty(recibidas);
+            Assert.All(recibidas, s => Assert.Equal(10.0, s.DesvioMaximoKm));
         }
 
         [Fact]

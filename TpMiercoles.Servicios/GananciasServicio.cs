@@ -23,7 +23,7 @@ namespace TpMiercoles.Servicios
     {
         private static readonly TimeZoneInfo ZonaArgentina =
             TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
-        private const double SinLimite = double.MaxValue;
+        public const double TopeDesvioKm = OportunidadServicio.DESVIO_MAXIMO_POR_DEFECTO_KM; // 10 km
 
         private readonly IRutaRepositorio _rutas;
         private readonly IOptimizadorServicio _optimizador;
@@ -48,6 +48,8 @@ namespace TpMiercoles.Servicios
         public async Task<GananciasMensualDTO> CalcularAsync(int conductorId, int anio, int mes, CriterioOptimizacion criterio,
             double? desvioMaximoKm = null, CancellationToken ct = default)
         {
+            double desvioEfectivoKm = Math.Min(desvioMaximoKm ?? TopeDesvioKm, TopeDesvioKm);
+
             (DateTime inicioMes, DateTime finMes) = LimitesDelMes(anio, mes);
 
             DateTime ahora = Ahora();
@@ -76,7 +78,7 @@ namespace TpMiercoles.Servicios
                 ct.ThrowIfCancellationRequested();
 
                 SalidaEstimadaDTO? estimada = await EstimarSalidaAsync(
-                    ruta, salida, conductorId, criterio, desvioMaximoKm, enviosUsados, ct);
+                    ruta, salida, conductorId, criterio, desvioEfectivoKm, enviosUsados, ct);
 
                 if (estimada is null)
                 {
@@ -99,7 +101,7 @@ namespace TpMiercoles.Servicios
                 Anio = anio,
                 Mes = mes,
                 Criterio = criterio,
-                DesvioMaximoKm = desvioMaximoKm,
+                DesvioMaximoKm = desvioEfectivoKm,
 
                 EfectivaDesde = inicioMes,
                 EfectivaHasta = efectivaHasta,
@@ -143,7 +145,7 @@ namespace TpMiercoles.Servicios
             DateTime salida,
             int conductorId,
             CriterioOptimizacion criterio,
-            double? desvioMaximoKm,
+            double desvioMaximoKm,
             IReadOnlyCollection<int> yaUsados,
             CancellationToken ct)
         {
@@ -151,7 +153,7 @@ namespace TpMiercoles.Servicios
             {
                 RutaId = ruta.Id,
                 FechaSalida = salida,
-                DesvioMaximoKm = desvioMaximoKm ?? SinLimite,
+                DesvioMaximoKm = desvioMaximoKm,
                 EnviosExcluidos = [.. yaUsados],
                 // Son unas 12 salidas por carga: con rutas reales se pasaria del limite por minuto
                 // de ORS. Como es una estimacion del mes, se calcula todo con distancias estimadas.

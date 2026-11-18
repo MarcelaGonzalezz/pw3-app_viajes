@@ -5,7 +5,7 @@
         public required int Anio { get; init; }
         public required int Mes { get; init; }
         public required CriterioOptimizacion Criterio { get; init; }
-        public required double? DesvioMaximoKm { get; init; } //null = sin limite
+        public required double DesvioMaximoKm { get; init; } // siempre hay tope (max. 10 km)
 
         public required DateTime EfectivaDesde { get; init; }
         public required DateTime EfectivaHasta { get; init; }
