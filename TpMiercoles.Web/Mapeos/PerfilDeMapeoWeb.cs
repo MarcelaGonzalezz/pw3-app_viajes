@@ -4,7 +4,9 @@ using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Servicios.DTOs.Direccion;
 using TpMiercoles.Servicios.DTOs.Historial;
 using TpMiercoles.Servicios.DTOs.Ruta;
+using TpMiercoles.Servicios.DTOs.Oportunidades;
 using TpMiercoles.Web.Models;
+using TpMiercoles.Servicios.DTOs.Ganancias;
 
 namespace TpMiercoles.Web.Mapeos
 {
@@ -38,10 +40,28 @@ namespace TpMiercoles.Web.Mapeos
             CreateMap<RutaViewModel, RutaDTO>();
             CreateMap<RutaDTO, RutaViewModel>();
             CreateMap<CrearRutaViewModel, CrearRutaDTO>();
+            CreateMap<EditarRutaDTO, EditarRutaViewModel>();
+            CreateMap<EditarRutaViewModel, EditarRutaDTO>();
 
             CreateMap<HistorialItemDTO, HistorialItemViewModel>();
 
             CreateMap<RutaDiaDTO, DayOfWeek>().ConvertUsing(r => r.DiaSemana);
+
+            CreateMap<TransporteListadoDTO, TransporteListadoViewModel>();
+            CreateMap<TransporteDetalleDTO, TransporteDetalleViewModel>();
+
+            CreateMap<OportunidadDTO, OportunidadViewModel>()
+                .ForMember(d => d.Retiro, o => o.MapFrom(s => s.RetiroDireccion))
+                .ForMember(d => d.Entrega, o => o.MapFrom(s => s.EntregaDireccion));
+            CreateMap<OportunidadDetalleDTO, OportunidadDetalleViewModel>()
+                .IncludeBase<OportunidadDTO, OportunidadViewModel>();
+            CreateMap<SalidaDeRutaDTO, SalidaDeRutaViewModel>();
+            CreateMap<OportunidadesDeRutaDTO, OportunidadesDeRutaViewModel>();
+            CreateMap<PaquetePropuestoDTO, PaquetePropuestoViewModel>();
+            CreateMap<SalidaEstimadaDTO, SalidaEstimadaViewModel>();
+            CreateMap<SemanaDeGananciasDTO, SemanaDeGananciasViewModel>();
+            CreateMap<GananciasMensualDTO, GananciasViewModel>()
+                .ForMember(d => d.Error, o => o.Ignore());
         }
     }
 }

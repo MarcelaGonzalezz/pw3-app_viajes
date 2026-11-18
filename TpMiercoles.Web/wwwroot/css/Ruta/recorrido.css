@@ -1,0 +1,48 @@
+﻿.recorrido-total {
+    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: var(--light-blue, #ddf1fa);
+    border-left: 4px solid var(--med-blue, #4eb8dd);
+    border-radius: 4px;
+    color: var(--texto, #3a5e77);
+}
+
+.recorrido-total__titulo {
+    margin: 0 0 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.recorrido-total__contenido {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 3rem;
+}
+
+.recorrido-total__aviso {
+    margin: 0;
+}
+
+.recorrido-dato {
+    display: flex;
+    flex-direction: column;
+}
+
+.recorrido-dato__etiqueta {
+    font-size: 0.85rem;
+}
+
+.recorrido-dato__valor {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--dark-blue, #217093);
+}
+
+.recorrido-total--error {
+    background: #fdecea;
+    border-left-color: var(--error, #d93025);
+    color: var(--error, #d93025);
+}

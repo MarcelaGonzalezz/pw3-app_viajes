@@ -23,7 +23,7 @@ namespace TpMiercoles.Tests.Repositorios
             Assert.NotNull(resultado);
             Assert.Same(viaje, resultado);
             Assert.Equal("Ramos Mejía", resultado!.DireccionOrigen.Texto);
-            Assert.Single(resultado.Ruta.Paradas);
+            Assert.Single(resultado.Paradas);
             Assert.Single(resultado.Asignaciones);
         }
 
@@ -214,6 +214,75 @@ namespace TpMiercoles.Tests.Repositorios
             db.Contexto.Verify(
                 c => c.SaveChangesAsync(It.IsAny<CancellationToken>()),
                 Times.Once);
+        }
+
+        [Fact]
+        public async Task ObtenerPorRutaYFechaAsync_CuandoCoincideRutaYFecha_DevuelveElViaje()
+        {
+            DateTime fecha = new(2026, 11, 2, 8, 0, 0);
+            var db = new DbContextMockFactory(
+                viajesIniciales:
+                [
+                    ViajeTestData.CrearViaje(id: 1, usuarioId: 5, fechaSalida: fecha),
+                    ViajeTestData.CrearViaje(id: 2, usuarioId: 5, fechaSalida: fecha),
+                    ViajeTestData.CrearViaje(id: 3, usuarioId: 5, fechaSalida: fecha.AddDays(1))
+                ]);
+            var repositorio = CrearRepositorio(db);
+
+            var resultado = await repositorio.ObtenerPorRutaYFechaAsync(1, fecha);
+
+            Assert.NotNull(resultado);
+            Assert.Equal(1, resultado!.Id);
+        }
+
+        [Fact]
+        public async Task ObtenerPorRutaYFechaAsync_CuandoNoCoincide_DevuelveNull()
+        {
+            DateTime fecha = new(2026, 11, 2, 8, 0, 0);
+            var db = new DbContextMockFactory(
+                viajesIniciales:
+                [
+                    ViajeTestData.CrearViaje(id: 1, usuarioId: 5, fechaSalida: fecha),
+                    ViajeTestData.CrearViaje(id: 2, usuarioId: 5, fechaSalida: fecha)
+                ]);
+            var repositorio = CrearRepositorio(db);
+
+            Assert.Null(await repositorio.ObtenerPorRutaYFechaAsync(1, fecha.AddDays(1)));
+            Assert.Null(await repositorio.ObtenerPorRutaYFechaAsync(99, fecha));
+        }
+
+        [Fact]
+        public async Task ObtenerParaAsignarPorRutaYFechaAsync_DevuelveElViajeConSusAsignaciones()
+        {
+            DateTime fecha = new(2026, 11, 2, 8, 0, 0);
+            var viaje = ViajeTestData.CrearViaje(
+                id: 1,
+                usuarioId: 5,
+                fechaSalida: fecha,
+                asignaciones: [ViajeTestData.CrearAsignacion(1, envioId: 100)]);
+            var db = new DbContextMockFactory(viajesIniciales: [viaje]);
+            var repositorio = CrearRepositorio(db);
+
+            var resultado = await repositorio.ObtenerParaAsignarPorRutaYFechaAsync(1, fecha);
+
+            Assert.NotNull(resultado);
+            Assert.Single(resultado!.Asignaciones);
+            Assert.Equal(100, resultado.Asignaciones[0].EnvioId);
+        }
+
+        [Fact]
+        public async Task AgregarSinGuardarAsync_AgregaElViajeSinGuardar()
+        {
+            var db = new DbContextMockFactory();
+            var repositorio = CrearRepositorio(db);
+            var viaje = ViajeTestData.CrearViaje(id: 1, usuarioId: 5);
+
+            await repositorio.AgregarSinGuardarAsync(viaje);
+
+            db.Viajes.Verify(v => v.AddAsync(viaje, It.IsAny<CancellationToken>()), Times.Once);
+            db.Contexto.Verify(
+                c => c.SaveChangesAsync(It.IsAny<CancellationToken>()),
+                Times.Never);
         }
 
         private static ViajeRepositorio CrearRepositorio(DbContextMockFactory db)

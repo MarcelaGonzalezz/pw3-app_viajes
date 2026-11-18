@@ -5,16 +5,17 @@ using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Servicios.DTOs.Direccion;
 using TpMiercoles.Servicios.DTOs.Ruta;
 
-namespace TpMiercoles.Servicios
+namespace TpMiercoles.Servicios.Viajes
 {
     public interface IViajeServicio
     {
         // Detalle de un viaje para su duenio. Devuelve null si el viaje no existe
         // o si la ruta que lo genero no pertenece al usuario indicado.
-        Task<ViajeDetalleDTO?> ObtenerDetalleAsync(int viajeId, int usuarioId);
+        // ahora (la fecha y hora actual) se usa para marcar si el viaje ya vencio.
+        Task<ViajeDetalleDTO?> ObtenerDetalleAsync(int viajeId, int usuarioId, DateTime ahora);
 
-        // Viajes del usuario. estado null trae todos.
-        Task<List<ViajeListadoDTO>> ListarAsync(int usuarioId, EstadoActividadViaje? estado);
+        // Viajes del usuario. estado null trae todos. ahora marca cuales ya vencieron.
+        Task<List<ViajeListadoDTO>> ListarAsync(int usuarioId, EstadoActividadViaje? estado, DateTime ahora);
 
         // Datos del viaje para cargar el formulario de edicion.
         Task<ViajeEdicionDTO?> ObtenerParaEditarAsync(int viajeId, int usuarioId);
@@ -26,7 +27,8 @@ namespace TpMiercoles.Servicios
         Task<ResultadoOperacionViaje> DesactivarAsync(int viajeId, int usuarioId);
 
         // Vuelve a poner el viaje en ACTIVO para que busque oportunidades de nuevo.
-        Task<ResultadoOperacionViaje> ActivarAsync(int viajeId, int usuarioId);
+        // Un viaje vencido (ya paso su hora de llegada) no se puede reactivar.
+        Task<ResultadoOperacionViaje> ActivarAsync(int viajeId, int usuarioId, DateTime ahora);
     }
 
     public class ViajeServicio : IViajeServicio
@@ -40,7 +42,7 @@ namespace TpMiercoles.Servicios
             _mapper = mapper;
         }
 
-        public async Task<ViajeDetalleDTO?> ObtenerDetalleAsync(int viajeId, int usuarioId)
+        public async Task<ViajeDetalleDTO?> ObtenerDetalleAsync(int viajeId, int usuarioId, DateTime ahora)
         {
             Viaje? viaje = await _repositorio.ObtenerDetalleAsync(viajeId);
 
@@ -55,11 +57,12 @@ namespace TpMiercoles.Servicios
                 return null;
             }
 
-            List<ParadaDTO> paradas = viaje.Ruta.Paradas
-                .OrderBy(p => p.Id)
-                .Select((parada, indice) => new ParadaDTO
+            List<ParadaDTO> paradas = viaje.Paradas
+                .OrderBy(p => p.Orden)
+                .ThenBy(p => p.Id)
+                .Select(parada => new ParadaDTO
                 {
-                    Orden = indice + 1,
+                    Orden = parada.Orden,
                     Direccion = _mapper.Map<DireccionDTO>(parada.Direccion)
                 })
                 .ToList();
@@ -75,7 +78,11 @@ namespace TpMiercoles.Servicios
                     DireccionEntrega = a.Envio.DireccionEntrega.Texto,
                     FechaDesde = a.Envio.FechaDesde,
                     FechaHasta = a.Envio.FechaHasta,
-                    Estado = a.Estado,
+                    Descripcion = a.Envio.Paquete.Descripcion,
+                    PesoKg = a.Envio.Paquete.PesoKg,
+                    Monto = a.Envio.Monto,
+                    // El estado que importa es el del envio, no el de la asignacion.
+                    Estado = a.Envio.Estado,
                     FechaAceptacion = a.FechaAceptacion,
                     FechaRetiro = a.FechaRetiro,
                     FechaEntrega = a.FechaEntrega
@@ -89,6 +96,7 @@ namespace TpMiercoles.Servicios
                 Id = viaje.Id,
                 RutaId = viaje.RutaId,
                 Estado = viaje.Estado,
+                Vencido = Vencimiento.EstaVencido(viaje, ahora),
                 DireccionOrigen = viaje.DireccionOrigen.Texto,
                 DireccionDestino = viaje.DireccionDestino.Texto,
                 FechaSalida = viaje.FechaSalida,
@@ -103,7 +111,7 @@ namespace TpMiercoles.Servicios
             };
         }
 
-        public async Task<List<ViajeListadoDTO>> ListarAsync(int usuarioId, EstadoActividadViaje? estado)
+        public async Task<List<ViajeListadoDTO>> ListarAsync(int usuarioId, EstadoActividadViaje? estado, DateTime ahora)
         {
             List<Viaje> viajes = await _repositorio.ListarPorUsuarioAsync(usuarioId, estado);
 
@@ -111,7 +119,9 @@ namespace TpMiercoles.Servicios
                 .Select(v => new ViajeListadoDTO
                 {
                     Id = v.Id,
+                    RutaId = v.RutaId,
                     Estado = v.Estado,
+                    Vencido = Vencimiento.EstaVencido(v, ahora),
                     DireccionOrigen = v.DireccionOrigen.Texto,
                     DireccionDestino = v.DireccionDestino.Texto,
                     FechaSalida = v.FechaSalida,
@@ -165,21 +175,29 @@ namespace TpMiercoles.Servicios
         // comprometido: las asignaciones existentes quedan intactas y hay que
         // cumplirlas. La pantalla avisa cuantos envios siguen en pie.
         public Task<ResultadoOperacionViaje> DesactivarAsync(int viajeId, int usuarioId)
-            => CambiarEstadoAsync(viajeId, usuarioId, EstadoActividadViaje.INACTIVO);
+            => CambiarEstadoAsync(viajeId, usuarioId, EstadoActividadViaje.INACTIVO, ahora: null);
 
-        public Task<ResultadoOperacionViaje> ActivarAsync(int viajeId, int usuarioId)
-            => CambiarEstadoAsync(viajeId, usuarioId, EstadoActividadViaje.ACTIVO);
+        public Task<ResultadoOperacionViaje> ActivarAsync(int viajeId, int usuarioId, DateTime ahora)
+            => CambiarEstadoAsync(viajeId, usuarioId, EstadoActividadViaje.ACTIVO, ahora);
 
         // Si el viaje ya estaba en el estado pedido no escribe nada y contesta ok igual:
         // repetir la operacion no es un error.
+        // ahora solo hace falta al activar, para rechazar un viaje vencido.
         private async Task<ResultadoOperacionViaje> CambiarEstadoAsync(
-            int viajeId, int usuarioId, EstadoActividadViaje nuevoEstado)
+            int viajeId, int usuarioId, EstadoActividadViaje nuevoEstado, DateTime? ahora)
         {
             Viaje? viaje = await _repositorio.ObtenerParaModificarAsync(viajeId);
 
             if (viaje is null || viaje.Ruta.UsuarioId != usuarioId)
             {
                 return ResultadoOperacionViaje.NoExiste();
+            }
+
+            // Decision del grupo: lo vencido queda inactivo para siempre.
+            if (ahora is not null && Vencimiento.EstaVencido(viaje, ahora.Value))
+            {
+                return ResultadoOperacionViaje.Invalido(
+                    ["El viaje ya venció (pasó su hora de llegada): no se puede volver a activar."]);
             }
 
             if (viaje.Estado != nuevoEstado)

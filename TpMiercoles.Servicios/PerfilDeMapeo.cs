@@ -19,7 +19,9 @@ namespace TpMiercoles.Servicios
             CreateMap<ParadaDTO, Parada>();
             CreateMap<RutaDia, RutaDiaDTO>();
             CreateMap<Parada, ParadaDTO>();
-            CreateMap<Ruta, RutaDTO>();
+            CreateMap<Ruta, RutaDTO>()
+                .ForMember(d => d.Vencida, o => o.Ignore());
+            CreateMap<Ruta, EditarRutaDTO>();
             CreateMap<Envio, EnvioDTO>()
                 .ForMember(d => d.Origen, o => o.MapFrom(s => s.DireccionRetiro))
                 .ForMember(d => d.Destino, o => o.MapFrom(s => s.DireccionEntrega));

@@ -8,23 +8,32 @@ namespace TpMiercoles.Servicios
     {
         // Historial del usuario. Solo devuelve operaciones propias.
         //  - tipo: null trae todo.
-        //  - desde / hasta: rango inclusivo de fechas, ambos opcionales.
+        //  - desde / hasta: rango inclusivo de fechas, ambos opcionales. La fecha de un viaje
+        //    es la de su ultima entrega (cuando se acredita la ganancia).
         // El resumen (viajes, envios transportados, ganancia) respeta el rango de fechas
         // pero no el tipo, para que las tarjetas no cambien al tocar un chip.
-        Task<HistorialDTO> ObtenerAsync(int usuarioId, TipoOperacionHistorial? tipo, DateTime? desde, DateTime? hasta);
+        //  - estado: Activo/Inactivo del viaje. Solo aplica a las filas de viaje: con este filtro
+        //    puesto no se listan envios. Tampoco cambia el resumen ni los contadores.
+        Task<HistorialDTO> ObtenerAsync(
+            int usuarioId, TipoOperacionHistorial? tipo, EstadoActividadViaje? estado, DateTime? desde, DateTime? hasta);
     }
 
     public class HistorialServicio : IHistorialServicio
     {
-        private readonly IHistorialRepositorio _repositorio;
+        private static readonly TimeZoneInfo ZonaArgentina =
+            TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
 
-        public HistorialServicio(IHistorialRepositorio repositorio)
+        private readonly IHistorialRepositorio _repositorio;
+        private readonly TimeProvider _reloj;
+
+        public HistorialServicio(IHistorialRepositorio repositorio, TimeProvider reloj)
         {
             _repositorio = repositorio;
+            _reloj = reloj;
         }
 
         public async Task<HistorialDTO> ObtenerAsync(
-            int usuarioId, TipoOperacionHistorial? tipo, DateTime? desde, DateTime? hasta)
+            int usuarioId, TipoOperacionHistorial? tipo, EstadoActividadViaje? estado, DateTime? desde, DateTime? hasta)
         {
             // Si vienen al reves los damos vuelta en vez de devolver un historial vacio.
             if (desde is not null && hasta is not null && desde > hasta)
@@ -32,8 +41,8 @@ namespace TpMiercoles.Servicios
                 (desde, hasta) = (hasta, desde);
             }
 
-            List<Viaje> viajes = await _repositorio.ListarViajesRealizadosAsync(usuarioId, DateTime.Now);
-            List<Envio> envios = await _repositorio.ListarEnviosFinalizadosAsync(usuarioId);
+            List<Viaje> viajes = await _repositorio.ListarViajesRealizadosAsync(usuarioId, Ahora());
+            List<Envio> envios = await _repositorio.ListarEnviosEntregadosAsync(usuarioId);
 
             List<HistorialItemDTO> itemsViajes = viajes.Select(ArmarItemDeViaje).ToList();
             List<HistorialItemDTO> itemsEnvios = envios.Select(ArmarItemDeEnvio).ToList();
@@ -46,9 +55,11 @@ namespace TpMiercoles.Servicios
             List<HistorialItemDTO> viajesEnRango = enRango
                 .Where(i => i.Tipo == TipoOperacionHistorial.ViajeRealizado).ToList();
 
-            // 2) Filtro por tipo: afecta solo la lista.
+            // 2) Filtro por tipo y por estado del viaje: afecta solo la lista.
             List<HistorialItemDTO> lista = enRango
                 .Where(i => tipo is null || i.Tipo == tipo.Value)
+                .Where(i => estado is null
+                            || (i.Tipo == TipoOperacionHistorial.ViajeRealizado && i.EstadoDelViaje == estado.Value))
                 .OrderByDescending(i => i.Fecha)
                 .ThenByDescending(i => i.Id)
                 .ToList();
@@ -60,36 +71,40 @@ namespace TpMiercoles.Servicios
                 GananciaEfectiva = viajesEnRango.Sum(v => v.Monto),
                 TotalOperaciones = enRango.Count,
                 TotalEnviosEntregados = enRango.Count(i => i.Tipo == TipoOperacionHistorial.EnvioEntregado),
-                TotalEnviosCancelados = enRango.Count(i => i.Tipo == TipoOperacionHistorial.EnvioCancelado),
                 Items = lista
             };
         }
 
+        // Fecha y hora de Argentina, sin depender de la zona horaria del servidor.
+        private DateTime Ahora() =>
+            TimeZoneInfo.ConvertTime(_reloj.GetUtcNow(), ZonaArgentina).DateTime;
+
         // La ganancia efectiva es solo lo que se entrego: un paquete retirado o en camino
         // todavia es ganancia potencial, y una asignacion cancelada no cuenta.
+        // La ganancia se acredita al entregar, asi que la fecha del viaje es la de su ultima entrega.
         private static HistorialItemDTO ArmarItemDeViaje(Viaje viaje)
         {
-            List<Envio> entregados = viaje.Asignaciones
+            List<Asignacion> entregadas = viaje.Asignaciones
                 .Where(a => a.Estado != EstadoViaje.CANCELADO && a.Envio.Estado == EstadoEnvio.Entregado)
-                .Select(a => a.Envio)
                 .ToList();
+
+            DateTime? ultimaEntrega = entregadas.Max(a => a.FechaEntrega);
 
             return new HistorialItemDTO
             {
                 Tipo = TipoOperacionHistorial.ViajeRealizado,
                 Id = viaje.Id,
+                EstadoDelViaje = viaje.Estado,
                 Origen = viaje.DireccionOrigen.Texto,
                 Destino = viaje.DireccionDestino.Texto,
-                Fecha = viaje.FechaSalida,
-                CantidadPaquetes = entregados.Count,
-                Monto = entregados.Sum(e => e.Monto)
+                Fecha = ultimaEntrega ?? viaje.FechaSalida,
+                CantidadPaquetes = entregadas.Count,
+                Monto = entregadas.Sum(a => a.Envio.Monto)
             };
         }
 
         private static HistorialItemDTO ArmarItemDeEnvio(Envio envio)
         {
-            bool entregado = envio.Estado == EstadoEnvio.Entregado;
-
             DateTime? fechaEntrega = envio.Asignaciones
                 .Where(a => a.FechaEntrega is not null)
                 .Select(a => a.FechaEntrega)
@@ -97,11 +112,11 @@ namespace TpMiercoles.Servicios
 
             return new HistorialItemDTO
             {
-                Tipo = entregado ? TipoOperacionHistorial.EnvioEntregado : TipoOperacionHistorial.EnvioCancelado,
+                Tipo = TipoOperacionHistorial.EnvioEntregado,
                 Id = envio.Id,
                 Origen = envio.DireccionRetiro.Texto,
                 Destino = envio.DireccionEntrega.Texto,
-                Fecha = entregado ? (fechaEntrega ?? envio.FechaHasta) : envio.FechaHasta,
+                Fecha = fechaEntrega ?? envio.FechaHasta,
                 Descripcion = envio.Paquete.Descripcion,
                 Monto = envio.Monto
             };

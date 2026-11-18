@@ -3,11 +3,15 @@
 @model MisEnviosViewModel
 @{
     ViewData["Title"] = "Mis envíos";
+
+    string? fDesde = Model.Desde?.ToString("yyyy-MM-dd");
+    string? fHasta = Model.Hasta?.ToString("yyyy-MM-dd");
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/viajes/detalle.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/viajes/viajes.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/oportunidades/oportunidades.css" asp-append-version="true" />
 }
 
 <div class="vd">
@@ -16,6 +20,7 @@
         <div class="vd-header-main">
             <p class="vd-eyebrow">Emisor</p>
             <h1 class="vd-title">Mis envíos</h1>
+            <h2 class="tr-subtitulo"> Seguí el estado de los paquetes que enviaste</h2>
         </div>
         <a asp-action="Nuevo" class="vl-btn vl-btn--principal">Nuevo envío</a>
     </header>
@@ -30,30 +35,62 @@
         <div class="vl-aviso vl-aviso--error" role="alert">@error</div>
     }
 
+    <form method="get" asp-action="Index" class="op-buscador">
+        @if (Model.Filtro is not null)
+        {
+            <input type="hidden" name="estado" value="@Model.Filtro" />
+        }
+        @if (Model.SoloVencidos)
+        {
+            <input type="hidden" name="vencidos" value="true" />
+        }
+        <label>
+            Origen o destino
+            <input type="search" name="texto" value="@Model.Texto" maxlength="100" placeholder="Ej: Ramos Mejía" />
+        </label>
+        <label>
+            Desde
+            <input type="date" name="desde" value="@fDesde" />
+        </label>
+        <label>
+            Hasta
+            <input type="date" name="hasta" value="@fHasta" />
+        </label>
+        <button type="submit" class="vl-btn vl-btn--principal">Filtrar</button>
+        @if (!string.IsNullOrWhiteSpace(Model.Texto) || Model.Desde is not null || Model.Hasta is not null)
+        {
+            <a asp-action="Index" asp-route-estado="@Model.Filtro" asp-route-vencidos="@(Model.SoloVencidos ? "true" : null)" class="vl-btn">Limpiar</a>
+        }
+    </form>
+
     <nav class="vl-filtros" aria-label="Filtrar envíos">
-        <a class="vl-filtro @(Model.Filtro is null ? "vl-filtro--on" : "")"
-           asp-action="Index">
+        <a class="vl-filtro @(Model.Filtro is null && !Model.SoloVencidos ? "vl-filtro--on" : "")"
+           asp-action="Index" asp-route-texto="@Model.Texto" asp-route-desde="@fDesde" asp-route-hasta="@fHasta">
             Todos <span class="vl-filtro-n">@Model.TotalTodos</span>
         </a>
         <a class="vl-filtro @(Model.Filtro == EstadoEnvio.BuscandoConductor ? "vl-filtro--on" : "")"
-           asp-action="Index" asp-route-estado="@EstadoEnvio.BuscandoConductor">
+           asp-action="Index" asp-route-estado="@EstadoEnvio.BuscandoConductor" asp-route-texto="@Model.Texto" asp-route-desde="@fDesde" asp-route-hasta="@fHasta">
             Buscando conductor <span class="vl-filtro-n">@Model.TotalBuscando</span>
         </a>
         <a class="vl-filtro @(Model.Filtro == EstadoEnvio.ConductorAsignado ? "vl-filtro--on" : "")"
-           asp-action="Index" asp-route-estado="@EstadoEnvio.ConductorAsignado">
+           asp-action="Index" asp-route-estado="@EstadoEnvio.ConductorAsignado" asp-route-texto="@Model.Texto" asp-route-desde="@fDesde" asp-route-hasta="@fHasta">
             Conductor asignado <span class="vl-filtro-n">@Model.TotalAsignados</span>
         </a>
         <a class="vl-filtro @(Model.Filtro == EstadoEnvio.EnCamino ? "vl-filtro--on" : "")"
-           asp-action="Index" asp-route-estado="@EstadoEnvio.EnCamino">
+           asp-action="Index" asp-route-estado="@EstadoEnvio.EnCamino" asp-route-texto="@Model.Texto" asp-route-desde="@fDesde" asp-route-hasta="@fHasta">
             En camino <span class="vl-filtro-n">@Model.TotalEnCamino</span>
         </a>
         <a class="vl-filtro @(Model.Filtro == EstadoEnvio.Entregado ? "vl-filtro--on" : "")"
-           asp-action="Index" asp-route-estado="@EstadoEnvio.Entregado">
+           asp-action="Index" asp-route-estado="@EstadoEnvio.Entregado" asp-route-texto="@Model.Texto" asp-route-desde="@fDesde" asp-route-hasta="@fHasta">
             Entregados <span class="vl-filtro-n">@Model.TotalEntregados</span>
         </a>
         <a class="vl-filtro @(Model.Filtro == EstadoEnvio.Cancelado ? "vl-filtro--on" : "")"
-           asp-action="Index" asp-route-estado="@EstadoEnvio.Cancelado">
+           asp-action="Index" asp-route-estado="@EstadoEnvio.Cancelado" asp-route-texto="@Model.Texto" asp-route-desde="@fDesde" asp-route-hasta="@fHasta">
             Cancelados <span class="vl-filtro-n">@Model.TotalCancelados</span>
+        </a>
+        <a class="vl-filtro @(Model.SoloVencidos ? "vl-filtro--on" : "")"
+           asp-action="Index" asp-route-vencidos="true" asp-route-texto="@Model.Texto" asp-route-desde="@fDesde" asp-route-hasta="@fHasta">
+            Vencidos <span class="vl-filtro-n">@Model.TotalVencidos</span>
         </a>
     </nav>
 
@@ -61,9 +98,9 @@
     {
         <section class="vd-card text-center py-5">
             <p class="vd-vacio mb-3">
-                @(Model.Filtro is null
-                    ? "Todavía no publicaste envíos."
-                    : "No hay envíos con ese estado.")
+                @(Model.HayFiltros
+                    ? "No hay envíos que coincidan con los filtros."
+                    : "Todavía no publicaste envíos.")
             </p>
             <a asp-action="Nuevo" class="vl-btn vl-btn--principal">Nuevo envío</a>
         </section>
@@ -73,14 +110,14 @@
         <ul class="vl-lista">
             @foreach (var envio in Model.Envios)
             {
-                var badgeClase = envio.Estado switch
+                var badgeClase = envio.EstaVencido ? "vd-estado--inactivo" : envio.Estado switch
                 {
-                    EstadoEnvio.BuscandoConductor => "vd-estado--activo",
-                    EstadoEnvio.ConductorAsignado => "vd-estado--activo",
-                    EstadoEnvio.Retirado => "vd-estado--activo",
-                    EstadoEnvio.EnCamino => "vd-estado--activo",
-                    EstadoEnvio.Entregado => "vd-estado--inactivo",
-                    EstadoEnvio.Cancelado => "vd-estado--inactivo",
+                    EstadoEnvio.BuscandoConductor => "vd-estado--asignado",
+                    EstadoEnvio.ConductorAsignado => "vd-estado--asignado",
+                    EstadoEnvio.Retirado => "vd-estado--retirado",
+                    EstadoEnvio.EnCamino => "vd-estado--encamino",
+                    EstadoEnvio.Entregado => "vd-estado--entregado",
+                    EstadoEnvio.Cancelado => "vd-estado--cancelado",
                     _ => "vd-estado--inactivo"
                 };
 

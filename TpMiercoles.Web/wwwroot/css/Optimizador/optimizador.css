@@ -1,0 +1,158 @@
+﻿.op-page .op-subtitulo {
+    margin: .5rem 0 0;
+    color: var(--app-muted);
+    font-size: .9375rem;
+}
+
+.op-page .op-form-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 1.25rem;
+}
+
+.op-page .vf-campo {
+    min-width: 0;
+}
+
+    .op-page .vf-campo input,
+    .op-page .op-select {
+        width: 100%;
+        min-width: 0;
+        min-height: 44px;
+    }
+
+.op-page .op-select {
+    padding: .55rem .7rem;
+    border: 1px solid var(--app-light-blue);
+    border-radius: 8px;
+    background-color: var(--app-input-bg);
+    color: var(--app-text);
+    font: inherit;
+}
+
+    .op-page .op-select:focus {
+        outline: none;
+        border-color: var(--app-med-blue);
+        box-shadow: 0 0 0 3px rgba(78, 184, 221, .25);
+    }
+
+.op-page .input-validation-error {
+    border-color: #8c2b2b;
+}
+
+.op-page .vl-btn:focus-visible {
+    outline: 3px solid var(--app-med-blue);
+    outline-offset: 3px;
+}
+
+.op-page .op-ayuda {
+    color: var(--app-muted);
+    font-size: .8125rem;
+    line-height: 1.5;
+}
+
+.op-page .op-nota {
+    margin: 1rem 0 0;
+}
+
+.op-page .op-vacio,
+.op-page .op-resultados,
+.op-page .op-propuesta {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.op-page .op-vacio {
+    align-items: flex-start;
+}
+
+.op-page .op-propuestas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.op-page .op-propuesta {
+    min-width: 0;
+}
+
+.op-page .op-etiquetas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.op-page .op-ingreso {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--app-light-blue);
+}
+
+    .op-page .op-ingreso strong {
+        color: var(--app-dark-blue);
+        font-size: 1.75rem;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+
+.op-page .op-datos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin: 0;
+}
+
+    .op-page .op-datos dt {
+        margin-bottom: .25rem;
+        color: var(--app-muted);
+        font-size: .75rem;
+        font-weight: 700;
+    }
+
+    .op-page .op-datos dd {
+        margin: 0;
+        color: var(--app-text);
+        font-size: .9375rem;
+        overflow-wrap: anywhere;
+    }
+
+.op-page .op-paquetes {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--app-light-blue);
+}
+
+.op-page .op-paquete {
+    padding: .25rem .6rem;
+    border: 1px solid var(--app-light-blue);
+    border-radius: 8px;
+    background-color: var(--app-input-bg);
+    color: var(--app-dark-blue);
+    font-size: .8125rem;
+    font-weight: 600;
+}
+
+.op-page .op-aviso {
+    padding: .85rem 1rem;
+    border: 1px solid var(--app-light-blue);
+    border-radius: 10px;
+    background-color: var(--app-input-bg);
+    color: var(--app-title);
+}
+
+@media (max-width: 640px) {
+    .op-page .op-form-grid,
+    .op-page .op-propuestas {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .op-page .vf-acciones .vl-btn {
+        flex: 1;
+    }
+}

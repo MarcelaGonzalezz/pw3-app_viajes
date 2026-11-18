@@ -77,6 +77,9 @@ namespace TpMiercoles.Servicios
                 CapacidadMaxPaquetes = 4,
                 FechaInicio = hoy,
                 FechaFin = hoy.AddMonths(3),
+                HoraSalida = new TimeOnly(8, 0),
+                HoraLlegada = new TimeOnly(9, 30),
+                Estado = EstadoRuta.ACTIVA,
                 RutaDias =
                 {
                     new RutaDia { DiaSemana = DayOfWeek.Monday },
@@ -85,10 +88,15 @@ namespace TpMiercoles.Servicios
                 },
                 Paradas =
                 {
-                    new Parada { Direccion = ciudadela },
-                    new Parada { Direccion = liniers }
+                    new Parada { Direccion = ciudadela, Orden = 1 },
+                    new Parada { Direccion = liniers, Orden = 2 }
                 }
             };
+
+            DateTime proximaSalida = ProximaSalida(
+                hoy,
+                [DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Friday],
+                rutaAlCentro.HoraSalida) ?? hoy.AddDays(1).AddHours(8);
 
             // Viaje ACTIVO con dos paquetes asignados: es el que sirve para ver
             // la pantalla de detalle completa.
@@ -99,9 +107,14 @@ namespace TpMiercoles.Servicios
                 DireccionDestino = centro,
                 PesoMax = 25,
                 CapacidadMaxPaquetes = 4,
-                FechaSalida = hoy.AddDays(1).AddHours(8),
-                FechaLlegada = hoy.AddDays(1).AddHours(9).AddMinutes(30),
-                Estado = EstadoActividadViaje.ACTIVO
+                FechaSalida = proximaSalida,
+                FechaLlegada = proximaSalida.AddMinutes(90),
+                Estado = EstadoActividadViaje.ACTIVO,
+                Paradas =
+                {
+                    new Parada { Direccion = ciudadela, Orden = 1 },
+                    new Parada { Direccion = liniers, Orden = 2 }
+                }
             };
 
             // Los tres envios quedan en un paso distinto del transporte, para poder
@@ -183,7 +196,10 @@ namespace TpMiercoles.Servicios
             });
 
             // Viaje INACTIVO y sin paquetes: sirve para el estado vacio de la pantalla
-            // y para el filtro Activos / Inactivos de la lista.
+            // y para el filtro Activos / Inactivos de la lista. Va en otra salida de la
+            // misma ruta para no chocar con el viaje anterior.
+            DateTime siguienteSalida = proximaSalida.AddDays(7);
+
             Viaje viajeInactivo = new()
             {
                 Ruta = rutaAlCentro,
@@ -191,9 +207,14 @@ namespace TpMiercoles.Servicios
                 DireccionDestino = centro,
                 PesoMax = 25,
                 CapacidadMaxPaquetes = 4,
-                FechaSalida = hoy.AddDays(3).AddHours(8),
-                FechaLlegada = hoy.AddDays(3).AddHours(9).AddMinutes(30),
-                Estado = EstadoActividadViaje.INACTIVO
+                FechaSalida = siguienteSalida,
+                FechaLlegada = siguienteSalida.AddMinutes(90),
+                Estado = EstadoActividadViaje.INACTIVO,
+                Paradas =
+                {
+                    new Parada { Direccion = ciudadela, Orden = 1 },
+                    new Parada { Direccion = liniers, Orden = 2 }
+                }
             };
 
             // Viaje de OTRO conductor: entrando a su detalle con el usuario de prueba
@@ -207,8 +228,16 @@ namespace TpMiercoles.Servicios
                 CapacidadMaxPaquetes = 2,
                 FechaInicio = hoy,
                 FechaFin = null,
+                HoraSalida = new TimeOnly(10, 0),
+                HoraLlegada = new TimeOnly(11, 0),
+                Estado = EstadoRuta.ACTIVA,
                 RutaDias = { new RutaDia { DiaSemana = DayOfWeek.Saturday } }
             };
+
+            DateTime salidaAjena = ProximaSalida(
+                hoy,
+                [DayOfWeek.Saturday],
+                rutaAjena.HoraSalida) ?? hoy.AddDays(2).AddHours(10);
 
             Viaje viajeAjeno = new()
             {
@@ -217,8 +246,8 @@ namespace TpMiercoles.Servicios
                 DireccionDestino = once,
                 PesoMax = 10,
                 CapacidadMaxPaquetes = 2,
-                FechaSalida = hoy.AddDays(2).AddHours(10),
-                FechaLlegada = hoy.AddDays(2).AddHours(11),
+                FechaSalida = salidaAjena,
+                FechaLlegada = salidaAjena.AddHours(1),
                 Estado = EstadoActividadViaje.ACTIVO
             };
 
@@ -257,5 +286,27 @@ namespace TpMiercoles.Servicios
 
         private static Direccion CrearDireccion(string texto, decimal latitud, decimal longitud)
             => new() { Texto = texto, Latitud = latitud, Longitud = longitud };
+
+        private static DateTime? ProximaSalida(DateTime desde, IReadOnlyCollection<DayOfWeek> dias, TimeOnly hora)
+        {
+            for (int i = 0; i <= 7; i++)
+            {
+                DateTime dia = desde.Date.AddDays(i);
+
+                if (!dias.Contains(dia.DayOfWeek))
+                {
+                    continue;
+                }
+
+                DateTime salida = dia + hora.ToTimeSpan();
+
+                if (salida > desde)
+                {
+                    return salida;
+                }
+            }
+
+            return null;
+        }
     }
 }

@@ -4,11 +4,24 @@ using Microsoft.EntityFrameworkCore;
 using TpMiercoles.Entidades;
 using TpMiercoles.Repositorios;
 using TpMiercoles.Servicios;
+using TpMiercoles.Servicios.Rutas;
+using TpMiercoles.Servicios.Rutas.OpenRouteService;
+using TpMiercoles.Servicios.Viajes;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+// Genera la especificación OpenAPI (/openapi/v1.json) que después dibuja Swagger.
+builder.Services.AddOpenApi(opciones => {
+    opciones.AddDocumentTransformer((documento, contexto, ct) => {
+        documento.Info.Title = "RuteaYa API";
+        documento.Info.Version = "v1";
+        documento.Info.Description =
+            "API REST de RuteaYa: viajes, oportunidades, transportes e historial. " +
+            "Requiere iniciar sesión: entrá primero en la aplicación web y después probá los endpoints desde acá.";
+        return Task.CompletedTask;
+    });
+});
 
 builder.Services.AddDbContext<ViajesDbContext>(options =>
     options.UseSqlServer(
@@ -16,10 +29,43 @@ builder.Services.AddDbContext<ViajesDbContext>(options =>
 
 builder.Services.AddScoped<IViajeServicio, ViajeServicio>();
 builder.Services.AddScoped<IViajeRepositorio, ViajeRepositorio>();
+builder.Services.AddScoped<IRutaRepositorio, RutaRepositorio>();
 builder.Services.AddScoped<IHistorialServicio, HistorialServicio>();
 builder.Services.AddScoped<IHistorialRepositorio, HistorialRepositorio>();
 builder.Services.AddScoped<ITransporteServicio, TransporteServicio>();
 builder.Services.AddScoped<ITransporteRepositorio, TransporteRepositorio>();
+builder.Services.AddScoped<IEnvioRepositorio, EnvioRepositorio>();
+builder.Services.AddScoped<IOportunidadServicio, OportunidadServicio>();
+
+// con API key usa OpenRouteService, sin key usa el mock
+var rutasOpts = builder.Configuration.GetSection(RutasOptions.Seccion).Get<RutasOptions>() ?? new();
+builder.Services.AddSingleton(rutasOpts);
+
+// El estimador (mock) siempre existe: Oportunidades evalua todos los envios con el y
+// con ORS confirma solo los mejores.
+builder.Services.AddSingleton<MockServicioRutas>();
+builder.Services.AddSingleton<IEstimadorDeRutas>(sp => sp.GetRequiredService<MockServicioRutas>());
+
+if (rutasOpts.UsarOpenRouteService) {
+    builder.Services.AddHttpClient<OpenRouteServiceRutas>(c => {
+        c.BaseAddress = new Uri(rutasOpts.OrsBaseUrl);
+        c.Timeout = TimeSpan.FromSeconds(rutasOpts.OrsTiempoMaximoSegundos);
+    });
+
+    // Plan B: si ORS agota la cuota (403), se pasa del límite por minuto (429), no responde a tiempo
+    // o falla (5xx, red, clave invalida), se calcula con el mock.
+    builder.Services.AddSingleton<EstadoCuotaRutas>();
+    builder.Services.AddTransient<IServicioRutas>(sp => new ServicioRutasConRespaldo(
+        sp.GetRequiredService<OpenRouteServiceRutas>(),
+        sp.GetRequiredService<MockServicioRutas>(),
+        sp.GetRequiredService<EstadoCuotaRutas>(),
+        sp.GetRequiredService<TimeProvider>(),
+        sp.GetRequiredService<ILogger<ServicioRutasConRespaldo>>()));
+} else{
+    // en modo mock, sin API key, para poder probar la app sin gastar llamadas a ORS
+    builder.Services.AddSingleton<IServicioRutas>(sp => sp.GetRequiredService<MockServicioRutas>());
+}
+
 builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(PerfilDeMapeo).Assembly));
@@ -62,9 +108,14 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+if (app.Environment.IsDevelopment()) {
     app.MapOpenApi();
+
+    // Página de Swagger en /swagger, armada a partir de /openapi/v1.json.
+    app.UseSwaggerUI(opciones => {
+        opciones.SwaggerEndpoint("/openapi/v1.json", "RuteaYa API v1");
+        opciones.DocumentTitle = "RuteaYa API";
+    });
 }
 
 app.UseHttpsRedirection();

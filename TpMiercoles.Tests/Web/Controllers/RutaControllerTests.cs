@@ -1,12 +1,14 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Moq;
 using System.Security.Claims;
 using TpMiercoles.Entidades;
 using TpMiercoles.Entidades.Excepciones;
 using TpMiercoles.Servicios;
+using TpMiercoles.Servicios.Excepciones;
 using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Servicios.DTOs.Ruta;
 using TpMiercoles.Servicios.DTOs.Direccion;
@@ -44,12 +46,14 @@ public class RutaControllerTests
             .Setup(s => s.ObtenerRutasActivasDeUnUsuarioAsync(It.IsAny<int>()))
             .ReturnsAsync(new List<RutaDTO>());
 
+        var httpContext = new DefaultHttpContext { User = CrearUsuarioAutenticado() };
         _controller = new RutaController(_mapper, _servicioMock.Object, _sesionMock.Object)
         {
             ControllerContext = new ControllerContext
             {
-                HttpContext = new DefaultHttpContext { User = CrearUsuarioAutenticado() }
-            }
+                HttpContext = httpContext
+            },
+            TempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>())
         };
     }
 
@@ -152,12 +156,12 @@ public class RutaControllerTests
     }
 
     [Fact]
-    public async Task Obtener_DevuelveVistaConLasRutasActivasYElNombreDelUsuario()
+    public async Task Obtener_DevuelveVistaConLasRutasYElNombreDelUsuario()
     {
         var rutasDTO = new List<RutaDTO> { CrearRutaDTOValida() };
 
         _servicioMock
-            .Setup(s => s.ObtenerRutasActivasDeUnUsuarioAsync(UsuarioId))
+            .Setup(s => s.ObtenerRutasDeUnUsuarioAsync(UsuarioId, It.IsAny<DateTime>()))
             .ReturnsAsync(rutasDTO);
 
         var resultado = await _controller.Obtener();
@@ -186,7 +190,7 @@ public class RutaControllerTests
         Assert.Equal("Parada 1", parada.Direccion.Texto);
 
         _servicioMock.Verify(
-            s => s.ObtenerRutasActivasDeUnUsuarioAsync(UsuarioId),
+            s => s.ObtenerRutasDeUnUsuarioAsync(UsuarioId, It.IsAny<DateTime>()),
             Times.Once);
     }
 
@@ -199,6 +203,267 @@ public class RutaControllerTests
         var modelo = Assert.IsType<ObtenerRutasViewModel>(vista.Model);
         Assert.Empty(modelo.Rutas);
         Assert.Equal(NombreUsuario, modelo.NombreUsuario);
+    }
+
+    [Fact]
+    public async Task Desactivar_CuandoOperacionExitosa_RedirigeAObtenerConMensaje()
+    {
+        const int rutaId = 10;
+        _servicioMock
+            .Setup(s => s.DesactivarRutaAsync(rutaId, UsuarioId))
+            .Returns(Task.CompletedTask);
+
+        var resultado = await _controller.Desactivar(rutaId);
+
+        var redireccion = Assert.IsType<RedirectToActionResult>(resultado);
+        Assert.Equal(nameof(RutaController.Obtener), redireccion.ActionName);
+        Assert.Equal("La ruta fue desactivada correctamente. Los viajes comprometidos siguen en pie.", _controller.TempData["Mensaje"]);
+        _servicioMock.Verify(s => s.DesactivarRutaAsync(rutaId, UsuarioId), Times.Once);
+    }
+
+    [Fact]
+    public async Task Desactivar_CuandoVolverADetalleEsTrue_RedirigeADetalle()
+    {
+        const int rutaId = 10;
+        _servicioMock
+            .Setup(s => s.DesactivarRutaAsync(rutaId, UsuarioId))
+            .Returns(Task.CompletedTask);
+
+        var resultado = await _controller.Desactivar(rutaId, volverADetalle: true);
+
+        var redireccion = Assert.IsType<RedirectToActionResult>(resultado);
+        Assert.Equal(nameof(RutaController.Detalle), redireccion.ActionName);
+        Assert.NotNull(redireccion.RouteValues);
+        Assert.Equal(rutaId, redireccion.RouteValues["id"]);
+        Assert.Equal("La ruta fue desactivada correctamente. Los viajes comprometidos siguen en pie.", _controller.TempData["Mensaje"]);
+        _servicioMock.Verify(s => s.DesactivarRutaAsync(rutaId, UsuarioId), Times.Once);
+    }
+
+    [Fact]
+    public async Task Desactivar_CuandoRutaNoExiste_DevuelveNotFound()
+    {
+        const int rutaId = 99;
+        _servicioMock
+            .Setup(s => s.DesactivarRutaAsync(rutaId, UsuarioId))
+            .ThrowsAsync(new RutaNoEncontradaException("La ruta no fue encontrada."));
+
+        var resultado = await _controller.Desactivar(rutaId);
+
+        Assert.IsType<NotFoundResult>(resultado);
+        _servicioMock.Verify(s => s.DesactivarRutaAsync(rutaId, UsuarioId), Times.Once);
+    }
+
+    [Fact]
+    public async Task Desactivar_CuandoUsuarioNoTienePermisos_DevuelveNotFound()
+    {
+        const int rutaId = 10;
+        _servicioMock
+            .Setup(s => s.DesactivarRutaAsync(rutaId, UsuarioId))
+            .ThrowsAsync(new UnauthorizedAccessException("No tienes permisos para modificar esta ruta."));
+
+        var resultado = await _controller.Desactivar(rutaId);
+
+        Assert.IsType<NotFoundResult>(resultado);
+        _servicioMock.Verify(s => s.DesactivarRutaAsync(rutaId, UsuarioId), Times.Once);
+    }
+
+    [Fact]
+    public async Task Activar_CuandoOperacionExitosa_RedirigeAObtenerConMensaje()
+    {
+        const int rutaId = 10;
+        _servicioMock
+            .Setup(s => s.ActivarRutaAsync(rutaId, UsuarioId, It.IsAny<DateTime>()))
+            .Returns(Task.CompletedTask);
+
+        var resultado = await _controller.Activar(rutaId);
+
+        var redireccion = Assert.IsType<RedirectToActionResult>(resultado);
+        Assert.Equal(nameof(RutaController.Obtener), redireccion.ActionName);
+        Assert.Equal("La ruta fue reactivada correctamente y volverá a buscar oportunidades.", _controller.TempData["Mensaje"]);
+        _servicioMock.Verify(s => s.ActivarRutaAsync(rutaId, UsuarioId, It.IsAny<DateTime>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Editar_Get_CuandoLaRutaEsDelUsuario_DevuelveVistaConLosDatosCargados()
+    {
+        const int rutaId = 10;
+        _servicioMock
+            .Setup(s => s.ObtenerParaEditarAsync(rutaId, UsuarioId))
+            .ReturnsAsync(CrearEditarRutaDTOValida(rutaId));
+
+        var resultado = await _controller.Editar(rutaId);
+
+        var vista = Assert.IsType<ViewResult>(resultado);
+        var modelo = Assert.IsType<EditarRutaViewModel>(vista.Model);
+        Assert.Equal(rutaId, modelo.Id);
+        Assert.Equal("Origen 123", modelo.DireccionOrigen.Texto);
+        Assert.Equal(-34.60m, modelo.DireccionOrigen.Latitud);
+        Assert.Equal("Destino 456", modelo.DireccionDestino.Texto);
+        Assert.Equal(25.5, modelo.PesoMax);
+        Assert.Equal(10, modelo.CapacidadMaxPaquetes);
+        Assert.Equal(new TimeOnly(8, 0), modelo.HoraSalida);
+        Assert.Equal(new TimeOnly(12, 30), modelo.HoraLlegada);
+        Assert.Equal([DayOfWeek.Monday, DayOfWeek.Friday], modelo.RutaDias);
+        var parada = Assert.Single(modelo.Paradas);
+        Assert.Equal(1, parada.Orden);
+        Assert.Equal("Parada 1", parada.Direccion.Texto);
+    }
+
+    [Fact]
+    public async Task Editar_Get_CuandoLaRutaNoExiste_DevuelveNotFound()
+    {
+        _servicioMock
+            .Setup(s => s.ObtenerParaEditarAsync(99, UsuarioId))
+            .ThrowsAsync(new RutaNoEncontradaException("La ruta no fue encontrada."));
+
+        var resultado = await _controller.Editar(99);
+
+        Assert.IsType<NotFoundResult>(resultado);
+    }
+
+    [Fact]
+    public async Task Editar_Get_CuandoLaRutaEsDeOtroUsuario_DevuelveNotFound()
+    {
+        _servicioMock
+            .Setup(s => s.ObtenerParaEditarAsync(10, UsuarioId))
+            .ThrowsAsync(new UnauthorizedAccessException("No tienes permisos para modificar esta ruta."));
+
+        var resultado = await _controller.Editar(10);
+
+        Assert.IsType<NotFoundResult>(resultado);
+    }
+
+    [Fact]
+    public async Task Editar_Post_CuandoModelStateEsInvalido_DevuelveVistaSinEditar()
+    {
+        _controller.ModelState.AddModelError(nameof(EditarRutaViewModel.PesoMax), "El peso debe ser mayor que cero.");
+        var modelo = CrearEditarRutaViewModelValido();
+
+        var resultado = await _controller.Editar(10, modelo);
+
+        var vista = Assert.IsType<ViewResult>(resultado);
+        Assert.Same(modelo, vista.Model);
+        _servicioMock.Verify(
+            s => s.EditarRutaAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<EditarRutaDTO>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Editar_Post_CuandoDatosSonValidos_EditaLaRutaYRedirigeAlDetalleConMensaje()
+    {
+        const int rutaId = 10;
+        EditarRutaDTO? dtoEnviado = null;
+        _servicioMock
+            .Setup(s => s.EditarRutaAsync(UsuarioId, rutaId, It.IsAny<EditarRutaDTO>()))
+            .Callback<int, int, EditarRutaDTO>((_, _, dto) => dtoEnviado = dto)
+            .ReturnsAsync(new ResultadoEdicionRutaDTO());
+
+        var resultado = await _controller.Editar(rutaId, CrearEditarRutaViewModelValido());
+
+        var redireccion = Assert.IsType<RedirectToActionResult>(resultado);
+        Assert.Equal(nameof(RutaController.Detalle), redireccion.ActionName);
+        Assert.NotNull(redireccion.RouteValues);
+        Assert.Equal(rutaId, redireccion.RouteValues["id"]);
+        Assert.Equal("La ruta fue modificada correctamente.", _controller.TempData["Mensaje"]);
+        Assert.False(_controller.TempData.ContainsKey("Aviso"));
+
+        Assert.NotNull(dtoEnviado);
+        Assert.Equal("Origen 123", dtoEnviado!.DireccionOrigen.Texto);
+        Assert.Equal(-34.60m, dtoEnviado.DireccionOrigen.Latitud);
+        Assert.Equal("Destino 456", dtoEnviado.DireccionDestino.Texto);
+        Assert.Equal(25.5, dtoEnviado.PesoMax);
+        Assert.Equal(10, dtoEnviado.CapacidadMaxPaquetes);
+        Assert.Equal(new DateTime(2026, 11, 1), dtoEnviado.FechaInicio);
+        Assert.Equal(new DateTime(2026, 12, 1), dtoEnviado.FechaFin);
+        Assert.Equal(new TimeOnly(8, 0), dtoEnviado.HoraSalida);
+        Assert.Equal(new TimeOnly(12, 30), dtoEnviado.HoraLlegada);
+        Assert.Equal([DayOfWeek.Monday, DayOfWeek.Wednesday], dtoEnviado.RutaDias.Select(d => d.DiaSemana));
+        var parada = Assert.Single(dtoEnviado.Paradas);
+        Assert.Equal(1, parada.Orden);
+        Assert.Equal("Parada 1", parada.Direccion.Texto);
+    }
+
+    [Fact]
+    public async Task Editar_Post_UsaElIdDeLaUrlAunqueElFormularioTraigaOtro()
+    {
+        const int rutaId = 10;
+        var modelo = CrearEditarRutaViewModelValido();
+        modelo.Id = 555;
+        _servicioMock
+            .Setup(s => s.EditarRutaAsync(UsuarioId, rutaId, It.IsAny<EditarRutaDTO>()))
+            .ReturnsAsync(new ResultadoEdicionRutaDTO());
+
+        await _controller.Editar(rutaId, modelo);
+
+        _servicioMock.Verify(s => s.EditarRutaAsync(UsuarioId, rutaId, It.Is<EditarRutaDTO>(d => d.Id == rutaId)), Times.Once);
+        _servicioMock.Verify(s => s.EditarRutaAsync(It.IsAny<int>(), 555, It.IsAny<EditarRutaDTO>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Editar_Post_CuandoElServicioDevuelveAvisos_LosGuardaEnTempData()
+    {
+        const int rutaId = 10;
+        _servicioMock
+            .Setup(s => s.EditarRutaAsync(UsuarioId, rutaId, It.IsAny<EditarRutaDTO>()))
+            .ReturnsAsync(new ResultadoEdicionRutaDTO { Avisos = ["Aviso uno.", "Aviso dos."] });
+
+        var resultado = await _controller.Editar(rutaId, CrearEditarRutaViewModelValido());
+
+        Assert.IsType<RedirectToActionResult>(resultado);
+        Assert.Equal("Aviso uno. Aviso dos.", _controller.TempData["Aviso"]);
+    }
+
+    [Fact]
+    public async Task Editar_Post_CuandoLaValidacionDeRutaFalla_DevuelveLaVistaConElError()
+    {
+        const int rutaId = 10;
+        const string mensaje = "No se puede cambiar la hora de salida porque la ruta ya tiene viajes creados.";
+        var modelo = CrearEditarRutaViewModelValido();
+        _servicioMock
+            .Setup(s => s.EditarRutaAsync(UsuarioId, rutaId, It.IsAny<EditarRutaDTO>()))
+            .ThrowsAsync(new ValidacionRutaException(mensaje));
+
+        var resultado = await _controller.Editar(rutaId, modelo);
+
+        var vista = Assert.IsType<ViewResult>(resultado);
+        Assert.Same(modelo, vista.Model);
+        Assert.False(_controller.ModelState.IsValid);
+        Assert.Contains(_controller.ModelState[string.Empty]!.Errors, e => e.ErrorMessage == mensaje);
+    }
+
+    [Fact]
+    public async Task Editar_Post_CuandoLaRutaNoExiste_DevuelveNotFound()
+    {
+        _servicioMock
+            .Setup(s => s.EditarRutaAsync(UsuarioId, 99, It.IsAny<EditarRutaDTO>()))
+            .ThrowsAsync(new RutaNoEncontradaException("La ruta no fue encontrada."));
+
+        var resultado = await _controller.Editar(99, CrearEditarRutaViewModelValido());
+
+        Assert.IsType<NotFoundResult>(resultado);
+    }
+
+    [Fact]
+    public async Task Editar_Post_CuandoLaRutaEsDeOtroUsuario_DevuelveNotFound()
+    {
+        _servicioMock
+            .Setup(s => s.EditarRutaAsync(UsuarioId, 10, It.IsAny<EditarRutaDTO>()))
+            .ThrowsAsync(new UnauthorizedAccessException("No tienes permisos para modificar esta ruta."));
+
+        var resultado = await _controller.Editar(10, CrearEditarRutaViewModelValido());
+
+        Assert.IsType<NotFoundResult>(resultado);
+    }
+
+    [Fact]
+    public void Editar_Post_TieneValidateAntiForgeryToken()
+    {
+        var metodo = typeof(RutaController).GetMethod(
+            nameof(RutaController.Editar), [typeof(int), typeof(EditarRutaViewModel)]);
+
+        Assert.NotNull(metodo);
+        Assert.True(Attribute.IsDefined(metodo!, typeof(ValidateAntiForgeryTokenAttribute)));
+        Assert.True(Attribute.IsDefined(metodo!, typeof(HttpPostAttribute)));
     }
 
     private static ClaimsPrincipal CrearUsuarioAutenticado()
@@ -229,6 +494,44 @@ public class RutaControllerTests
             }
         ]
     };
+
+    private static EditarRutaViewModel CrearEditarRutaViewModelValido()
+    {
+        CrearRutaViewModel crear = CrearRutaValida();
+        return new EditarRutaViewModel
+        {
+            Id = 10,
+            DireccionOrigen = crear.DireccionOrigen,
+            DireccionDestino = crear.DireccionDestino,
+            PesoMax = crear.PesoMax,
+            CapacidadMaxPaquetes = crear.CapacidadMaxPaquetes,
+            FechaInicio = crear.FechaInicio,
+            FechaFin = crear.FechaFin,
+            HoraSalida = crear.HoraSalida,
+            HoraLlegada = crear.HoraLlegada,
+            RutaDias = crear.RutaDias,
+            Paradas = crear.Paradas
+        };
+    }
+
+    private static EditarRutaDTO CrearEditarRutaDTOValida(int id)
+    {
+        RutaDTO ruta = CrearRutaDTOValida();
+        return new EditarRutaDTO
+        {
+            Id = id,
+            DireccionOrigen = ruta.DireccionOrigen,
+            DireccionDestino = ruta.DireccionDestino,
+            PesoMax = ruta.PesoMax,
+            CapacidadMaxPaquetes = ruta.CapacidadMaxPaquetes,
+            FechaInicio = ruta.FechaInicio,
+            FechaFin = ruta.FechaFin,
+            HoraSalida = ruta.HoraSalida,
+            HoraLlegada = ruta.HoraLlegada,
+            RutaDias = ruta.RutaDias,
+            Paradas = ruta.Paradas
+        };
+    }
 
     private static RutaDTO CrearRutaDTOValida() => new()
     {

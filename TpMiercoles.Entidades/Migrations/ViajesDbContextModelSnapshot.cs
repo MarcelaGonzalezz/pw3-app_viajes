@@ -153,7 +153,10 @@ namespace TpMiercoles.Entidades.Migrations
                     b.Property<int>("Orden")
                         .HasColumnType("int");
 
-                    b.Property<int>("RutaId")
+                    b.Property<int?>("RutaId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ViajeId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -162,7 +165,12 @@ namespace TpMiercoles.Entidades.Migrations
 
                     b.HasIndex("RutaId");
 
-                    b.ToTable("Parada");
+                    b.HasIndex("ViajeId");
+
+                    b.ToTable("Parada", t =>
+                        {
+                            t.HasCheckConstraint("CK_Parada_UnDuenio", "([RutaId] IS NOT NULL AND [ViajeId] IS NULL) OR ([RutaId] IS NULL AND [ViajeId] IS NOT NULL)");
+                        });
                 });
 
             modelBuilder.Entity("TpMiercoles.Entidades.Ruta", b =>
@@ -182,6 +190,12 @@ namespace TpMiercoles.Entidades.Migrations
                     b.Property<int>("DireccionOrigenId")
                         .HasColumnType("int");
 
+                    b.Property<double?>("DistanciaMetros")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("DuracionSegundos")
+                        .HasColumnType("float");
+
                     b.Property<int>("Estado")
                         .HasColumnType("int");
 
@@ -190,6 +204,9 @@ namespace TpMiercoles.Entidades.Migrations
 
                     b.Property<DateTime>("FechaInicio")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("GeometriaJson")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<TimeOnly>("HoraLlegada")
                         .HasColumnType("time");
@@ -370,12 +387,18 @@ namespace TpMiercoles.Entidades.Migrations
                     b.HasOne("TpMiercoles.Entidades.Ruta", "Ruta")
                         .WithMany("Paradas")
                         .HasForeignKey("RutaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TpMiercoles.Entidades.Viaje", "Viaje")
+                        .WithMany("Paradas")
+                        .HasForeignKey("ViajeId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Direccion");
 
                     b.Navigation("Ruta");
+
+                    b.Navigation("Viaje");
                 });
 
             modelBuilder.Entity("TpMiercoles.Entidades.Ruta", b =>
@@ -461,6 +484,8 @@ namespace TpMiercoles.Entidades.Migrations
             modelBuilder.Entity("TpMiercoles.Entidades.Viaje", b =>
                 {
                     b.Navigation("Asignaciones");
+
+                    b.Navigation("Paradas");
                 });
 #pragma warning restore 612, 618
         }

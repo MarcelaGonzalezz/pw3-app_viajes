@@ -38,7 +38,11 @@ namespace TpMiercoles.Repositorios
                 .Include(a => a.Envio).ThenInclude(e => e.DireccionEntrega)
                 .Include(a => a.Viaje).ThenInclude(v => v.Ruta)
                 .Where(a => a.Viaje.Ruta.UsuarioId == conductorId
-                            && a.Estado != EstadoViaje.CANCELADO);
+                            && a.Estado != EstadoViaje.CANCELADO
+                            // Mis transportes solo tiene paquetes con conductor: uno que todavia busca
+                            // conductor vive en Oportunidades, y uno cancelado ya no se transporta.
+                            && a.Envio.Estado != EstadoEnvio.BuscandoConductor
+                            && a.Envio.Estado != EstadoEnvio.Cancelado);
 
             if (estado is not null)
             {

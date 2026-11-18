@@ -4,13 +4,18 @@ namespace TpMiercoles.Servicios.DTOs.Historial
     {
         public TipoOperacionHistorial Tipo { get; set; }
 
+        // Solo viajes: si el viaje esta activo o inactivo. Null en los envios.
+        public TpMiercoles.Entidades.EstadoActividadViaje? EstadoDelViaje { get; set; }
+
         // Id del viaje o del envio, segun el tipo. Sirve para armar el link al detalle.
         public int Id { get; set; }
 
         public string Origen { get; set; } = string.Empty;
         public string Destino { get; set; } = string.Empty;
 
-        // Fecha de la operacion: salida del viaje, entrega del envio o fecha limite si se cancelo.
+        // Fecha en que se acredita la operacion:
+        //  - Viaje: fecha de entrega de su ultimo paquete entregado (si no se registro, la de salida).
+        //  - Envio: fecha de entrega.
         public DateTime Fecha { get; set; }
 
         // Solo viajes: paquetes entregados en ese viaje.

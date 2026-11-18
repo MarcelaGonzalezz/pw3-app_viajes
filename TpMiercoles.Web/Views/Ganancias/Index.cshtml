@@ -1,0 +1,267 @@
+﻿@using System.Globalization
+@using TpMiercoles.Servicios.DTOs.Ganancias
+@model GananciasViewModel
+@{
+    ViewData["Title"] = "Potencial de ganancias";
+    CultureInfo argentina = new("es-AR");
+
+    string TextoCriterio(CriterioOptimizacion c) => c switch
+    {
+        CriterioOptimizacion.MayorGanancia => "Mayor ganancia",
+        CriterioOptimizacion.MenorDesvio => "Menor desvío",
+        _ => "Equilibrada"
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/viajes/detalle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/viajes/viajes.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/historial/historial.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/ganancias/ganancias.css" asp-append-version="true" />
+}
+
+<div class="vd">
+
+    <header class="vd-header">
+        <div class="vd-header-main">
+            <p class="vd-eyebrow">Mi actividad</p>
+            <h1 class="vd-title">Potencial de ganancias</h1>
+            <p class="hs-subtitulo">Estimación de @Model.MesTexto con tus rutas activas y los envíos disponibles.</p>
+        </div>
+    </header>
+
+    @if (Model.Error is not null)
+    {
+        <div class="vl-aviso vl-aviso--error" role="alert">@Model.Error</div>
+    }
+
+    <section class="vd-card">
+        <form method="get" asp-action="Index" class="hs-fechas">
+            <div class="vf-campo">
+                <label for="mes">Mes</label>
+                <select id="mes" name="mes">
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        <option value="@m" selected="@(m == Model.Mes)">@argentina.DateTimeFormat.GetMonthName(m)</option>
+                        //si el valor es true, escribe selected, si es false, omite el atributo entero, así el formulario muestra marcado lo que se calculó
+                    }
+                </select>
+            </div>
+            <div class="vf-campo">
+                <label for="anio">Año</label>
+                <input type="number" id="anio" name="anio" value="@Model.Anio" min="2000" max="2100" />
+            </div>
+            <div class="vf-campo">
+                <label for="criterio">Criterio</label>
+                <select id="criterio" name="criterio">
+                    @foreach (CriterioOptimizacion c in Enum.GetValues<CriterioOptimizacion>())
+                    {
+                        <option value="@c" selected="@(c == Model.Criterio)">@TextoCriterio(c)</option>
+                    }
+                </select>
+            </div>
+            <div class="vf-campo gn-campo-check">
+                <label class="gn-check">
+                    <input type="checkbox" name="limitarDesvio" value="true" checked="@Model.LimitaDesvio" />
+                    Limitar el desvío a @GananciasViewModel.DesvioDelSistemaKm.ToString("0.#", argentina) km por viaje
+                </label>
+            </div>
+            <div class="hs-fechas-acciones">
+                <button type="submit" class="vl-btn vl-btn--principal">Calcular</button>
+            </div>
+        </form>
+    </section>
+
+    <div class="gn-bloques">
+
+        <section class="gn-bloque">
+            <h2 class="gn-bloque-titulo">Ya obtenido</h2>
+            @if (Model.MesTodaviaNoEmpezo)
+            {
+                <p class="vd-vacio">Todavía no empezó el mes.</p>
+            }
+            else
+            {
+                <div class="vd-dato hs-dato--ganancia">
+                    <span class="vd-dato-label">Ganancia efectiva</span>
+                    <span class="hs-numero">@Model.GananciaEfectivaTexto</span>
+                    <span class="vd-dato-extra">
+                        @Model.EnviosEntregados envíos entregados · @Model.PeriodoEfectivoTexto
+                    </span>
+                </div>
+            }
+        </section>
+
+        <section class="gn-bloque">
+            <h2 class="gn-bloque-titulo">Potencial</h2>
+            @if (Model.MesTerminado)
+            {
+                <p class="vd-vacio">El mes ya terminó: no queda nada por estimar.</p>
+            }
+            else
+            {
+                <div class="gn-par">
+                    <div class="vd-dato gn-dato--potencial">
+                        <span class="vd-dato-label">Ganancia potencial</span>
+                        <span class="hs-numero">@Model.GananciaPotencialTexto</span>
+                        <span class="vd-dato-extra">Envíos que podrías sumar · @Model.PeriodoPotencialTexto</span>
+                    </div>
+                    <div class="vd-dato">
+                        <span class="vd-dato-label">Ganancia comprometida</span>
+                        <span class="hs-numero">@Model.GananciaComprometidaTexto</span>
+                        <span class="vd-dato-extra">Envíos aceptados, todavía sin entregar</span>
+                    </div>
+                </div>
+            }
+        </section>
+
+        <section class="gn-bloque">
+            <div class="vd-dato gn-dato--total">
+                <span class="vd-dato-label">Potencial total del mes</span>
+                <span class="hs-numero">@Model.PotencialTotalTexto</span>
+                <span class="vd-dato-extra">
+                    Ya obtenido @Model.GananciaEfectivaTexto + comprometido @Model.GananciaComprometidaTexto
+                    + potencial @Model.GananciaPotencialTexto
+                </span>
+            </div>
+        </section>
+
+    </div>
+
+    @if (!Model.MesTerminado)
+    {
+        <section class="hs-resumen gn-resumen" aria-label="Resumen de la estimación">
+            <div class="vd-dato">
+                <span class="vd-dato-label">Viajes analizados</span>
+                <span class="hs-numero">@Model.ViajesAnalizados</span>
+            </div>
+            <div class="vd-dato">
+                <span class="vd-dato-label">Paquetes posibles</span>
+                <span class="hs-numero">@Model.PaquetesPosibles</span>
+            </div>
+            <div class="vd-dato">
+                <span class="vd-dato-label">Promedio por viaje</span>
+                <span class="hs-numero">@Model.PromedioTexto</span>
+            </div>
+            <div class="vd-dato">
+                <span class="vd-dato-label">Desvío total</span>
+                <span class="hs-numero">@Model.DesvioTotalKm.ToString("0.#", argentina) km</span>
+            </div>
+        </section>
+
+        <p class="gn-nota">
+            Criterio: <strong>@TextoCriterio(Model.Criterio)</strong> ·
+            desvío máximo por viaje: <strong>@Model.DesvioMaximoTexto</strong>.
+            Los kilómetros son <strong>estimados</strong> (en línea recta, ajustados por calles), sin consultar rutas reales.
+            @if (Model.SalidasDescartadas > 0) //solo aparece si es mayor que cero
+            {
+                <text>@Model.SalidasDescartadas salidas no se pudieron analizar.</text>
+            }
+        </p>
+
+        @if (Model.Salidas.Count == 0)
+        {
+            <section class="vd-card">
+                <p class="vd-vacio">No tenés rutas activas con salidas en este período.</p>
+            </section>
+        }
+        else
+        {
+            @if (Model.MejorRecorrido is not null)
+            {
+                <section class="vd-card gn-mejor">
+                    <p class="vd-eyebrow">Mejor recorrido</p>
+                    <p class="hs-fila-ruta">
+                        @Model.MejorRecorrido.Origen
+                        <span class="vd-flecha" aria-hidden="true">&rarr;</span>
+                        @Model.MejorRecorrido.Destino
+                    </p>
+                    <p class="hs-fila-sub">
+                        <span class="gn-capital">@Model.MejorRecorrido.FechaTexto</span> ·
+                        @Model.MejorRecorrido.OcupacionTexto ·
+                        <span class="hs-monto hs-monto--ganancia">@Model.MejorRecorrido.GananciaTexto</span>
+                    </p>
+                </section>
+            }
+
+            <section class="vd-card">
+                <h2 class="gn-bloque-titulo">Ganancia potencial por semana</h2>
+                <table class="gn-tabla">
+                    <thead>
+                        <tr>
+                            <th>Semana</th>
+                            <th>Días</th>
+                            <th class="gn-num">Viajes</th>
+                            <th class="gn-num">Paquetes</th>
+                            <th class="gn-num">Ganancia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var semana in Model.Semanas)
+                        {
+                            <tr>
+                                <td>Semana @semana.Numero</td>
+                                <td class="gn-capital">@semana.RangoTexto</td>
+                                <td class="gn-num">@semana.Viajes</td>
+                                <td class="gn-num">@semana.Paquetes</td>
+                                <td class="gn-num">@semana.GananciaTexto</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="vd-card">
+                <h2 class="gn-bloque-titulo">Detalle por salida</h2>
+                <table class="gn-tabla">
+                    <thead>
+                        <tr>
+                            <th>Salida</th>
+                            <th>Recorrido</th>
+                            <th>Carga</th>
+                            <th class="gn-num">Desvío</th>
+                            <th class="gn-num">Comprometido</th>
+                            <th class="gn-num">Potencial</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var salida in Model.Salidas)
+                        {
+                            <tr class="@(salida.TuvoEnvios ? "" : "gn-fila--vacia")">
+                                <td class="gn-capital">@salida.FechaTexto</td>
+                                <td>@salida.Origen &rarr; @salida.Destino</td>
+                                @if (salida.TuvoEnvios)
+                                {
+                                    <td>
+                                        @salida.OcupacionTexto · @salida.PesoTexto
+                                        @if (salida.Paquetes.Count > 0)
+                                        {
+                                            <ul class="gn-paquetes">
+                                                @foreach (var paquete in salida.Paquetes)
+                                                {
+                                                    <li>
+                                                        <a href="@($"/oportunidades/{salida.RutaId}/envios/{paquete.EnvioId}?fecha={salida.FechaSalida:yyyy-MM-dd}")"
+                                                           title="Ver el envío y aceptarlo">@paquete.Descripcion</a>
+                                                        <span class="gn-paquete-dato">@($"Envío #{paquete.EnvioId}") · @paquete.PesoTexto · @paquete.MontoTexto</span>
+                                                        <span class="gn-paquete-ruta">@paquete.Retiro &rarr; @paquete.Entrega</span>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
+                                    </td>
+                                    <td class="gn-num">@salida.DesvioTexto</td>
+                                }
+                                else
+                                {
+                                    <td colspan="2">Sin envíos compatibles</td>
+                                }
+                                <td class="gn-num">@salida.ComprometidaTexto</td>
+                                <td class="gn-num">@salida.GananciaTexto</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
+        }
+    }
+</div>

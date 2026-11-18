@@ -21,5 +21,11 @@ namespace TpMiercoles.Servicios.DTOs.Ruta
         public TimeOnly HoraSalida { get; set; }
         public TimeOnly HoraLlegada { get; set; }
         public EstadoRuta Estado { get; set; } = EstadoRuta.ACTIVA;
+        // true si ya paso su fecha "hasta": queda inactiva y no se puede reactivar.
+        public bool Vencida { get; set; }
+
+        public double? DistanciaMetros { get; set; }
+        public int? DuracionSegundos { get; set; }
+        public string? GeometriaJson { get; set; } 
     }
 }

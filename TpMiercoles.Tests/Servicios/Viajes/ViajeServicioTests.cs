@@ -1,16 +1,19 @@
 using Moq;
 using TpMiercoles.Entidades;
 using TpMiercoles.Repositorios;
-using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.DTOs;
+using TpMiercoles.Servicios.Viajes;
 using TpMiercoles.Tests.Helpers;
 
-namespace TpMiercoles.Tests.Servicios
+namespace TpMiercoles.Tests.Servicios.Viajes
 {
     public class ViajeServicioTests
     {
         private readonly Mock<IViajeRepositorio> _repositorioMock;
         private readonly ViajeServicio _servicio;
+
+        // Fecha fija anterior a las de ViajeTestData (1/11/2026): esos viajes no estan vencidos.
+        private static readonly DateTime AntesDeLosViajes = new(2026, 10, 25, 12, 0, 0);
 
         public ViajeServicioTests()
         {
@@ -31,7 +34,7 @@ namespace TpMiercoles.Tests.Servicios
                 .Setup(r => r.ObtenerDetalleAsync(10))
                 .ReturnsAsync(viaje);
 
-            var resultado = await _servicio.ObtenerDetalleAsync(10, 5);
+            var resultado = await _servicio.ObtenerDetalleAsync(10, 5, AntesDeLosViajes);
 
             Assert.Null(resultado);
         }
@@ -52,8 +55,8 @@ namespace TpMiercoles.Tests.Servicios
                 capacidadMaxPaquetes: 4,
                 paradas:
                 [
-                    ViajeTestData.CrearParada(2, "Liniers"),
-                    ViajeTestData.CrearParada(1, "Ciudadela")
+                    ViajeTestData.CrearParada(2, "Liniers", orden: 2),
+                    ViajeTestData.CrearParada(1, "Ciudadela", orden: 1)
                 ],
                 dias:
                 [
@@ -71,14 +74,19 @@ namespace TpMiercoles.Tests.Servicios
                         direccionRetiro: "Ciudadela",
                         direccionEntrega: "Centro",
                         estado: EstadoViaje.CONFIRMADO,
-                        fechaRetiro: new DateTime(2026, 10, 31, 9, 0, 0)),
+                        fechaRetiro: new DateTime(2026, 10, 31, 9, 0, 0),
+                        estadoEnvio: EstadoEnvio.Entregado),
                     ViajeTestData.CrearAsignacion(
                         id: 1,
                         envioId: 100,
                         direccionRetiro: "Liniers",
                         direccionEntrega: "Once",
                         estado: EstadoViaje.PENDIENTE,
-                        fechaAceptacion: fechaAceptacion)
+                        fechaAceptacion: fechaAceptacion,
+                        estadoEnvio: EstadoEnvio.Retirado,
+                        descripcion: "Zapatillas",
+                        monto: 4000m,
+                        pesoKg: 2)
                 ]);
             viaje.DireccionOrigen = ViajeTestData.CrearDireccion(20, "Ramos Mejía");
             viaje.DireccionDestino = ViajeTestData.CrearDireccion(21, "Microcentro");
@@ -87,7 +95,7 @@ namespace TpMiercoles.Tests.Servicios
                 .Setup(r => r.ObtenerDetalleAsync(10))
                 .ReturnsAsync(viaje);
 
-            var resultado = await _servicio.ObtenerDetalleAsync(10, 5);
+            var resultado = await _servicio.ObtenerDetalleAsync(10, 5, AntesDeLosViajes);
 
             Assert.NotNull(resultado);
             Assert.Equal(10, resultado!.Id);
@@ -125,7 +133,10 @@ namespace TpMiercoles.Tests.Servicios
                     Assert.Equal("Carla Méndez", paquete.Remitente);
                     Assert.Equal("Liniers", paquete.DireccionRetiro);
                     Assert.Equal("Once", paquete.DireccionEntrega);
-                    Assert.Equal(EstadoViaje.PENDIENTE, paquete.Estado);
+                    Assert.Equal(EstadoEnvio.Retirado, paquete.Estado);
+                    Assert.Equal("Zapatillas", paquete.Descripcion);
+                    Assert.Equal(4000m, paquete.Monto);
+                    Assert.Equal(2, paquete.PesoKg);
                     Assert.Equal(fechaAceptacion, paquete.FechaAceptacion);
                 },
                 paquete =>
@@ -135,7 +146,7 @@ namespace TpMiercoles.Tests.Servicios
                     Assert.Equal("Juan Pérez", paquete.Remitente);
                     Assert.Equal("Ciudadela", paquete.DireccionRetiro);
                     Assert.Equal("Centro", paquete.DireccionEntrega);
-                    Assert.Equal(EstadoViaje.CONFIRMADO, paquete.Estado);
+                    Assert.Equal(EstadoEnvio.Entregado, paquete.Estado);
                     Assert.Equal(new DateTime(2026, 10, 31, 9, 0, 0), paquete.FechaRetiro);
                 });
         }
@@ -156,7 +167,7 @@ namespace TpMiercoles.Tests.Servicios
                 .Setup(r => r.ObtenerDetalleAsync(10))
                 .ReturnsAsync(viaje);
 
-            var resultado = await _servicio.ObtenerDetalleAsync(10, 5);
+            var resultado = await _servicio.ObtenerDetalleAsync(10, 5, AntesDeLosViajes);
 
             Assert.NotNull(resultado);
             Assert.Equal(2, resultado!.CantidadPaquetes);
@@ -195,7 +206,7 @@ namespace TpMiercoles.Tests.Servicios
                 .Setup(r => r.ListarPorUsuarioAsync(5, null))
                 .ReturnsAsync([viajeActivo, viajeInactivo]);
 
-            var resultado = await _servicio.ListarAsync(5, null);
+            var resultado = await _servicio.ListarAsync(5, null, AntesDeLosViajes);
 
             Assert.Collection(
                 resultado,
@@ -432,7 +443,7 @@ namespace TpMiercoles.Tests.Servicios
                 .Setup(r => r.ObtenerParaModificarAsync(10))
                 .ReturnsAsync(viaje);
 
-            var resultado = await _servicio.ActivarAsync(10, 5);
+            var resultado = await _servicio.ActivarAsync(10, 5, AntesDeLosViajes);
 
             Assert.True(resultado.NoEncontrado);
             Assert.False(resultado.EsExitoso);
@@ -476,7 +487,7 @@ namespace TpMiercoles.Tests.Servicios
                 .Setup(r => r.ObtenerParaModificarAsync(10))
                 .ReturnsAsync(viaje);
 
-            var resultado = await _servicio.ActivarAsync(10, 5);
+            var resultado = await _servicio.ActivarAsync(10, 5, AntesDeLosViajes);
 
             Assert.True(resultado.EsExitoso);
             Assert.Equal(EstadoActividadViaje.ACTIVO, viaje.Estado);
@@ -516,12 +527,60 @@ namespace TpMiercoles.Tests.Servicios
                 .Setup(r => r.ObtenerParaModificarAsync(10))
                 .ReturnsAsync(viaje);
 
-            var resultado = await _servicio.ActivarAsync(10, 5);
+            var resultado = await _servicio.ActivarAsync(10, 5, AntesDeLosViajes);
 
             Assert.True(resultado.EsExitoso);
             Assert.Equal(EstadoActividadViaje.ACTIVO, viaje.Estado);
             Assert.Equal(1, resultado.PaquetesAfectados);
             _repositorioMock.Verify(r => r.GuardarCambiosAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task ActivarAsync_CuandoElViajeYaLlego_LoRechazaYNoGuarda()
+        {
+            // salida 1/11 08:00, llegada 09:30; ahora 1/11 09:31
+            var viaje = ViajeTestData.CrearViaje(id: 10, usuarioId: 5, estado: EstadoActividadViaje.INACTIVO);
+            _repositorioMock
+                .Setup(r => r.ObtenerParaModificarAsync(10))
+                .ReturnsAsync(viaje);
+
+            var resultado = await _servicio.ActivarAsync(10, 5, new DateTime(2026, 11, 1, 9, 31, 0));
+
+            Assert.False(resultado.EsExitoso);
+            Assert.False(resultado.NoEncontrado);
+            Assert.Single(resultado.Errores);
+            Assert.Equal(EstadoActividadViaje.INACTIVO, viaje.Estado);
+            _repositorioMock.Verify(r => r.GuardarCambiosAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task ActivarAsync_CuandoYaSalioPeroTodaviaNoLlego_LoActiva()
+        {
+            // salida 1/11 08:00, llegada 09:30; ahora 1/11 09:00
+            var viaje = ViajeTestData.CrearViaje(id: 10, usuarioId: 5, estado: EstadoActividadViaje.INACTIVO);
+            _repositorioMock
+                .Setup(r => r.ObtenerParaModificarAsync(10))
+                .ReturnsAsync(viaje);
+
+            var resultado = await _servicio.ActivarAsync(10, 5, new DateTime(2026, 11, 1, 9, 0, 0));
+
+            Assert.True(resultado.EsExitoso);
+            Assert.Equal(EstadoActividadViaje.ACTIVO, viaje.Estado);
+        }
+
+        [Fact]
+        public async Task ListarAsync_MarcaComoVencidosSoloLosViajesQueYaLlegaron()
+        {
+            var llego = ViajeTestData.CrearViaje(id: 1, usuarioId: 5, fechaSalida: new DateTime(2026, 11, 1, 8, 0, 0));
+            var enCamino = ViajeTestData.CrearViaje(id: 2, usuarioId: 5, fechaSalida: new DateTime(2026, 11, 2, 8, 0, 0));
+            _repositorioMock
+                .Setup(r => r.ListarPorUsuarioAsync(5, null))
+                .ReturnsAsync([llego, enCamino]);
+
+            var resultado = await _servicio.ListarAsync(5, null, new DateTime(2026, 11, 2, 9, 0, 0));
+
+            Assert.True(resultado.Single(v => v.Id == 1).Vencido);
+            Assert.False(resultado.Single(v => v.Id == 2).Vencido);
         }
 
         private static ViajeEdicionDTO CrearDatosEdicion(

@@ -159,6 +159,66 @@ public class EnvioControllerTests
         Assert.Equal(0, modelo.TotalCancelados);
     }
 
+    [Fact]
+    public async Task Index_ConTexto_FiltraPorOrigenODestinoSinImportarMayusculasNiTildes()
+    {
+        EnvioListadoDTO ramos = EnvioTestData.CrearListadoDTO(1, EstadoEnvio.BuscandoConductor);
+        EnvioListadoDTO moron = EnvioTestData.CrearListadoDTO(2, EstadoEnvio.BuscandoConductor);
+        moron.Origen = "Morón";
+        moron.Destino = "Castelar";
+        EnvioListadoDTO haedo = EnvioTestData.CrearListadoDTO(3, EstadoEnvio.BuscandoConductor);
+        haedo.Origen = "Haedo";
+        haedo.Destino = "Ramos Mejía";
+        _servicioMock
+            .Setup(s => s.ListarAsync(UsuarioId, null))
+            .ReturnsAsync([ramos, moron, haedo]);
+
+        var resultado = await _controller.Index(null, texto: "ramos mejia");
+
+        var modelo = ObtenerModelo<MisEnviosViewModel>(resultado);
+        Assert.Equal([1, 3], modelo.Envios.Select(e => e.Id));
+        Assert.Equal("ramos mejia", modelo.Texto);
+    }
+
+    [Fact]
+    public async Task Index_ConRangoDeFechas_DevuelveSoloLosEnviosQueSeSolapan()
+    {
+        DateTime hoy = DateTime.Today;
+        EnvioListadoDTO cercano = EnvioTestData.CrearListadoDTO(1, EstadoEnvio.BuscandoConductor);
+        cercano.FechaDesde = hoy.AddDays(1);
+        cercano.FechaHasta = hoy.AddDays(5);
+        EnvioListadoDTO lejano = EnvioTestData.CrearListadoDTO(2, EstadoEnvio.BuscandoConductor);
+        lejano.FechaDesde = hoy.AddDays(20);
+        lejano.FechaHasta = hoy.AddDays(25);
+        _servicioMock
+            .Setup(s => s.ListarAsync(UsuarioId, null))
+            .ReturnsAsync([cercano, lejano]);
+
+        var resultado = await _controller.Index(null, desde: hoy.AddDays(10), hasta: hoy.AddDays(30));
+
+        var modelo = ObtenerModelo<MisEnviosViewModel>(resultado);
+        Assert.Equal([2], modelo.Envios.Select(e => e.Id));
+    }
+
+    [Fact]
+    public async Task Index_ConEstadoYTexto_CombinaLosFiltrosYNoAlteraLosContadores()
+    {
+        EnvioListadoDTO cancelado = EnvioTestData.CrearListadoDTO(1, EstadoEnvio.Cancelado);
+        EnvioListadoDTO canceladoOtroLugar = EnvioTestData.CrearListadoDTO(2, EstadoEnvio.Cancelado);
+        canceladoOtroLugar.Origen = "Haedo";
+        canceladoOtroLugar.Destino = "Castelar";
+        EnvioListadoDTO buscando = EnvioTestData.CrearListadoDTO(3, EstadoEnvio.BuscandoConductor);
+        _servicioMock
+            .Setup(s => s.ListarAsync(UsuarioId, null))
+            .ReturnsAsync([cancelado, canceladoOtroLugar, buscando]);
+
+        var resultado = await _controller.Index(EstadoEnvio.Cancelado, texto: "ciudadela");
+
+        var modelo = ObtenerModelo<MisEnviosViewModel>(resultado);
+        Assert.Equal([1], modelo.Envios.Select(e => e.Id));
+        Assert.Equal(3, modelo.TotalTodos);
+        Assert.Equal(2, modelo.TotalCancelados);
+    }
     #endregion
 
     #region Detalle

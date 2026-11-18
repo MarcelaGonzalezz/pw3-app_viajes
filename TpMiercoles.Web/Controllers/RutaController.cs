@@ -1,10 +1,11 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TpMiercoles.Entidades;
 using TpMiercoles.Entidades.Excepciones;
 using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.DTOs.Ruta;
+using TpMiercoles.Servicios.Excepciones;
 using TpMiercoles.Web.Infraestructura;
 using TpMiercoles.Web.Models;
 
@@ -23,6 +24,7 @@ namespace TpMiercoles.Web.Controllers
             _rutaServicio = rutaServicio;
             _sesionWeb = sesionWeb;
         }
+
         [HttpGet]
         public IActionResult Crear()
         {
@@ -32,7 +34,6 @@ namespace TpMiercoles.Web.Controllers
             };
             return View(vm);
         }
-
 
         [HttpPost]
         public async Task<IActionResult> Crear(CrearRutaViewModel ruta)
@@ -47,11 +48,9 @@ namespace TpMiercoles.Web.Controllers
             }
             catch (ValidacionRutaException e)
             {
-                ModelState.AddModelError("Error al crear la ruta: ", e.Message);
+                ModelState.AddModelError(string.Empty, e.Message); 
                 return View(ruta);
             }
-
-
         }
 
         [HttpGet]
@@ -59,10 +58,138 @@ namespace TpMiercoles.Web.Controllers
         {
             int usuarioId = _sesionWeb.UsuarioIdRequerido;
             string nombreUsuario = User.Identity?.Name;
-            var rutasDTO = await _rutaServicio.ObtenerRutasActivasDeUnUsuarioAsync(usuarioId);
+            var rutasDTO = await _rutaServicio.ObtenerRutasDeUnUsuarioAsync(usuarioId, DateTime.Now);
             var rutasVm = _mapper.Map<List<RutaViewModel>>(rutasDTO);
             return View(new ObtenerRutasViewModel { Rutas = rutasVm, NombreUsuario = nombreUsuario });
+        }
 
+        [HttpGet]
+        public async Task<IActionResult> Detalle(int id)
+        {
+            int usuarioId = _sesionWeb.UsuarioIdRequerido;
+
+            try
+            {
+                var rutaDto = await _rutaServicio.ObtenerDetalleAsync(id, usuarioId, DateTime.Now);
+                return View(rutaDto);
+            }
+            catch (RutaNoEncontradaException)
+            {
+                return NotFound();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return NotFound();
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Editar(int id)
+        {
+            int usuarioId = _sesionWeb.UsuarioIdRequerido;
+
+            try
+            {
+                EditarRutaDTO dto = await _rutaServicio.ObtenerParaEditarAsync(id, usuarioId);
+                return View(_mapper.Map<EditarRutaViewModel>(dto));
+            }
+            catch (RutaNoEncontradaException)
+            {
+                return NotFound();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return NotFound();
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Editar(int id, EditarRutaViewModel ruta)
+        {
+            // El id de la ruta sale de la URL, no del formulario.
+            ruta.Id = id;
+
+            if (!ModelState.IsValid) return View(ruta);
+
+            int usuarioId = _sesionWeb.UsuarioIdRequerido;
+            EditarRutaDTO dto = _mapper.Map<EditarRutaDTO>(ruta);
+
+            try
+            {
+                ResultadoEdicionRutaDTO resultado = await _rutaServicio.EditarRutaAsync(usuarioId, id, dto);
+                TempData["Mensaje"] = "La ruta fue modificada correctamente.";
+                if (resultado.Avisos.Count > 0)
+                    TempData["Aviso"] = string.Join(" ", resultado.Avisos);
+
+                return RedirectToAction(nameof(Detalle), new { id });
+            }
+            catch (RutaNoEncontradaException)
+            {
+                return NotFound();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return NotFound();
+            }
+            catch (ValidacionRutaException e)
+            {
+                ModelState.AddModelError(string.Empty, e.Message);
+                return View(ruta);
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Desactivar(int id, bool volverADetalle = false)
+        {
+            int usuarioId = _sesionWeb.UsuarioIdRequerido;
+            try
+            {
+                await _rutaServicio.DesactivarRutaAsync(id, usuarioId);
+                TempData["Mensaje"] = "La ruta fue desactivada correctamente. Los viajes comprometidos siguen en pie.";
+            }
+            catch (RutaNoEncontradaException)
+            {
+                return NotFound();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return NotFound();
+            }
+
+            return volverADetalle
+                ? RedirectToAction(nameof(Detalle), new { id })
+                : RedirectToAction(nameof(Obtener));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Activar(int id, bool volverADetalle = false)
+        {
+            int usuarioId = _sesionWeb.UsuarioIdRequerido;
+            try
+            {
+                await _rutaServicio.ActivarRutaAsync(id, usuarioId, DateTime.Now);
+                TempData["Mensaje"] = "La ruta fue reactivada correctamente y volverá a buscar oportunidades.";
+            }
+            catch (RutaNoEncontradaException)
+            {
+                return NotFound();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return NotFound();
+            }
+            catch (ValidacionRutaException e)
+            {
+                // Por ejemplo, una ruta vencida: no se puede reactivar.
+                TempData["Error"] = e.Message;
+            }
+
+            return volverADetalle
+                ? RedirectToAction(nameof(Detalle), new { id })
+                : RedirectToAction(nameof(Obtener));
         }
     }
 }

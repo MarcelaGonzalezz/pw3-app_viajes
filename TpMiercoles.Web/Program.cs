@@ -7,6 +7,11 @@ using System.Globalization;
 using TpMiercoles.Entidades;
 using TpMiercoles.Repositorios;
 using TpMiercoles.Servicios;
+using TpMiercoles.Servicios.Excepciones;
+using TpMiercoles.Servicios.Optimizacion;
+using TpMiercoles.Servicios.Rutas;
+using TpMiercoles.Servicios.Rutas.OpenRouteService;
+using TpMiercoles.Servicios.Viajes;
 using TpMiercoles.Web.Infraestructura;
 using TpMiercoles.Web.Mapeos;
 
@@ -41,13 +46,39 @@ builder.Services.AddScoped<IViajeServicio, ViajeServicio>();
 builder.Services.AddScoped<IViajeRepositorio, ViajeRepositorio>();
 builder.Services.AddScoped<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 builder.Services.AddScoped<ISesionWeb, SesionWeb>();
+builder.Services.AddScoped<IPreferenciasDeGanancias, PreferenciasDeGananciasEnCookie>();
 builder.Services.AddScoped<IEnvioServicio, EnvioServicio>();
 builder.Services.AddScoped<IEnvioRepositorio, EnvioRepositorio>();
 builder.Services.AddScoped<ISeedDeDesarrollo, SeedDeDesarrollo>();
 builder.Services.AddScoped<IHistorialRepositorio, HistorialRepositorio>();
 builder.Services.AddScoped<IHistorialServicio, HistorialServicio>();
 builder.Services.AddScoped<ISeedDeHistorial, SeedDeHistorial>();
+builder.Services.AddScoped<ISeedDeOportunidades, SeedDeOportunidades>();
+builder.Services.AddScoped<ISeedDeGanancias, SeedDeGanancias>();
+builder.Services.AddScoped<ITransporteRepositorio, TransporteRepositorio>();
+builder.Services.AddScoped<ITransporteServicio, TransporteServicio>();
+builder.Services.AddScoped<ISeedDeTransportes, SeedDeTransportes>();
+builder.Services.AddScoped<ISeedDeEnviosUnicos, SeedDeEnviosUnicos>();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<IResolvedorSalidaOptimizacion,ResolvedorSalidaOptimizacion>();
+builder.Services.AddScoped<IBuscadorCandidatosOptimizacion,BuscadorCandidatosOptimizacion>();
+builder.Services.AddScoped<IGananciasServicio, GananciasServicio>();
+builder.Services.AddScoped<ValidadorSolicitudOptimizacion>();
+builder.Services.AddScoped<ValidadorSalidaOptimizacion>();
+builder.Services.AddScoped<CalculadorCompromisosSalida>();
+builder.Services.AddScoped<ConstructorRecorridoOptimizacion>();
+builder.Services.AddScoped<EvaluadorDesvioCompromisos>();
+builder.Services.AddScoped<MotorDeCombinaciones>();
+
+decimal proporcionMinimaIngreso =
+    builder.Configuration.GetValue<decimal>(
+        "Optimizacion:ProporcionMinimaIngreso",
+        0.80m);
+
+builder.Services.AddScoped<IOptimizadorServicio>(proveedor =>
+    ActivatorUtilities.CreateInstance<OptimizadorServicio>(
+        proveedor,
+        proporcionMinimaIngreso));
 
 string carpetaClaves = Path.GetFullPath(
     Path.Combine(builder.Environment.ContentRootPath, "..", "shared-keys"));
@@ -96,6 +127,41 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddAuthorization(); //Hace funcionar [Authorize]
 
+var rutasOpts = builder.Configuration.GetSection(RutasOptions.Seccion).Get<RutasOptions>() ?? new();
+builder.Services.AddSingleton(rutasOpts);
+
+// El estimador (mock) siempre existe: el optimizador compara todas las combinaciones con el y
+// Potencial de ganancias calcula todo con el. Con ORS, solo las finalistas se piden a ORS.
+builder.Services.AddSingleton<MockServicioRutas>();
+builder.Services.AddSingleton<IEstimadorDeRutas>(sp => sp.GetRequiredService<MockServicioRutas>());
+
+if (rutasOpts.UsarOpenRouteService) {
+    builder.Services.AddHttpClient<OpenRouteServiceRutas>(c => {
+        c.BaseAddress = new Uri(rutasOpts.OrsBaseUrl);
+        c.Timeout = TimeSpan.FromSeconds(rutasOpts.OrsTiempoMaximoSegundos);
+    });
+
+    // Plan B: si ORS agota la cuota (403), se pasa del límite por minuto (429), no responde a tiempo
+    // o falla (5xx, red, clave invalida), se calcula con el mock.
+    builder.Services.AddSingleton<EstadoCuotaRutas>();
+    builder.Services.AddTransient<IServicioRutas>(sp => new ServicioRutasConRespaldo(
+        sp.GetRequiredService<OpenRouteServiceRutas>(),
+        sp.GetRequiredService<MockServicioRutas>(),
+        sp.GetRequiredService<EstadoCuotaRutas>(),
+        sp.GetRequiredService<TimeProvider>(),
+        sp.GetRequiredService<ILogger<ServicioRutasConRespaldo>>()));
+} else{
+    // en modo mock, sin API key, para poder probar la app sin gastar llamadas a ORS
+    builder.Services.AddSingleton<IServicioRutas>(sp => sp.GetRequiredService<MockServicioRutas>());
+}
+
+builder.Services.AddScoped<IRecorridoServicio, RecorridoServicio>();
+builder.Services.AddScoped<IMapaViajeServicio, MapaViajeServicio>();
+builder.Services.AddScoped<IOportunidadServicio, OportunidadServicio>();
+builder.Services.AddScoped<IMaterializadorDeViajes, MaterializadorDeViajes>();
+builder.Services.AddScoped<IVencedorDeViajesYRutas, VencedorDeViajesYRutas>();
+builder.Services.AddHostedService<MaterializacionDeViajesHostedService>();
+
 var app = builder.Build();
 var invariante = CultureInfo.InvariantCulture;
 app.UseRequestLocalization(new RequestLocalizationOptions
@@ -111,6 +177,11 @@ if (app.Environment.IsDevelopment())
     using IServiceScope ambitoDeSeed = app.Services.CreateScope();
     await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeDesarrollo>().SembrarAsync();
     await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeHistorial>().SembrarAsync();
+    await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeOportunidades>().SembrarAsync();
+    await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeGanancias>().SembrarAsync();
+    await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeTransportes>().SembrarAsync();
+    // Va ultimo: renombra los envios repetidos que hayan dejado los seeds anteriores.
+    await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeEnviosUnicos>().SembrarAsync();
 }
 
 if (!app.Environment.IsDevelopment())
