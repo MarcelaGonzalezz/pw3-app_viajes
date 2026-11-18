@@ -13,7 +13,6 @@
     --texto: var(--app-title, #3a5e77);
     --error: #d93025;
     --ok: #2e9e6b;
-
     box-sizing: border-box;
     width: 100%;
     max-width: 720px;
@@ -27,11 +26,11 @@
     -webkit-font-smoothing: antialiased;
 }
 
-.envio-form *,
-.envio-form *::before,
-.envio-form *::after {
-    box-sizing: border-box;
-}
+    .envio-form *,
+    .envio-form *::before,
+    .envio-form *::after {
+        box-sizing: border-box;
+    }
 
 /* ---------- Títulos ---------- */
 
@@ -66,17 +65,17 @@
     color: var(--texto);
 }
 
-.envio-seccion__titulo .paso {
-    display: inline-grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: var(--med-blue);
-    color: #fff;
-    font-size: 0.9rem;
-    font-weight: 700;
-}
+    .envio-seccion__titulo .paso {
+        display: inline-grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--med-blue);
+        color: #fff;
+        font-size: 0.9rem;
+        font-weight: 700;
+    }
 
 /* ---------- Grupos y etiquetas ---------- */
 
@@ -86,9 +85,9 @@
     min-width: 0;
 }
 
-.envio-form .campo:last-child {
-    margin-bottom: 0;
-}
+    .envio-form .campo:last-child {
+        margin-bottom: 0;
+    }
 
 .envio-form label {
     display: block;
@@ -155,11 +154,11 @@
     background-position: right 1em center;
 }
 
-/* Un select sin elección (valor vacío) se ve como placeholder */
-.envio-form select:has(option[value=""]:checked) {
-    font-weight: 400;
-    color: #7a97a8;
-}
+    /* Un select sin elección (valor vacío) se ve como placeholder */
+    .envio-form select:has(option[value=""]:checked) {
+        font-weight: 400;
+        color: #7a97a8;
+    }
 
 /* Clase que agrega jQuery Validate / tag helpers cuando el campo es inválido */
 .envio-form .input-validation-error {
@@ -176,9 +175,9 @@
     color: var(--error);
 }
 
-.envio-form .error:empty {
-    display: none;
-}
+    .envio-form .error:empty {
+        display: none;
+    }
 
 .envio-form .error--resumen {
     margin-bottom: 1.5rem;
@@ -187,11 +186,11 @@
     border-radius: 4px;
 }
 
-.envio-form .error--resumen ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
+    .envio-form .error--resumen ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
 
 /* ---------- Campo de dirección (buscador Nominatim) ---------- */
 
@@ -224,35 +223,35 @@
     box-shadow: 0 6px 18px rgb(0 0 0 / 12%);
 }
 
-.resultados:empty {
-    display: none;
-}
+    .resultados:empty {
+        display: none;
+    }
 
-.resultados li {
-    padding: 0.6em 1em;
-    font-size: 0.95rem;
-    color: var(--texto);
-    cursor: pointer;
-}
+    .resultados li {
+        padding: 0.6em 1em;
+        font-size: 0.95rem;
+        color: var(--texto);
+        cursor: pointer;
+    }
 
-.resultados li + li {
-    border-top: 1px solid var(--light-blue);
-}
+        .resultados li + li {
+            border-top: 1px solid var(--light-blue);
+        }
 
-.resultados li:hover,
-.resultados li:focus-visible {
-    background: var(--light-blue);
-    outline: none;
-}
+        .resultados li:hover,
+        .resultados li:focus-visible {
+            background: var(--light-blue);
+            outline: none;
+        }
 
-.resultados li.sin-accion {
-    cursor: default;
-    color: #617E92;
-}
+        .resultados li.sin-accion {
+            cursor: default;
+            color: #617E92;
+        }
 
-.resultados li.sin-accion:hover {
-    background: transparent;
-}
+            .resultados li.sin-accion:hover {
+                background: transparent;
+            }
 
 /* ---------- Botones ---------- */
 
@@ -278,10 +277,10 @@
     transition: background-color 0.2s ease-out;
 }
 
-.envio-form .btn-guardar:hover,
-.envio-form .btn-guardar:active {
-    background-color: var(--dark-blue);
-}
+    .envio-form .btn-guardar:hover,
+    .envio-form .btn-guardar:active {
+        background-color: var(--dark-blue);
+    }
 
 .envio-form .btn-cancelar {
     padding: 0 0.5rem;
@@ -292,11 +291,11 @@
     transition: border-color 0.2s ease, color 0.2s ease;
 }
 
-.envio-form .btn-cancelar:hover,
-.envio-form .btn-cancelar:focus-visible {
-    color: #2b4658;
-    border-bottom-color: currentColor;
-}
+    .envio-form .btn-cancelar:hover,
+    .envio-form .btn-cancelar:focus-visible {
+        color: #2b4658;
+        border-bottom-color: currentColor;
+    }
 
 /* ---------- Responsive ---------- */
 
@@ -317,5 +316,59 @@
     .envio-form .btn-cancelar {
         text-align: center;
         border-bottom: none;
+    }
+}
+
+/* ---------- Pantallas anchas: dos columnas ---------- */
+/* Fila 1: Recorrido (izquierda) y Paquete (derecha). Fila 2: Entrega y pago a lo ancho. */
+
+@media (min-width: 992px) {
+    .envio-form {
+        max-width: 1180px;
+        padding: 1.75em 2.25em;
+    }
+
+    .envio-subtitulo {
+        margin-bottom: 1.5rem;
+    }
+
+    .envio-columnas {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        column-gap: 2.5rem;
+        align-items: start;
+    }
+
+    .envio-seccion {
+        margin-bottom: 1.5rem;
+    }
+
+    .envio-seccion--ancha {
+        grid-column: 1 / -1;
+    }
+
+    .envio-form .campo {
+        margin-bottom: 1rem;
+    }
+
+    .envio-form input[type="text"],
+    .envio-form input[type="number"],
+    .envio-form input[type="date"],
+    .envio-form input[type="datetime-local"],
+    .envio-form select {
+        height: 46px;
+    }
+
+    /* Botones centrados debajo de todo */
+    .acciones {
+        justify-content: center;
+        margin-top: 1rem;
+        padding-top: 1.25rem;
+        border-top: 2px solid var(--light-blue);
+    }
+
+    .envio-form .btn-guardar {
+        flex: 0 0 360px;
+        height: 50px;
     }
 }

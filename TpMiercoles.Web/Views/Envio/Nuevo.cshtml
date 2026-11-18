@@ -42,6 +42,8 @@
 
         <div asp-validation-summary="ModelOnly" class="error error--resumen"></div>
 
+        <div class="envio-columnas">
+
         @* ---------- 1. Recorrido ---------- *@
         <section class="envio-seccion">
             <h2 class="envio-seccion__titulo"><span class="paso">1</span> Recorrido</h2>
@@ -85,7 +87,7 @@
         </section>
 
         @* ---------- 3. Entrega y pago ---------- *@
-        <section class="envio-seccion">
+        <section class="envio-seccion envio-seccion--ancha">
             <h2 class="envio-seccion__titulo"><span class="paso">3</span> Entrega y pago</h2>
 
             <div class="grid-2">
@@ -102,6 +104,8 @@
                 </div>
             </div>
         </section>
+
+        </div>
 
         <div class="acciones">
             <a class="btn-cancelar" asp-controller="Home" asp-action="Index">Cancelar</a>
