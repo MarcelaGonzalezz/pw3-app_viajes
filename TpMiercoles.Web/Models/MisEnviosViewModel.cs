@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using System;
 using TpMiercoles.Entidades;
 
 namespace TpMiercoles.Web.Models
@@ -16,5 +16,14 @@ namespace TpMiercoles.Web.Models
         public int TotalCancelados { get; set; }
         public bool SoloVencidos { get; set; }
         public int TotalVencidos { get; set; }
+        public string? Texto { get; set; }
+        public DateTime? Desde { get; set; }
+        public DateTime? Hasta { get; set; }
+        public bool HayFiltros =>
+            Filtro is not null
+            || SoloVencidos
+            || !string.IsNullOrWhiteSpace(Texto)
+            || Desde is not null
+            || Hasta is not null;
     }
 }
