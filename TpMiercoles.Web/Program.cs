@@ -25,14 +25,12 @@ CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
 
 // Add services to the container.
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddAutoMapper(cfg =>
-{
+builder.Services.AddAutoMapper(cfg => {
     cfg.AddMaps(typeof(PerfilDeMapeo).Assembly);
     cfg.AddMaps(typeof(PerfilDeMapeoWeb).Assembly);
 });
 builder.Services.AddControllersWithViews();
-builder.Services.AddHttpClient("ViajesApi", cliente =>
-{
+builder.Services.AddHttpClient("ViajesApi", cliente => {
     cliente.BaseAddress = new Uri(
         builder.Configuration["Api:BaseUrl"]!);
 });
@@ -60,8 +58,8 @@ builder.Services.AddScoped<ITransporteServicio, TransporteServicio>();
 builder.Services.AddScoped<ISeedDeTransportes, SeedDeTransportes>();
 builder.Services.AddScoped<ISeedDeEnviosUnicos, SeedDeEnviosUnicos>();
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddScoped<IResolvedorSalidaOptimizacion,ResolvedorSalidaOptimizacion>();
-builder.Services.AddScoped<IBuscadorCandidatosOptimizacion,BuscadorCandidatosOptimizacion>();
+builder.Services.AddScoped<IResolvedorSalidaOptimizacion, ResolvedorSalidaOptimizacion>();
+builder.Services.AddScoped<IBuscadorCandidatosOptimizacion, BuscadorCandidatosOptimizacion>();
 builder.Services.AddScoped<IGananciasServicio, GananciasServicio>();
 builder.Services.AddScoped<ValidadorSolicitudOptimizacion>();
 builder.Services.AddScoped<ValidadorSalidaOptimizacion>();
@@ -89,8 +87,7 @@ builder.Services
     .SetApplicationName("TpMiercoles");
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
+    .AddCookie(options => {
         options.LoginPath = "/Usuario/Login";
         options.Cookie.Name = ".TpMiercoles.Auth";
         options.Cookie.Path = "/";
@@ -100,10 +97,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromHours(8); //La cookie dura 8 horas
         options.SlidingExpiration = true; //Se renueva si el usuario sigue logueado
 
-        options.Events.OnRedirectToLogin = contexto =>
-        {
-            if (contexto.Request.Path.StartsWithSegments("/api"))
-            {
+        options.Events.OnRedirectToLogin = contexto => {
+            if (contexto.Request.Path.StartsWithSegments("/api")) {
                 contexto.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 return Task.CompletedTask;
             }
@@ -112,10 +107,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             return Task.CompletedTask;
         };
 
-        options.Events.OnRedirectToAccessDenied = contexto =>
-        {
-            if (contexto.Request.Path.StartsWithSegments("/api"))
-            {
+        options.Events.OnRedirectToAccessDenied = contexto => {
+            if (contexto.Request.Path.StartsWithSegments("/api")) {
                 contexto.Response.StatusCode = StatusCodes.Status403Forbidden;
                 return Task.CompletedTask;
             }
@@ -150,7 +143,7 @@ if (rutasOpts.UsarOpenRouteService) {
         sp.GetRequiredService<EstadoCuotaRutas>(),
         sp.GetRequiredService<TimeProvider>(),
         sp.GetRequiredService<ILogger<ServicioRutasConRespaldo>>()));
-} else{
+} else {
     // en modo mock, sin API key, para poder probar la app sin gastar llamadas a ORS
     builder.Services.AddSingleton<IServicioRutas>(sp => sp.GetRequiredService<MockServicioRutas>());
 }
@@ -164,15 +157,13 @@ builder.Services.AddHostedService<MaterializacionDeViajesHostedService>();
 
 var app = builder.Build();
 var invariante = CultureInfo.InvariantCulture;
-app.UseRequestLocalization(new RequestLocalizationOptions
-{
+app.UseRequestLocalization(new RequestLocalizationOptions {
     DefaultRequestCulture = new RequestCulture(invariante),
     SupportedCultures = [invariante],
     SupportedUICultures = [invariante]
 });
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+if (app.Environment.IsDevelopment()) {
     // Datos de ejemplo para poder probar las pantallas. No corre en produccion.
     using IServiceScope ambitoDeSeed = app.Services.CreateScope();
     await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeDesarrollo>().SembrarAsync();
@@ -184,12 +175,16 @@ if (app.Environment.IsDevelopment())
     await ambitoDeSeed.ServiceProvider.GetRequiredService<ISeedDeEnviosUnicos>().SembrarAsync();
 }
 
-if (!app.Environment.IsDevelopment())
-{
+if (!app.Environment.IsDevelopment()) {
     app.UseExceptionHandler("/Home/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
+// Si una respuesta sale con un código de error y sin contenido (por ejemplo un NotFound()),
+// se vuelve a ejecutar el pedido contra /estado/{código} para mostrar una página amigable
+// en lugar de una pantalla en blanco. La URL y el código de estado no cambian.
+app.UseStatusCodePagesWithReExecute("/estado/{0}");
 
 app.UseHttpsRedirection();
 app.UseRouting();

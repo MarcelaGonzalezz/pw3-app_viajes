@@ -1,0 +1,39 @@
+﻿@model int
+
+@{
+    // Título y explicación según el código de error que llegó.
+    (string titulo, string detalle) = Model switch {
+        404 => ("No encontramos esta página",
+                "Puede que la dirección esté mal escrita, o que lo que buscabas ya no exista."),
+        403 => ("No tenés permiso para ver esto",
+                "Esta sección pertenece a otro usuario."),
+        _ => ("Algo salió mal",
+              "No pudimos completar el pedido. Probá de nuevo en unos minutos.")
+    };
+
+    ViewData["Title"] = titulo;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/viajes/detalle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/viajes/viajes.css" asp-append-version="true" />
+}
+
+<div class="vd">
+    <header class="vd-header">
+        <div>
+            <p class="vd-eyebrow">Error @Model</p>
+            <h1 class="vd-title">@titulo</h1>
+            <p class="vd-vacio">@detalle</p>
+        </div>
+    </header>
+
+    <div class="vf-acciones">
+        <a asp-controller="Home" asp-action="Index" class="vl-btn vl-btn--principal">
+            Ir al inicio
+        </a>
+        <button type="button" class="vl-btn" onclick="history.back()">
+            Volver
+        </button>
+    </div>
+</div>

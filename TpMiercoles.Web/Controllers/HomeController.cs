@@ -122,5 +122,12 @@ namespace TpMiercoles.Web.Controllers
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
+        // Página para los códigos de error sin contenido (404, 403...). La invoca
+        // UseStatusCodePagesWithReExecute en Program.cs: el código de estado original se mantiene.
+        [AllowAnonymous]
+        [Route("/estado/{codigo:int}")]
+        public IActionResult Estado(int codigo) {
+            return View(codigo);
+        }
     }
 }

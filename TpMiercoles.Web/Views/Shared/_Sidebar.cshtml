@@ -23,8 +23,7 @@
     </div>
 
     <nav class="sidebar-nav">
-        <a asp-controller="Home" asp-action="Index" class="sidebar-link @(currentController == "Home" ? "active" : "")">Inicio</a>
-        <a asp-controller="Ruta" asp-action="Crear" class="sidebar-link @(currentController == "Ruta" && currentAction == "Crear" ? "active" : "")">Crear nueva ruta</a>
+        <a asp-controller="Home" asp-action="Index" class="sidebar-link @(currentController == "Home" && currentAction == "Index" ? "active" : "")">Inicio</a>        <a asp-controller="Ruta" asp-action="Crear" class="sidebar-link @(currentController == "Ruta" && currentAction == "Crear" ? "active" : "")">Crear nueva ruta</a>
         <a asp-controller="Ruta" asp-action="Obtener" class="sidebar-link @(currentController == "Ruta" && currentAction == "Obtener" ? "active" : "")">Mis rutas</a>
         <a asp-controller="Viajes" asp-action="Index" class="sidebar-link @(currentController == "Viajes" ? "active" : "")">Mis viajes</a>
         <a asp-controller="Envio" asp-action="Index" class="sidebar-link @(currentController == "Envio" ? "active" : "")">Mis envíos</a>
