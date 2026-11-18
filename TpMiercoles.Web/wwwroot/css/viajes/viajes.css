@@ -269,3 +269,20 @@
     margin-top: 1.25rem;
     flex-wrap: wrap;
 }
+
+/* ---------- Paginación ---------- */
+
+.vl-paginacion {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.vl-paginacion-info {
+    color: var(--app-muted);
+    font-size: .9rem;
+    font-weight: 600;
+}

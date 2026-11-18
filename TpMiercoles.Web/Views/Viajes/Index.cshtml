@@ -15,7 +15,7 @@
         <div class="vd-header-main">
             <p class="vd-eyebrow">Conductor</p>
             <h1 class="vd-title">Mis viajes</h1>
-            <h2 class="tr-subtitulo">Seguí el detalle de tus viajes</h2>
+            <p class="tr-subtitulo">Seguí el detalle de tus viajes</h2>
         </div>
     </header>
 
@@ -114,5 +114,35 @@
                 </li>
             }
         </ul>
+        @if (Model.TotalPaginas > 1)
+{
+    <nav class="vl-paginacion" aria-label="Paginación de viajes">
+
+        @if (Model.TienePaginaAnterior)
+        {
+            <a class="vl-btn"
+               asp-action="Index"
+               asp-route-estado="@Model.Filtro"
+               asp-route-pagina="@(Model.PaginaActual - 1)">
+                Anterior
+            </a>
+        }
+
+        <span class="vl-paginacion-info">
+            Página @Model.PaginaActual de @Model.TotalPaginas
+        </span>
+
+        @if (Model.TienePaginaSiguiente)
+        {
+            <a class="vl-btn vl-btn--principal"
+               asp-action="Index"
+               asp-route-estado="@Model.Filtro"
+               asp-route-pagina="@(Model.PaginaActual + 1)">
+                Siguiente
+            </a>
+        }
+
+    </nav>
+}
     }
 </div>

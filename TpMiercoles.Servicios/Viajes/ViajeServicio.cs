@@ -116,6 +116,8 @@ namespace TpMiercoles.Servicios.Viajes
             List<Viaje> viajes = await _repositorio.ListarPorUsuarioAsync(usuarioId, estado);
 
             return viajes
+                .OrderByDescending(v => v.FechaSalida)
+                .ThenByDescending(v => v.Id)
                 .Select(v => new ViajeListadoDTO
                 {
                     Id = v.Id,

@@ -32,7 +32,7 @@ namespace TpMiercoles.Web.Controllers
 
         // GET /viajes  (opcional ?estado=ACTIVO | INACTIVO; sin parametro trae todos)
         [HttpGet("/viajes")]
-        public async Task<IActionResult> Index(EstadoActividadViaje? estado)
+        public async Task<IActionResult> Index(EstadoActividadViaje? estado, int pagina = 1)
         {
             int? usuarioId = _sesionWeb.UsuarioId;
             if (usuarioId is null)
@@ -67,16 +67,46 @@ namespace TpMiercoles.Web.Controllers
             List<ViajeListadoDTO> todos =
                 await respuesta.Content.ReadFromJsonAsync<List<ViajeListadoDTO>>() ?? [];
 
+            const int viajesPorPagina = 4;
+
             List<ViajeListadoDTO> filtrados = estado is null
                 ? todos
                 : todos.Where(v => v.Estado == estado.Value).ToList();
 
+            // Calculamos la cantidad de páginas.
+            int totalPaginas = (int)Math.Ceiling(
+                filtrados.Count / (double)viajesPorPagina
+            );
+
+            // Evitamos páginas inválidas.
+            pagina = Math.Max(1, pagina);
+
+            if (totalPaginas > 0)
+            {
+                pagina = Math.Min(pagina, totalPaginas);
+            }
+
+            // Obtenemos únicamente los viajes de la página actual.
+            List<ViajeListadoDTO> viajesPagina = filtrados
+                .Skip((pagina - 1) * viajesPorPagina)
+                .Take(viajesPorPagina)
+                .ToList();
+
             MisViajesViewModel modelo = new()
             {
                 Filtro = estado,
-                Viajes = filtrados.Select(_mapper.Map<ViajeListadoViewModel>).ToList(),
-                TotalActivos = todos.Count(v => v.Estado == EstadoActividadViaje.ACTIVO),
-                TotalInactivos = todos.Count(v => v.Estado == EstadoActividadViaje.INACTIVO)
+                Viajes = viajesPagina
+                    .Select(_mapper.Map<ViajeListadoViewModel>)
+                    .ToList(),
+
+                TotalActivos = todos.Count(v =>
+                    v.Estado == EstadoActividadViaje.ACTIVO),
+
+                TotalInactivos = todos.Count(v =>
+                    v.Estado == EstadoActividadViaje.INACTIVO),
+
+                PaginaActual = pagina,
+                TotalPaginas = totalPaginas
             };
 
             return View(modelo);
