@@ -78,7 +78,8 @@ namespace TpMiercoles.Web.Controllers
                 TotalBuscando = todos.Count(e => e.Estado == EstadoEnvio.BuscandoConductor && !e.EstaVencido),
                 TotalVencidos = todos.Count(e => e.EstaVencido),
                 TotalAsignados = todos.Count(e => e.Estado == EstadoEnvio.ConductorAsignado),
-                TotalEnCamino = todos.Count(e => e.Estado == EstadoEnvio.Retirado || e.Estado == EstadoEnvio.EnCamino),
+                TotalRetirados = todos.Count(e => e.Estado == EstadoEnvio.Retirado),
+                TotalEnCamino = todos.Count(e => e.Estado == EstadoEnvio.EnCamino),
                 TotalEntregados = todos.Count(e => e.Estado == EstadoEnvio.Entregado),
                 TotalCancelados = todos.Count(e => e.Estado == EstadoEnvio.Cancelado)
             };

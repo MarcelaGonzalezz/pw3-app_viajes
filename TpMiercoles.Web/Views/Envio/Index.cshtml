@@ -76,6 +76,10 @@
            asp-action="Index" asp-route-estado="@EstadoEnvio.ConductorAsignado" asp-route-texto="@Model.Texto" asp-route-desde="@fDesde" asp-route-hasta="@fHasta">
             Conductor asignado <span class="vl-filtro-n">@Model.TotalAsignados</span>
         </a>
+        <a class="vl-filtro @(Model.Filtro == EstadoEnvio.Retirado ? "vl-filtro--on" : "")"
+           asp-action="Index" asp-route-estado="@EstadoEnvio.Retirado" asp-route-texto="@Model.Texto" asp-route-desde="@fDesde" asp-route-hasta="@fHasta">
+            Retirados <span class="vl-filtro-n">@Model.TotalRetirados</span>
+        </a>
         <a class="vl-filtro @(Model.Filtro == EstadoEnvio.EnCamino ? "vl-filtro--on" : "")"
            asp-action="Index" asp-route-estado="@EstadoEnvio.EnCamino" asp-route-texto="@Model.Texto" asp-route-desde="@fDesde" asp-route-hasta="@fHasta">
             En camino <span class="vl-filtro-n">@Model.TotalEnCamino</span>

@@ -117,6 +117,26 @@ public class EnvioControllerTests
     }
 
     [Fact]
+    public async Task Index_ConFiltroRetirado_DevuelveSoloLosRetirados()
+    {
+        _servicioMock
+            .Setup(s => s.ListarAsync(UsuarioId, null))
+            .ReturnsAsync(
+            [
+                EnvioTestData.CrearListadoDTO(1, EstadoEnvio.ConductorAsignado),
+                EnvioTestData.CrearListadoDTO(2, EstadoEnvio.Retirado),
+                EnvioTestData.CrearListadoDTO(3, EstadoEnvio.EnCamino)
+            ]);
+
+        var resultado = await _controller.Index(EstadoEnvio.Retirado);
+
+        var modelo = ObtenerModelo<MisEnviosViewModel>(resultado);
+        Assert.Equal(EstadoEnvio.Retirado, modelo.Filtro);
+        Assert.Equal([2], modelo.Envios.Select(e => e.Id));
+        Assert.Equal(1, modelo.TotalRetirados);
+    }
+
+    [Fact]
     public async Task Index_LosContadoresSeCalculanSobreTodosLosEnviosAunqueHayaFiltro()
     {
         _servicioMock
@@ -138,7 +158,8 @@ public class EnvioControllerTests
         Assert.Equal(7, modelo.TotalTodos);
         Assert.Equal(2, modelo.TotalBuscando);
         Assert.Equal(1, modelo.TotalAsignados);
-        Assert.Equal(2, modelo.TotalEnCamino);
+        Assert.Equal(1, modelo.TotalRetirados);
+        Assert.Equal(1, modelo.TotalEnCamino);
         Assert.Equal(1, modelo.TotalEntregados);
         Assert.Equal(1, modelo.TotalCancelados);
         Assert.Single(modelo.Envios);
@@ -154,6 +175,7 @@ public class EnvioControllerTests
         Assert.Equal(0, modelo.TotalTodos);
         Assert.Equal(0, modelo.TotalBuscando);
         Assert.Equal(0, modelo.TotalAsignados);
+        Assert.Equal(0, modelo.TotalRetirados);
         Assert.Equal(0, modelo.TotalEnCamino);
         Assert.Equal(0, modelo.TotalEntregados);
         Assert.Equal(0, modelo.TotalCancelados);
