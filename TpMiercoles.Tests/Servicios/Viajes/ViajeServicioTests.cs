@@ -5,18 +5,15 @@ using TpMiercoles.Servicios.DTOs;
 using TpMiercoles.Servicios.Viajes;
 using TpMiercoles.Tests.Helpers;
 
-namespace TpMiercoles.Tests.Servicios.Viajes
-{
-    public class ViajeServicioTests
-    {
+namespace TpMiercoles.Tests.Servicios.Viajes {
+    public class ViajeServicioTests {
         private readonly Mock<IViajeRepositorio> _repositorioMock;
         private readonly ViajeServicio _servicio;
 
         // Fecha fija anterior a las de ViajeTestData (1/11/2026): esos viajes no estan vencidos.
         private static readonly DateTime AntesDeLosViajes = new(2026, 10, 25, 12, 0, 0);
 
-        public ViajeServicioTests()
-        {
+        public ViajeServicioTests() {
             _repositorioMock = new Mock<IViajeRepositorio>();
             _servicio = new ViajeServicio(_repositorioMock.Object, MapperFactory.Crear());
         }
@@ -24,8 +21,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task ObtenerDetalleAsync_CuandoElViajeNoExisteONoEsDelUsuario_DevuelveNull(bool esDeOtroUsuario)
-        {
+        public async Task ObtenerDetalleAsync_CuandoElViajeNoExisteONoEsDelUsuario_DevuelveNull(bool esDeOtroUsuario) {
             Viaje? viaje = esDeOtroUsuario
                 ? ViajeTestData.CrearViaje(id: 10, usuarioId: 99)
                 : null;
@@ -40,8 +36,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         }
 
         [Fact]
-        public async Task ObtenerDetalleAsync_CuandoElViajeEsDelUsuario_DevuelveElDetalleCompleto()
-        {
+        public async Task ObtenerDetalleAsync_CuandoElViajeEsDelUsuario_DevuelveElDetalleCompleto() {
             DateTime fechaSalida = new(2026, 11, 2, 8, 0, 0);
             DateTime fechaLlegada = fechaSalida.AddMinutes(90);
             DateTime fechaAceptacion = new(2026, 10, 30, 12, 0, 0);
@@ -113,21 +108,18 @@ namespace TpMiercoles.Tests.Servicios.Viajes
 
             Assert.Collection(
                 resultado.Paradas,
-                parada =>
-                {
+                parada => {
                     Assert.Equal(1, parada.Orden);
                     Assert.Equal("Ciudadela", parada.Direccion.Texto);
                 },
-                parada =>
-                {
+                parada => {
                     Assert.Equal(2, parada.Orden);
                     Assert.Equal("Liniers", parada.Direccion.Texto);
                 });
 
             Assert.Collection(
                 resultado.Paquetes,
-                paquete =>
-                {
+                paquete => {
                     Assert.Equal(1, paquete.AsignacionId);
                     Assert.Equal(100, paquete.EnvioId);
                     Assert.Equal("Carla Méndez", paquete.Remitente);
@@ -139,8 +131,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
                     Assert.Equal(2, paquete.PesoKg);
                     Assert.Equal(fechaAceptacion, paquete.FechaAceptacion);
                 },
-                paquete =>
-                {
+                paquete => {
                     Assert.Equal(2, paquete.AsignacionId);
                     Assert.Equal(101, paquete.EnvioId);
                     Assert.Equal("Juan Pérez", paquete.Remitente);
@@ -152,8 +143,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         }
 
         [Fact]
-        public async Task ObtenerDetalleAsync_CuandoHayMasPaquetesQueCapacidad_LugaresDisponiblesEsCero()
-        {
+        public async Task ObtenerDetalleAsync_CuandoHayMasPaquetesQueCapacidad_LugaresDisponiblesEsCero() {
             var viaje = ViajeTestData.CrearViaje(
                 id: 10,
                 usuarioId: 5,
@@ -175,8 +165,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         }
 
         [Fact]
-        public async Task ListarAsync_CuandoHayViajes_DevuelveElListadoMapeado()
-        {
+        public async Task ListarAsync_CuandoHayViajes_DevuelveElListadoMapeado() {
             DateTime primeraSalida = new(2026, 11, 2, 8, 0, 0);
             DateTime segundaSalida = new(2026, 11, 3, 9, 0, 0);
 
@@ -207,11 +196,18 @@ namespace TpMiercoles.Tests.Servicios.Viajes
                 .ReturnsAsync([viajeActivo, viajeInactivo]);
 
             var resultado = await _servicio.ListarAsync(5, null, AntesDeLosViajes);
-
+            // Los más nuevos primero: el viaje del 3/11 (#2) va antes que el del 2/11 (#1).
             Assert.Collection(
                 resultado,
-                viaje =>
-                {
+                viaje => {
+                    Assert.Equal(2, viaje.Id);
+                    Assert.Equal(EstadoActividadViaje.INACTIVO, viaje.Estado);
+                    Assert.Equal(segundaSalida, viaje.FechaSalida);
+                    Assert.Equal(segundaSalida.AddHours(2), viaje.FechaLlegada);
+                    Assert.Equal(1, viaje.CantidadPaquetes);
+                    Assert.Equal(2, viaje.CapacidadMaxPaquetes);
+                },
+                viaje => {
                     Assert.Equal(1, viaje.Id);
                     Assert.Equal(EstadoActividadViaje.ACTIVO, viaje.Estado);
                     Assert.Equal("Ramos Mejía", viaje.DireccionOrigen);
@@ -220,23 +216,13 @@ namespace TpMiercoles.Tests.Servicios.Viajes
                     Assert.Equal(primeraSalida.AddHours(1), viaje.FechaLlegada);
                     Assert.Equal(2, viaje.CantidadPaquetes);
                     Assert.Equal(4, viaje.CapacidadMaxPaquetes);
-                },
-                viaje =>
-                {
-                    Assert.Equal(2, viaje.Id);
-                    Assert.Equal(EstadoActividadViaje.INACTIVO, viaje.Estado);
-                    Assert.Equal(segundaSalida, viaje.FechaSalida);
-                    Assert.Equal(segundaSalida.AddHours(2), viaje.FechaLlegada);
-                    Assert.Equal(1, viaje.CantidadPaquetes);
-                    Assert.Equal(2, viaje.CapacidadMaxPaquetes);
                 });
         }
 
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task ObtenerParaEditarAsync_CuandoElViajeNoExisteONoEsDelUsuario_DevuelveNull(bool esDeOtroUsuario)
-        {
+        public async Task ObtenerParaEditarAsync_CuandoElViajeNoExisteONoEsDelUsuario_DevuelveNull(bool esDeOtroUsuario) {
             Viaje? viaje = esDeOtroUsuario
                 ? ViajeTestData.CrearViaje(id: 10, usuarioId: 99)
                 : null;
@@ -250,8 +236,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         }
 
         [Fact]
-        public async Task ObtenerParaEditarAsync_CuandoElViajeEsDelUsuario_DevuelveLosDatosDeEdicion()
-        {
+        public async Task ObtenerParaEditarAsync_CuandoElViajeEsDelUsuario_DevuelveLosDatosDeEdicion() {
             DateTime fechaSalida = new(2026, 11, 2, 8, 0, 0);
             DateTime fechaLlegada = fechaSalida.AddMinutes(90);
             var viaje = ViajeTestData.CrearViaje(
@@ -291,8 +276,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task ActualizarAsync_CuandoElViajeNoExisteONoEsDelUsuario_DevuelveNoEncontrado(bool esDeOtroUsuario)
-        {
+        public async Task ActualizarAsync_CuandoElViajeNoExisteONoEsDelUsuario_DevuelveNoEncontrado(bool esDeOtroUsuario) {
             Viaje? viaje = esDeOtroUsuario
                 ? ViajeTestData.CrearViaje(id: 10, usuarioId: 99)
                 : null;
@@ -309,8 +293,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         }
 
         [Fact]
-        public async Task ActualizarAsync_CuandoLosDatosSonValidos_ActualizaYGuardaLosCambios()
-        {
+        public async Task ActualizarAsync_CuandoLosDatosSonValidos_ActualizaYGuardaLosCambios() {
             var viaje = ViajeTestData.CrearViaje(
                 id: 10,
                 usuarioId: 5,
@@ -338,8 +321,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         }
 
         [Fact]
-        public async Task ActualizarAsync_CuandoLosDatosSonInvalidos_DevuelveTodosLosErrores()
-        {
+        public async Task ActualizarAsync_CuandoLosDatosSonInvalidos_DevuelveTodosLosErrores() {
             var viaje = ViajeTestData.CrearViaje(id: 10, usuarioId: 5);
             _repositorioMock
                 .Setup(r => r.ObtenerParaModificarAsync(10))
@@ -361,8 +343,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         }
 
         [Fact]
-        public async Task ActualizarAsync_CuandoLaCapacidadEsMenorALosPaquetesAsignados_DevuelveError()
-        {
+        public async Task ActualizarAsync_CuandoLaCapacidadEsMenorALosPaquetesAsignados_DevuelveError() {
             var viaje = ViajeTestData.CrearViaje(
                 id: 10,
                 usuarioId: 5,
@@ -389,8 +370,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         }
 
         [Fact]
-        public async Task ActualizarAsync_CuandoLaCapacidadIgualaLosPaquetesAsignados_EsValido()
-        {
+        public async Task ActualizarAsync_CuandoLaCapacidadIgualaLosPaquetesAsignados_EsValido() {
             var viaje = ViajeTestData.CrearViaje(
                 id: 10,
                 usuarioId: 5,
@@ -414,8 +394,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         }
 
         [Fact]
-        public async Task DesactivarAsync_CuandoElViajeEsDeOtroUsuario_DevuelveNoEncontrado()
-        {
+        public async Task DesactivarAsync_CuandoElViajeEsDeOtroUsuario_DevuelveNoEncontrado() {
             var viaje = ViajeTestData.CrearViaje(
                 id: 10,
                 usuarioId: 99,
@@ -433,8 +412,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         }
 
         [Fact]
-        public async Task ActivarAsync_CuandoElViajeEsDeOtroUsuario_DevuelveNoEncontrado()
-        {
+        public async Task ActivarAsync_CuandoElViajeEsDeOtroUsuario_DevuelveNoEncontrado() {
             var viaje = ViajeTestData.CrearViaje(
                 id: 10,
                 usuarioId: 99,
@@ -452,8 +430,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         }
 
         [Fact]
-        public async Task DesactivarAsync_CuandoElViajeEstaActivo_LoDesactivaYGuarda()
-        {
+        public async Task DesactivarAsync_CuandoElViajeEstaActivo_LoDesactivaYGuarda() {
             var viaje = ViajeTestData.CrearViaje(
                 id: 10,
                 usuarioId: 5,
@@ -476,8 +453,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         }
 
         [Fact]
-        public async Task ActivarAsync_CuandoElViajeEstaInactivo_LoActivaYGuarda()
-        {
+        public async Task ActivarAsync_CuandoElViajeEstaInactivo_LoActivaYGuarda() {
             var viaje = ViajeTestData.CrearViaje(
                 id: 10,
                 usuarioId: 5,
@@ -496,8 +472,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         }
 
         [Fact]
-        public async Task DesactivarAsync_CuandoElViajeYaEstaInactivo_NoGuardaCambios()
-        {
+        public async Task DesactivarAsync_CuandoElViajeYaEstaInactivo_NoGuardaCambios() {
             var viaje = ViajeTestData.CrearViaje(
                 id: 10,
                 usuarioId: 5,
@@ -516,8 +491,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         }
 
         [Fact]
-        public async Task ActivarAsync_CuandoElViajeYaEstaActivo_NoGuardaCambios()
-        {
+        public async Task ActivarAsync_CuandoElViajeYaEstaActivo_NoGuardaCambios() {
             var viaje = ViajeTestData.CrearViaje(
                 id: 10,
                 usuarioId: 5,
@@ -536,8 +510,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         }
 
         [Fact]
-        public async Task ActivarAsync_CuandoElViajeYaLlego_LoRechazaYNoGuarda()
-        {
+        public async Task ActivarAsync_CuandoElViajeYaLlego_LoRechazaYNoGuarda() {
             // salida 1/11 08:00, llegada 09:30; ahora 1/11 09:31
             var viaje = ViajeTestData.CrearViaje(id: 10, usuarioId: 5, estado: EstadoActividadViaje.INACTIVO);
             _repositorioMock
@@ -554,8 +527,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         }
 
         [Fact]
-        public async Task ActivarAsync_CuandoYaSalioPeroTodaviaNoLlego_LoActiva()
-        {
+        public async Task ActivarAsync_CuandoYaSalioPeroTodaviaNoLlego_LoActiva() {
             // salida 1/11 08:00, llegada 09:30; ahora 1/11 09:00
             var viaje = ViajeTestData.CrearViaje(id: 10, usuarioId: 5, estado: EstadoActividadViaje.INACTIVO);
             _repositorioMock
@@ -569,8 +541,7 @@ namespace TpMiercoles.Tests.Servicios.Viajes
         }
 
         [Fact]
-        public async Task ListarAsync_MarcaComoVencidosSoloLosViajesQueYaLlegaron()
-        {
+        public async Task ListarAsync_MarcaComoVencidosSoloLosViajesQueYaLlegaron() {
             var llego = ViajeTestData.CrearViaje(id: 1, usuarioId: 5, fechaSalida: new DateTime(2026, 11, 1, 8, 0, 0));
             var enCamino = ViajeTestData.CrearViaje(id: 2, usuarioId: 5, fechaSalida: new DateTime(2026, 11, 2, 8, 0, 0));
             _repositorioMock
@@ -587,10 +558,8 @@ namespace TpMiercoles.Tests.Servicios.Viajes
             DateTime? salida = null,
             DateTime? fechaLlegada = null,
             double pesoMax = 30,
-            int capacidad = 6)
-        {
-            return new ViajeEdicionDTO
-            {
+            int capacidad = 6) {
+            return new ViajeEdicionDTO {
                 FechaSalida = salida ?? ViajeTestData.FechaSalida.AddDays(1),
                 FechaLlegada = fechaLlegada,
                 PesoMax = pesoMax,
