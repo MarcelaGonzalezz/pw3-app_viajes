@@ -30,6 +30,10 @@ namespace TpMiercoles.Servicios
         // acepto, otro conductor pudo haberla tomado.
         Task<ResultadoOperacionOportunidad> AceptarAsync(int rutaId, int envioId, int conductorId, DateTime? fechaSalida = null, int? viajeId = null);
         Task<ResultadoAceptacionPropuestaDTO> AceptarPropuestaAsync(int rutaId, int? viajeId, DateTime fechaSalidaProgramada, IReadOnlyList<int> envioIds, int conductorId);
+        // Resumen para la pantalla de confirmación: datos actuales de la salida y de cada envío,
+        // indicando si siguen disponibles. No modifica nada. Null si la salida no existe o no es del conductor.
+        Task<ResumenPropuestaDTO?> ObtenerResumenPropuestaAsync(int rutaId, int? viajeId, DateTime fechaSalidaProgramada, IReadOnlyList<int> envioIds, int conductorId);
+
         // cantidad de envios que pasan los chequeos baratos para alguna salida del conductor.
         // No calcula rutas, asi que puede ser algo mayor que la lista de oportunidades.
         Task<int> ContarDisponiblesAsync(int conductorId, CancellationToken ct = default);
@@ -297,77 +301,191 @@ namespace TpMiercoles.Servicios
 
             return ResultadoOperacionOportunidad.Exitoso(asignacion.Id, viaje.Id);
         }
-        public async Task<ResultadoAceptacionPropuestaDTO> AceptarPropuestaAsync(int rutaId, int? viajeId, DateTime fechaSalidaProgramada, IReadOnlyList<int> envioIds, int conductorId)
-        {
+        public async Task<ResultadoAceptacionPropuestaDTO> AceptarPropuestaAsync(int rutaId, int? viajeId, DateTime fechaSalidaProgramada, IReadOnlyList<int> envioIds, int conductorId) {
             ArgumentNullException.ThrowIfNull(envioIds);
 
             if (rutaId <= 0 || conductorId <= 0
                 || (viajeId.HasValue && viajeId.Value <= 0)
-                || fechaSalidaProgramada == default)
-            {
-                return new ResultadoAceptacionPropuestaDTO
-                {
+                || fechaSalidaProgramada == default) {
+                return new ResultadoAceptacionPropuestaDTO {
                     Error = "Los datos de la salida no son válidos."
                 };
             }
 
-            if (envioIds.Count == 0)
-            {
-                return new ResultadoAceptacionPropuestaDTO
-                {
+            if (envioIds.Count == 0) {
+                return new ResultadoAceptacionPropuestaDTO {
                     Error = "La propuesta debe incluir al menos un envío."
                 };
             }
 
-            if (envioIds.Any(id => id <= 0))
-            {
-                return new ResultadoAceptacionPropuestaDTO
-                {
+            if (envioIds.Any(id => id <= 0)) {
+                return new ResultadoAceptacionPropuestaDTO {
                     Error = "La propuesta contiene identificadores de envío inválidos."
                 };
             }
 
-            if (envioIds.Distinct().Count() != envioIds.Count)
-            {
-                return new ResultadoAceptacionPropuestaDTO
-                {
+            if (envioIds.Distinct().Count() != envioIds.Count) {
+                return new ResultadoAceptacionPropuestaDTO {
                     Error = "La propuesta contiene envíos repetidos."
                 };
             }
 
-            var aceptados = new List<int>();
-            int? viajeDestinoId = viajeId;
+            Salida? salida = await ResolverSalidaAsync(
+                rutaId, conductorId, fechaSalidaProgramada, paraModificar: true, viajeId: viajeId);
 
-            foreach (int envioId in envioIds)
-            {
-                ResultadoOperacionOportunidad resultado =
-                    await AceptarAsync(rutaId, envioId, conductorId, fechaSalidaProgramada, viajeDestinoId);
-
-                if (!resultado.EsExitoso)
-                {
-                    return new ResultadoAceptacionPropuestaDTO
-                    {
-                        EnviosAceptadosIds = aceptados.AsReadOnly(),
-                        ViajeId = aceptados.Count > 0 ? viajeDestinoId : null,
-                        EnvioFallidoId = envioId,
-                        Error = resultado.NoEncontrado
-                            ? $"No se encontró la salida o el envío #{envioId}."
-                            : resultado.Conflicto
-                                ?? $"No se pudo aceptar el envío #{envioId}."
-                    };
-                }
-
-                aceptados.Add(envioId);
-                viajeDestinoId = resultado.ViajeId;
+            if (salida is null) {
+                return new ResultadoAceptacionPropuestaDTO {
+                    Error = "No se encontró la salida de la propuesta."
+                };
             }
 
-            return new ResultadoAceptacionPropuestaDTO
-            {
-                EnviosAceptadosIds = aceptados.AsReadOnly(),
-                ViajeId = viajeDestinoId
+            List<string> motivosDeLaSalida = MotivosDeLaSalida(salida);
+
+            if (motivosDeLaSalida.Count > 0) {
+                return new ResultadoAceptacionPropuestaDTO {
+                    Error = string.Join(" ", motivosDeLaSalida)
+                };
+            }
+
+            // 1) Se verifican TODOS los envíos antes de tocar nada: si alguno ya no se puede, no se acepta ninguno.
+            //    El lugar y el peso se van descontando, porque los envíos de la propuesta van juntos en el mismo viaje.
+            int lugaresRestantes = CapacidadRestante(salida);
+            decimal pesoRestanteKg = (decimal)PesoRestante(salida);
+            var envios = new List<Envio>();
+
+            foreach (int envioId in envioIds) {
+                Envio? envio = await _envioRepositorio.ObtenerParaOportunidadAsync(envioId);
+
+                if (envio is null) {
+                    return ConflictoEnPropuesta(envioId, $"No se encontró el envío #{envioId}.");
+                }
+
+                List<string> motivos = MotivosConLoAcumulado(salida, envio, conductorId, lugaresRestantes, pesoRestanteKg);
+
+                if (motivos.Count > 0) {
+                    return ConflictoEnPropuesta(
+                        envioId,
+                        $"El envío #{envioId} ya no se puede aceptar: {string.Join(" ", motivos)} "
+                        + "No se aceptó ningún envío de la propuesta.");
+                }
+
+                envios.Add(envio);
+                lugaresRestantes--;
+                pesoRestanteKg -= (decimal)envio.Paquete.PesoKg;
+            }
+
+            // 2) Todos siguen disponibles: se asignan juntos y se guardan con un solo GuardarCambiosAsync.
+            //    Entity Framework guarda todo en una única transacción: o se guardan todos o ninguno.
+            Viaje viaje = salida.Viaje ?? SnapshotDeRuta.Crear(salida.Ruta, salida.FechaSalida, salida.FechaLlegada);
+
+            if (salida.Viaje is null) {
+                await _viajeRepositorio.AgregarSinGuardarAsync(viaje);
+            }
+
+            DateTime ahora = Ahora();
+
+            foreach (Envio envio in envios) {
+                viaje.Asignaciones.Add(new Asignacion {
+                    Envio = envio,
+                    EnvioId = envio.Id,
+                    Estado = EstadoViaje.CONFIRMADO,
+                    FechaAceptacion = ahora
+                });
+
+                envio.Estado = EstadoEnvio.ConductorAsignado;
+            }
+
+            await _viajeRepositorio.GuardarCambiosAsync();
+
+            return new ResultadoAceptacionPropuestaDTO {
+                EnviosAceptadosIds = envios.Select(envio => envio.Id).ToList().AsReadOnly(),
+                ViajeId = viaje.Id
+            };
+        }
+        public async Task<ResumenPropuestaDTO?> ObtenerResumenPropuestaAsync(int rutaId, int? viajeId, DateTime fechaSalidaProgramada, IReadOnlyList<int> envioIds, int conductorId) {
+            ArgumentNullException.ThrowIfNull(envioIds);
+
+            if (rutaId <= 0 || conductorId <= 0 || envioIds.Count == 0 || fechaSalidaProgramada == default) {
+                return null;
+            }
+
+            // Solo lectura: no se reserva nada hasta que el conductor confirme.
+            Salida? salida = await ResolverSalidaAsync(
+                rutaId, conductorId, fechaSalidaProgramada, paraModificar: false, viajeId: viajeId);
+
+            if (salida is null) {
+                return null;
+            }
+
+            int lugaresRestantes = CapacidadRestante(salida);
+            decimal pesoRestanteKg = (decimal)PesoRestante(salida);
+            var envios = new List<EnvioDePropuestaDTO>();
+
+            // A diferencia de aceptar, no corta en el primero que falla:
+            // revisa todos para mostrar en la pantalla cuáles siguen disponibles y cuáles no.
+            foreach (int envioId in envioIds.Distinct()) {
+                Envio? envio = await _envioRepositorio.ObtenerParaOportunidadAsync(envioId);
+
+                if (envio is null) {
+                    envios.Add(new EnvioDePropuestaDTO {
+                        Id = envioId,
+                        Disponible = false,
+                        Motivo = "El envío ya no existe."
+                    });
+                    continue;
+                }
+
+                List<string> motivos = MotivosConLoAcumulado(salida, envio, conductorId, lugaresRestantes, pesoRestanteKg);
+
+                // Solo ocupa lugar y peso si de verdad entra.
+                if (motivos.Count == 0) {
+                    lugaresRestantes--;
+                    pesoRestanteKg -= (decimal)envio.Paquete.PesoKg;
+                }
+
+                envios.Add(new EnvioDePropuestaDTO {
+                    Id = envio.Id,
+                    Descripcion = envio.Paquete.Descripcion,
+                    Monto = envio.Monto,
+                    PesoKg = envio.Paquete.PesoKg,
+                    Retiro = envio.DireccionRetiro.Texto,
+                    Entrega = envio.DireccionEntrega.Texto,
+                    Disponible = motivos.Count == 0,
+                    Motivo = motivos.Count > 0 ? string.Join(" ", motivos) : null
+                });
+            }
+
+            return new ResumenPropuestaDTO {
+                RutaId = salida.RutaId,
+                ViajeId = salida.ViajeId,
+                FechaSalida = salida.FechaSalida,
+                Origen = salida.Origen.Texto,
+                Destino = salida.Destino.Texto,
+                MotivosDeLaSalida = MotivosDeLaSalida(salida).AsReadOnly(),
+                Envios = envios.AsReadOnly()
             };
         }
 
+        // Motivos del envío más los de la propuesta completa: lugar y peso que quedan
+        // después de sumar los envíos anteriores de la misma propuesta.
+        private List<string> MotivosConLoAcumulado(Salida salida, Envio envio, int conductorId, int lugaresRestantes, decimal pesoRestanteKg) {
+            List<string> motivos = MotivosDelEnvio(salida, envio, conductorId);
+
+            if (motivos.Count > 0) {
+                return motivos;
+            }
+
+            if (lugaresRestantes <= 0) {
+                motivos.Add("Con los demás paquetes de la propuesta, el viaje no tiene lugar para este.");
+            } else if ((decimal)envio.Paquete.PesoKg > pesoRestanteKg) {
+                motivos.Add("Con los demás paquetes de la propuesta, se supera el peso máximo del viaje.");
+            }
+
+            return motivos;
+        }
+
+        private static ResultadoAceptacionPropuestaDTO ConflictoEnPropuesta(int envioId, string error) =>
+            new() { EnvioFallidoId = envioId, Error = error };
         // HELPERS
 
         #region Salida

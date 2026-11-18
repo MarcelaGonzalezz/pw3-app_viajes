@@ -1,0 +1,171 @@
+﻿@using System.Globalization
+@model ConfirmarPropuestaViewModel
+
+@{
+    ViewData["Title"] = "Confirmar selección";
+
+    var cultura = CultureInfo.GetCultureInfo("es-AR");
+    var resumen = Model.Resumen!;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/viajes/detalle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/viajes/viajes.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/optimizador/optimizador.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/optimizador/confirmar.css" asp-append-version="true" />
+}
+
+<div class="vd op-page cf-page">
+
+    <header class="vd-header">
+        <div>
+            <p class="vd-eyebrow">Optimizador &middot; Confirmación</p>
+            <h1 class="vd-title">Confirmá tu selección</h1>
+            <p class="op-subtitulo">
+                Revisá los paquetes antes de reservarlos. Hasta que confirmes, no se reserva nada.
+            </p>
+        </div>
+    </header>
+
+    @* ---------- Conflictos: algún envío ya no se puede aceptar ---------- *@
+    @if (!resumen.TodosDisponibles) {
+        <div class="vl-aviso vl-aviso--error" role="alert">
+            <strong>No se puede confirmar esta selección.</strong>
+            @if (resumen.MotivosDeLaSalida.Count > 0) {
+                @string.Join(" ", resumen.MotivosDeLaSalida)
+            } else {
+                <text>
+                    Algunos envíos ya no están disponibles (por ejemplo, porque otro conductor los tomó).
+                    Recalculá las propuestas con los envíos que siguen disponibles, o volvé sin modificar.
+                </text>
+            }
+        </div>
+    }
+
+    @if (Model.DistanciasEstimadas) {
+        <div class="op-aviso" role="status">
+            El desvío es estimado (en línea recta, ajustado por calles):
+            no se pudo confirmar con rutas reales.
+        </div>
+    }
+
+    @* ---------- Viaje ---------- *@
+    <section class="vd-card" aria-label="Viaje">
+        <h2 class="vd-card-titulo">Viaje</h2>
+        <p class="cf-recorrido">
+            <span>@resumen.Origen</span>
+            <span class="vd-flecha" aria-hidden="true">&rarr;</span>
+            <span>@resumen.Destino</span>
+        </p>
+        <p class="op-ayuda">
+            Salida: @resumen.FechaSalida.ToString("dd/MM/yyyy HH:mm", cultura)
+            &middot;
+            @(resumen.ViajeId is int viajeId
+                ? $"Viaje #{viajeId}"
+                : "El viaje se crea al confirmar")
+        </p>
+    </section>
+
+    @* ---------- Totales ---------- *@
+    <section class="cf-totales" aria-label="Totales de la selección">
+        <div class="vd-dato">
+            <span class="vd-dato-label">Paquetes seleccionados</span>
+            <span class="vd-dato-valor">@resumen.CantidadPaquetes</span>
+            <span class="vd-dato-extra">@Model.CantidadTotalPaquetes en total en el viaje</span>
+        </div>
+        <div class="vd-dato cf-dato--ganancia">
+            <span class="vd-dato-label">Ganancia total</span>
+            <span class="vd-dato-valor">@resumen.GananciaTotal.ToString("C2", cultura)</span>
+            <span class="vd-dato-extra">por los paquetes seleccionados</span>
+        </div>
+        <div class="vd-dato">
+            <span class="vd-dato-label">Peso total</span>
+            <span class="vd-dato-valor">@resumen.PesoTotalKg.ToString("0.##", cultura) kg</span>
+            <span class="vd-dato-extra">de los paquetes seleccionados</span>
+        </div>
+        <div class="vd-dato">
+            <span class="vd-dato-label">Desvío total</span>
+            <span class="vd-dato-valor">@Model.DesvioTotalKm.ToString("0.##", cultura) km@(Model.DistanciasEstimadas ? " (estimado)" : "")</span>
+            <span class="vd-dato-extra">del viaje con todos sus paquetes</span>
+        </div>
+    </section>
+
+    @* ---------- Paquetes ---------- *@
+    <section class="vd-card" aria-label="Paquetes seleccionados">
+        <h2 class="vd-card-titulo">
+            Paquetes seleccionados
+            <span class="vd-contador">@resumen.CantidadPaquetes</span>
+        </h2>
+
+        <ul class="vd-paquetes cf-paquetes">
+            @foreach (var envio in resumen.Envios) {
+                <li class="vd-paquete @(envio.Disponible ? "" : "cf-paquete--conflicto")">
+                    <div class="vd-paquete-top">
+                        <span class="vd-paquete-id">Envío #@envio.Id</span>
+                        <span class="vd-chip @(envio.Disponible ? "vd-chip--confirmado" : "vd-chip--cancelado")">
+                            @(envio.Disponible ? "Disponible" : "No disponible")
+                        </span>
+                    </div>
+
+                    @if (envio.Disponible || !string.IsNullOrEmpty(envio.Descripcion)) {
+                        <p class="vd-paquete-remitente">
+                            @envio.Descripcion &middot; @envio.Monto.ToString("C2", cultura) &middot; @envio.PesoKg.ToString("0.##", cultura) kg
+                        </p>
+                        <dl class="vd-paquete-datos">
+                            <div>
+                                <dt>Retiro</dt>
+                                <dd>@envio.Retiro</dd>
+                            </div>
+                            <div>
+                                <dt>Entrega</dt>
+                                <dd>@envio.Entrega</dd>
+                            </div>
+                        </dl>
+                    }
+
+                    @if (!envio.Disponible) {
+                        <p class="cf-motivo" role="alert">@envio.Motivo</p>
+                    }
+                </li>
+            }
+        </ul>
+    </section>
+
+    @* ---------- Acciones ---------- *@
+    <div class="cf-acciones">
+        <a class="vl-btn"
+           asp-controller="Optimizador"
+           asp-action="Index"
+           asp-route-salida="@Model.SalidaSeleccionada"
+           asp-route-desvio="@(Model.DesvioMaximoKm?.ToString(CultureInfo.InvariantCulture))">
+            Volver sin modificar
+        </a>
+
+        @if (!string.IsNullOrEmpty(Model.SalidaSeleccionada) && Model.DesvioMaximoKm.HasValue) {
+            @* Vuelve a calcular las propuestas de la misma salida con el mismo desvío máximo. *@
+            <form asp-controller="Optimizador" asp-action="Index" method="post" asp-antiforgery="true" class="vl-form-inline">
+                <input type="hidden" name="SalidaSeleccionada" value="@Model.SalidaSeleccionada" />
+                <input type="hidden" name="DesvioMaximoKm" value="@Model.DesvioMaximoKm.Value.ToString(CultureInfo.InvariantCulture)" />
+                <button type="submit" class="vl-btn">Recalcular propuestas</button>
+            </form>
+        }
+
+        @* Recién acá se reservan los envíos: todos juntos, o ninguno si alguno dejó de estar disponible. *@
+        <form asp-controller="Optimizador" asp-action="AceptarPropuesta" method="post" asp-antiforgery="true" class="vl-form-inline">
+            <input type="hidden" name="RutaId" value="@Model.RutaId" />
+            <input type="hidden" name="ViajeId" value="@Model.ViajeId" />
+            <input type="hidden" name="FechaSalidaProgramada" value="@(Model.FechaSalidaProgramada?.ToString("O", CultureInfo.InvariantCulture))" />
+            <input type="hidden" name="SalidaSeleccionada" value="@Model.SalidaSeleccionada" />
+            <input type="hidden" name="DesvioMaximoKm" value="@(Model.DesvioMaximoKm?.ToString(CultureInfo.InvariantCulture))" />
+            @foreach (int envioId in Model.EnvioIds) {
+                <input type="hidden" name="EnvioIds" value="@envioId" />
+            }
+
+            <button type="submit"
+                    class="vl-btn vl-btn--principal cf-confirmar"
+                    disabled="@(!resumen.TodosDisponibles)">
+                Confirmar y reservar
+            </button>
+        </form>
+    </div>
+</div>

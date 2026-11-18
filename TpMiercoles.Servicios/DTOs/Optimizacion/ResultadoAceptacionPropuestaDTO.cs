@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace TpMiercoles.Servicios.DTOs.Optimizacion
-{
-    public sealed class ResultadoAceptacionPropuestaDTO
-    {
+namespace TpMiercoles.Servicios.DTOs.Optimizacion {
+    public sealed class ResultadoAceptacionPropuestaDTO {
         public IReadOnlyList<int> EnviosAceptadosIds { get; init; } = [];
 
         public int? ViajeId { get; init; }
@@ -19,8 +17,5 @@ namespace TpMiercoles.Servicios.DTOs.Optimizacion
             && EnvioFallidoId is null
             && ViajeId.HasValue
             && EnviosAceptadosIds.Count > 0;
-
-        public bool EsParcial =>
-            !EsExitoso && EnviosAceptadosIds.Count > 0;
     }
 }

@@ -1,9 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace TpMiercoles.Web.Models
-{
-    public sealed class AceptarPropuestaViewModel
-    {
+namespace TpMiercoles.Web.Models {
+    public sealed class AceptarPropuestaViewModel {
         [Range(1, int.MaxValue, ErrorMessage = "La ruta seleccionada no es válida.")]
         public int RutaId { get; set; }
 
@@ -16,5 +14,9 @@ namespace TpMiercoles.Web.Models
         [Required(ErrorMessage = "Debe seleccionar los envíos de la propuesta.")]
         [MinLength(1, ErrorMessage = "La propuesta debe incluir al menos un envío.")]
         public List<int> EnvioIds { get; set; } = [];
+
+        // Para volver al optimizador con la misma búsqueda si hay un conflicto.
+        public string? SalidaSeleccionada { get; set; }
+        public double? DesvioMaximoKm { get; set; }
     }
 }

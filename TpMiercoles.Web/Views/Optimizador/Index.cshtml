@@ -309,19 +309,24 @@
                                     }
                                 </ul>
                             </div>
-                            <form asp-controller="Optimizador" asp-action="AceptarPropuesta" method="post" asp-antiforgery="true">
+                            @* Lleva a la pantalla de confirmación (Pantalla 11): todavía no reserva nada. *@
+                            <form asp-controller="Optimizador" asp-action="Confirmar" method="post" asp-antiforgery="true">
                                 <input type="hidden" name="RutaId" value="@resultado.RutaId" />
                                 <input type="hidden" name="ViajeId" value="@resultado.ViajeId" />
                                 <input type="hidden" name="FechaSalidaProgramada" value="@(resultado.FechaSalidaProgramada?.ToString("O", CultureInfo.InvariantCulture))" />
+                                <input type="hidden" name="DesvioTotalKm" value="@propuesta.DesvioTotalKm.ToString(CultureInfo.InvariantCulture)" />
+                                <input type="hidden" name="CantidadTotalPaquetes" value="@propuesta.CantidadTotalPaquetes" />
+                                <input type="hidden" name="DistanciasEstimadas" value="@(resultado.DistanciasEstimadas ? "true" : "false")" />
+                                <input type="hidden" name="SalidaSeleccionada" value="@Model.SalidaSeleccionada" />
+                                <input type="hidden" name="DesvioMaximoKm" value="@(Model.DesvioMaximoKm?.ToString(CultureInfo.InvariantCulture))" />
 
-                                @foreach (int envioId in propuesta.EnviosNuevosIds)
-                                {
+                                @foreach (int envioId in propuesta.EnviosNuevosIds) {
                                     <input type="hidden" name="EnvioIds" value="@envioId" />
                                 }
 
                                 <div class="vf-acciones">
                                     <button type="submit" class="vl-btn vl-btn--principal">
-                                        Aceptar propuesta
+                                        Revisar y confirmar
                                     </button>
                                 </div>
                             </form>

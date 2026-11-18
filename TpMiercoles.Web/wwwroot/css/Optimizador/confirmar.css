@@ -1,0 +1,80 @@
+﻿/* Pantalla 11: confirmación de la selección del optimizador.
+   Usa las tarjetas de detalle.css (.vd-) y suma solo lo propio, con el prefijo .cf-. */
+
+.cf-page {
+    max-width: 1280px;
+}
+
+.cf-recorrido {
+    margin: 0 0 .35rem;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--app-title);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+}
+
+/* Totales en una fila de cuatro recuadros */
+.cf-totales {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .75rem;
+}
+/* La ganancia se destaca en verde, como en la maqueta del enunciado */
+.cf-dato--ganancia {
+    background-color: #dff5ea;
+    border-color: #bfe8d3;
+}
+
+    .cf-dato--ganancia .vd-dato-label,
+    .cf-dato--ganancia .vd-dato-valor,
+    .cf-dato--ganancia .vd-dato-extra {
+        color: #17714a;
+    }
+
+/* Paquetes en grilla */
+.cf-paquetes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: .75rem;
+}
+
+.cf-paquete--conflicto {
+    border-color: #f0b7b7;
+    background-color: #fff7f7;
+}
+
+.cf-motivo {
+    margin: .6rem 0 0;
+    font-size: .875rem;
+    color: #8c2b2b;
+}
+
+.cf-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: .75rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--app-light-blue);
+}
+
+.cf-confirmar:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+@media (max-width: 992px) {
+    .cf-totales {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 560px) {
+    .cf-totales {
+        grid-template-columns: 1fr;
+    }
+}

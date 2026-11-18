@@ -47,7 +47,13 @@ public class OptimizadorControllerTests
         Assert.IsType<ChallengeResult>(await _controller.Index(CancellationToken.None));
         _servicio.VerifyNoOtherCalls();
     }
-
+    [Fact]
+    public async Task Get_ConBusquedaAnterior_DejaCargadaLaMismaSalidaYDesvio() {
+        var modelo = Modelo(await _controller.Index(CancellationToken.None, "1:20", 5));
+        Assert.Equal("1:20", modelo.SalidaSeleccionada);
+        Assert.Equal(5, modelo.DesvioMaximoKm);
+        Assert.Null(modelo.Resultado);
+    }
     [Fact]
     public async Task Get_CargaSelectorSinCalcularNiPrefijarDesvio()
     {

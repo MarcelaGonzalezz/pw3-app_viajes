@@ -71,17 +71,17 @@ public class AceptarPropuestaControllerTests
     }
 
     [Fact]
-    public async Task Parcial_InformaAceptadosYErrorEnDetalle()
-    {
-        Preparar(new ResultadoAceptacionPropuestaDTO { ViajeId = 50, EnviosAceptadosIds = [10],
-            EnvioFallidoId = 20, Error = "Envío no disponible" });
+    public async Task Conflicto_VuelveAlOptimizadorConLaMismaBusquedaParaRecalcular() {
+        _modelo.SalidaSeleccionada = "1:50";
+        _modelo.DesvioMaximoKm = 5;
+        Preparar(new ResultadoAceptacionPropuestaDTO { EnvioFallidoId = 20, Error = "Envío no disponible." });
         var resultado = Assert.IsType<RedirectToActionResult>(await _controller.AceptarPropuesta(_modelo));
-        Assert.Equal("Detalle", resultado.ActionName);
-        Assert.Equal("Viajes", resultado.ControllerName);
-        Assert.Equal(50, resultado.RouteValues!["id"]);
+        Assert.Equal("Index", resultado.ActionName);
+        Assert.Equal("1:50", resultado.RouteValues!["salida"]);
+        Assert.Equal(5.0, resultado.RouteValues!["desvio"]);
         string mensaje = Assert.IsType<string>(_controller.TempData["Error"]);
-        Assert.Contains("10", mensaje);
-        Assert.Contains("Envío no disponible", mensaje);
+        Assert.Contains("Envío no disponible.", mensaje);
+        Assert.Contains("recalcular", mensaje);
         Assert.Null(_controller.TempData["Mensaje"]);
     }
 
@@ -93,8 +93,7 @@ public class AceptarPropuestaControllerTests
         Preparar(new ResultadoAceptacionPropuestaDTO { Error = error });
         var resultado = Assert.IsType<RedirectToActionResult>(await _controller.AceptarPropuesta(_modelo));
         Assert.Equal("Index", resultado.ActionName);
-        Assert.Equal(error ?? "No se pudo aceptar la propuesta.", _controller.TempData["Error"]);
-        Assert.Null(_controller.TempData["Mensaje"]);
+        Assert.StartsWith(error ?? "No se pudo aceptar la propuesta.", Assert.IsType<string>(_controller.TempData["Error"])); Assert.Null(_controller.TempData["Mensaje"]);
     }
 
     private void Preparar(ResultadoAceptacionPropuestaDTO resultado) =>
@@ -123,4 +122,73 @@ public class AceptarPropuestaControllerTests
         _modelo.ViajeId = null;
         Assert.True(Validator.TryValidateObject(_modelo, new ValidationContext(_modelo), [], true));
     }
+
+    #region Confirmar (Pantalla 11)
+
+    private readonly ConfirmarPropuestaViewModel _confirmacion = new() {
+        RutaId = 1,
+        ViajeId = 50,
+        FechaSalidaProgramada = new DateTime(2026, 11, 2, 8, 0, 0),
+        EnvioIds = [10, 20],
+        DesvioTotalKm = 3.5,
+        CantidadTotalPaquetes = 4,
+        SalidaSeleccionada = "1:50",
+        DesvioMaximoKm = 5
+    };
+
+    [Fact]
+    public void Confirmar_ExigePostYAntiforgery() {
+        var accion = typeof(OptimizadorController).GetMethod(nameof(OptimizadorController.Confirmar))!;
+        Assert.True(Attribute.IsDefined(accion, typeof(HttpPostAttribute)));
+        Assert.True(Attribute.IsDefined(accion, typeof(ValidateAntiForgeryTokenAttribute)));
+    }
+
+    [Fact]
+    public async Task Confirmar_SinSesion_NoInvocaServicio() {
+        _sesion.Setup(s => s.UsuarioId).Returns((int?)null);
+        Assert.IsType<ChallengeResult>(await _controller.Confirmar(_confirmacion));
+        _servicio.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Confirmar_ModeloInvalido_VuelveAlOptimizadorSinConsultar() {
+        _controller.ModelState.AddModelError("EnvioIds", "Requerido");
+        var resultado = Assert.IsType<RedirectToActionResult>(await _controller.Confirmar(_confirmacion));
+        Assert.Equal("Index", resultado.ActionName);
+        Assert.Equal("1:50", resultado.RouteValues!["salida"]);
+        Assert.NotNull(_controller.TempData["Error"]);
+        _servicio.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Confirmar_SalidaInexistente_VuelveAlOptimizadorConError() {
+        PrepararResumen(null);
+        var resultado = Assert.IsType<RedirectToActionResult>(await _controller.Confirmar(_confirmacion));
+        Assert.Equal("Index", resultado.ActionName);
+        Assert.NotNull(_controller.TempData["Error"]);
+    }
+
+    [Fact]
+    public async Task Confirmar_MuestraElResumenSinAceptarNada() {
+        var resumen = new ResumenPropuestaDTO {
+            RutaId = 1,
+            ViajeId = 50,
+            Envios = [new EnvioDePropuestaDTO { Id = 10, Disponible = true }, new EnvioDePropuestaDTO { Id = 20, Disponible = true }]
+        };
+        PrepararResumen(resumen);
+
+        var vista = Assert.IsType<ViewResult>(await _controller.Confirmar(_confirmacion));
+
+        var modelo = Assert.IsType<ConfirmarPropuestaViewModel>(vista.Model);
+        Assert.Same(resumen, modelo.Resumen);
+        Assert.Equal(3.5, modelo.DesvioTotalKm);
+        _servicio.Verify(s => s.AceptarPropuestaAsync(It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<DateTime>(),
+            It.IsAny<IReadOnlyList<int>>(), It.IsAny<int>()), Times.Never);
+    }
+
+    private void PrepararResumen(ResumenPropuestaDTO? resumen) =>
+        _servicio.Setup(s => s.ObtenerResumenPropuestaAsync(1, 50, _confirmacion.FechaSalidaProgramada!.Value,
+            It.Is<IReadOnlyList<int>>(ids => ids.SequenceEqual(new[] { 10, 20 })), 7)).ReturnsAsync(resumen);
+
+    #endregion
 }

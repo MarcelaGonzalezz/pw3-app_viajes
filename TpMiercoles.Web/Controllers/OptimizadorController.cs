@@ -23,14 +23,16 @@ namespace TpMiercoles.Web.Controllers
             _oportunidadServicio = oportunidadServicio;
         }
 
+        // salida y desvio son opcionales: los usan "Volver" y "Recalcular" de la confirmación
+        // para dejar cargada la misma búsqueda.
         [HttpGet("/optimizador")]
         public async Task<IActionResult> Index(
-            CancellationToken ct)
-        {
+            CancellationToken ct,
+            string? salida = null,
+            double? desvio = null) {
             int? conductorId = _sesionWeb.UsuarioId;
 
-            if (conductorId is null)
-            {
+            if (conductorId is null) {
                 return Challenge();
             }
 
@@ -38,9 +40,10 @@ namespace TpMiercoles.Web.Controllers
                 conductorId.Value,
                 ct);
 
-            var modelo = new OptimizadorViewModel
-            {
-                Salidas = salidas
+            var modelo = new OptimizadorViewModel {
+                Salidas = salidas,
+                SalidaSeleccionada = salida,
+                DesvioMaximoKm = desvio
             };
 
             return View(modelo);
@@ -151,32 +154,59 @@ namespace TpMiercoles.Web.Controllers
 
             return View(modelo);
         }
-
-        [HttpPost("/optimizador/aceptar")]
+        // Pantalla 11: resumen de la propuesta antes de reservar. No modifica nada.
+        [HttpPost("/optimizador/confirmar")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AceptarPropuesta(AceptarPropuestaViewModel modelo)
-        {
+        public async Task<IActionResult> Confirmar(ConfirmarPropuestaViewModel modelo) {
             int? conductorId = _sesionWeb.UsuarioId;
 
-            if (conductorId is null)
-            {
+            if (conductorId is null) {
                 return Challenge();
             }
 
-            if (!ModelState.IsValid)
-            {
+            if (!ModelState.IsValid) {
                 TempData["Error"] =
                     "Los datos de la propuesta no son válidos. Volvé a calcularla.";
 
-                return RedirectToAction(nameof(Index));
+                return VolverAlOptimizador(modelo.SalidaSeleccionada, modelo.DesvioMaximoKm);
+            }
+
+            ResumenPropuestaDTO? resumen =
+                await _oportunidadServicio.ObtenerResumenPropuestaAsync(
+                    modelo.RutaId, modelo.ViajeId, modelo.FechaSalidaProgramada!.Value, modelo.EnvioIds, conductorId.Value);
+
+            if (resumen is null) {
+                TempData["Error"] =
+                    "La salida de la propuesta ya no está disponible. Volvé a calcularla.";
+
+                return VolverAlOptimizador(modelo.SalidaSeleccionada, modelo.DesvioMaximoKm);
+            }
+
+            modelo.Resumen = resumen;
+            return View(modelo);
+        }
+
+        [HttpPost("/optimizador/aceptar")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AceptarPropuesta(AceptarPropuestaViewModel modelo) {
+            int? conductorId = _sesionWeb.UsuarioId;
+
+            if (conductorId is null) {
+                return Challenge();
+            }
+
+            if (!ModelState.IsValid) {
+                TempData["Error"] =
+                    "Los datos de la propuesta no son válidos. Volvé a calcularla.";
+
+                return VolverAlOptimizador(modelo.SalidaSeleccionada, modelo.DesvioMaximoKm);
             }
 
             ResultadoAceptacionPropuestaDTO resultado =
                 await _oportunidadServicio.AceptarPropuestaAsync(
                     modelo.RutaId, modelo.ViajeId, modelo.FechaSalidaProgramada!.Value, modelo.EnvioIds, conductorId.Value);
 
-            if (resultado.EsExitoso)
-            {
+            if (resultado.EsExitoso) {
                 TempData["Mensaje"] =
                     $"Se aceptaron {resultado.EnviosAceptadosIds.Count} envíos "
                     + $"para el viaje #{resultado.ViajeId}.";
@@ -184,22 +214,17 @@ namespace TpMiercoles.Web.Controllers
                 return RedirectToAction("Detalle", "Viajes", new { id = resultado.ViajeId });
             }
 
-            if (resultado.EsParcial)
-            {
-                string idsAceptados = string.Join(", ", resultado.EnviosAceptadosIds);
-
-                TempData["Error"] =
-                    $"Se aceptaron los envíos {idsAceptados}, "
-                    + $"pero no se pudo completar la propuesta. {resultado.Error}";
-
-                return RedirectToAction("Detalle", "Viajes", new { id = resultado.ViajeId });
-            }
-
+            // Todo o nada: si falló, no se aceptó ningún envío. Se vuelve al optimizador con la misma
+            // búsqueda cargada, para recalcular o cancelar.
             TempData["Error"] =
-                resultado.Error ?? "No se pudo aceptar la propuesta.";
+                (resultado.Error ?? "No se pudo aceptar la propuesta.")
+                + " Podés recalcular las propuestas con los envíos que siguen disponibles.";
 
-            return RedirectToAction(nameof(Index));
+            return VolverAlOptimizador(modelo.SalidaSeleccionada, modelo.DesvioMaximoKm);
         }
+
+        private RedirectToActionResult VolverAlOptimizador(string? salida, double? desvio) =>
+            RedirectToAction(nameof(Index), new { salida, desvio });
     }
 
 
