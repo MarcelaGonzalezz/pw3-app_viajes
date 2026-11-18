@@ -1,16 +1,15 @@
 ﻿using TpMiercoles.Servicios.DTOs.Ganancias;
 using TpMiercoles.Web.Models;
+using System.Globalization;
 
 namespace TpMiercoles.Web.Infraestructura
 {
     // Lo que el conductor eligio por ultima vez en Potencial de ganancias.
     // El inicio lo usa para que la tarjeta "Potencial del mes" muestre el mismo numero.
-    public sealed record PreferenciaDeGanancias(CriterioOptimizacion Criterio, bool LimitarDesvio)
+    public sealed record PreferenciaDeGanancias(CriterioOptimizacion Criterio, double DesvioMaximoKm)
     {
         public static readonly PreferenciaDeGanancias PorDefecto =
-            new(CriterioOptimizacion.MayorGanancia, false);
-
-        public double? DesvioMaximoKm => LimitarDesvio ? GananciasViewModel.DesvioDelSistemaKm : null;
+            new(CriterioOptimizacion.MayorGanancia, GananciasViewModel.TopeDesvioKm);
 
         public string Descripcion
         {
@@ -22,11 +21,8 @@ namespace TpMiercoles.Web.Infraestructura
                     CriterioOptimizacion.Equilibrada => "criterio equilibrado",
                     _ => "mayor ganancia"
                 };
-                string desvio = LimitarDesvio
-                    ? $"desvío hasta {GananciasViewModel.DesvioDelSistemaKm:0.#} km"
-                    : "sin límite de desvío";
 
-                return $"Con {criterio}, {desvio}";
+                return $"Con {criterio}, desvío hasta {DesvioMaximoKm:0.#} km";
             }
         }
     }
@@ -42,7 +38,7 @@ namespace TpMiercoles.Web.Infraestructura
     // sesion en el mismo navegador no herede la eleccion. Formato: "usuarioId|criterio|0 o 1".
     public sealed class PreferenciasDeGananciasEnCookie : IPreferenciasDeGanancias
     {
-        private const string NombreCookie = ".TpMiercoles.Ganancias";
+        private const string NombreCookie = ".TpMiercoles.Ganancias.v2";
 
         private readonly IHttpContextAccessor _accessor;
 
@@ -59,19 +55,22 @@ namespace TpMiercoles.Web.Infraestructura
             if (partes.Length != 3
                 || !int.TryParse(partes[0], out int dueno) || dueno != usuarioId
                 || !int.TryParse(partes[1], out int criterio)
-                || !Enum.IsDefined((CriterioOptimizacion)criterio))
+                || !Enum.IsDefined((CriterioOptimizacion)criterio)
+                || !double.TryParse(partes[2], NumberStyles.Float, CultureInfo.InvariantCulture, out double km)
+                || !double.IsFinite(km)
+                || km < 1 || km > GananciasViewModel.TopeDesvioKm)
             {
                 return null;
             }
 
-            return new PreferenciaDeGanancias((CriterioOptimizacion)criterio, partes[2] == "1");
+            return new PreferenciaDeGanancias((CriterioOptimizacion)criterio, km);
         }
 
         public void Guardar(int usuarioId, PreferenciaDeGanancias preferencia)
         {
             _accessor.HttpContext?.Response.Cookies.Append(
                 NombreCookie,
-                $"{usuarioId}|{(int)preferencia.Criterio}|{(preferencia.LimitarDesvio ? 1 : 0)}",
+                $"{usuarioId}|{(int)preferencia.Criterio}|{(preferencia.DesvioMaximoKm.ToString(CultureInfo.InvariantCulture))}",
                 new CookieOptions
                 {
                     HttpOnly = true,

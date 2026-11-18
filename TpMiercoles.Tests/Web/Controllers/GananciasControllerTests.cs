@@ -56,7 +56,7 @@ namespace TpMiercoles.Tests.Web.Controllers
             await _controller.Index(null, null);
 
             _servicioMock.Verify(s => s.CalcularAsync(
-                UsuarioId, 2026, 11, CriterioOptimizacion.MayorGanancia, null, It.IsAny<CancellationToken>()),
+                UsuarioId, 2026, 11, CriterioOptimizacion.MayorGanancia, GananciasViewModel.TopeDesvioKm, It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
@@ -66,7 +66,7 @@ namespace TpMiercoles.Tests.Web.Controllers
             IActionResult resultado = await _controller.Index(2026, 12, CriterioOptimizacion.MenorDesvio);
 
             _servicioMock.Verify(s => s.CalcularAsync(
-                UsuarioId, 2026, 12, CriterioOptimizacion.MenorDesvio, null, It.IsAny<CancellationToken>()),
+                UsuarioId, 2026, 12, CriterioOptimizacion.MenorDesvio, GananciasViewModel.TopeDesvioKm, It.IsAny<CancellationToken>()),
                 Times.Once);
 
             GananciasViewModel modelo =
@@ -92,29 +92,29 @@ namespace TpMiercoles.Tests.Web.Controllers
             Assert.NotNull(modelo.Error);
 
             _servicioMock.Verify(s => s.CalcularAsync(
-                UsuarioId, 2026, 11, CriterioOptimizacion.MayorGanancia, null, It.IsAny<CancellationToken>()),
+                UsuarioId, 2026, 11, CriterioOptimizacion.MayorGanancia, GananciasViewModel.TopeDesvioKm, It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
         [Fact]
-        public async Task Index_SinTildarElLimite_CalculaSinLimite()
+        public async Task Index_SinValorDeDesvio_UsaElTope()
         {
-            await _controller.Index(null, null, CriterioOptimizacion.MayorGanancia, limitarDesvio: false);
-
-            _servicioMock.Verify(s => s.CalcularAsync(
-                UsuarioId, 2026, 11, CriterioOptimizacion.MayorGanancia, null, It.IsAny<CancellationToken>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task Index_TildandoElLimite_UsaElDelSistema()
-        {
-            IActionResult resultado = await _controller.Index(
-                null, null, CriterioOptimizacion.MayorGanancia, limitarDesvio: true);
+            await _controller.Index(null, null, CriterioOptimizacion.MayorGanancia, desvioMaximoKm: null);
 
             _servicioMock.Verify(s => s.CalcularAsync(
                 UsuarioId, 2026, 11, CriterioOptimizacion.MayorGanancia,
-                GananciasViewModel.DesvioDelSistemaKm, It.IsAny<CancellationToken>()),
+                GananciasViewModel.TopeDesvioKm, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task Index_ConDesvioValido_LoPasaAlServicio()
+        {
+            IActionResult resultado = await _controller.Index(
+                null, null, CriterioOptimizacion.MayorGanancia, desvioMaximoKm: 7);
+
+            _servicioMock.Verify(s => s.CalcularAsync(
+                UsuarioId, 2026, 11, CriterioOptimizacion.MayorGanancia, 7.0, It.IsAny<CancellationToken>()),
                 Times.Once);
 
             GananciasViewModel modelo =
@@ -122,18 +122,39 @@ namespace TpMiercoles.Tests.Web.Controllers
             Assert.Null(modelo.Error);
         }
 
+        [Theory]
+        [InlineData(15)]
+        [InlineData(10.5)]
+        [InlineData(0)]
+        [InlineData(-3)]
+        public async Task Index_ConDesvioFueraDeRango_MuestraAvisoYUsaElTope(double desvio)
+        {
+            IActionResult resultado = await _controller.Index(
+                null, null, CriterioOptimizacion.MenorDesvio, desvioMaximoKm: desvio);
+
+            GananciasViewModel modelo =
+                Assert.IsType<GananciasViewModel>(Assert.IsType<ViewResult>(resultado).Model);
+            Assert.NotNull(modelo.Error);
+
+            _servicioMock.Verify(s => s.CalcularAsync(
+                UsuarioId, 2026, 11, CriterioOptimizacion.MayorGanancia,
+                GananciasViewModel.TopeDesvioKm, It.IsAny<CancellationToken>()),
+        Times.Once);
+            _preferenciasMock.Verify(p => p.Guardar(It.IsAny<int>(), It.IsAny<PreferenciaDeGanancias>()), Times.Never);
+        }
+
         [Fact]
         public async Task Index_SinTocarElFormulario_UsaLoUltimoQueEligioElUsuario()
         {
             _preferenciasMock
                 .Setup(p => p.Leer(UsuarioId))
-                .Returns(new PreferenciaDeGanancias(CriterioOptimizacion.Equilibrada, true));
+                .Returns(new PreferenciaDeGanancias(CriterioOptimizacion.Equilibrada, GananciasViewModel.TopeDesvioKm));
 
             await _controller.Index(null, null);
 
             _servicioMock.Verify(s => s.CalcularAsync(
                 UsuarioId, 2026, 11, CriterioOptimizacion.Equilibrada,
-                GananciasViewModel.DesvioDelSistemaKm, It.IsAny<CancellationToken>()),
+                GananciasViewModel.TopeDesvioKm, It.IsAny<CancellationToken>()),
                 Times.Once);
             _preferenciasMock.Verify(p => p.Guardar(It.IsAny<int>(), It.IsAny<PreferenciaDeGanancias>()), Times.Never);
         }
@@ -141,10 +162,10 @@ namespace TpMiercoles.Tests.Web.Controllers
         [Fact]
         public async Task Index_AlEnviarElFormulario_GuardaLaEleccion()
         {
-            await _controller.Index(null, null, CriterioOptimizacion.MenorDesvio, limitarDesvio: null);
+            await _controller.Index(null, null, CriterioOptimizacion.MenorDesvio, desvioMaximoKm: 8);
 
             _preferenciasMock.Verify(p => p.Guardar(
-                UsuarioId, new PreferenciaDeGanancias(CriterioOptimizacion.MenorDesvio, false)),
+                UsuarioId, new PreferenciaDeGanancias(CriterioOptimizacion.MenorDesvio, 8)),
                 Times.Once);
         }
 

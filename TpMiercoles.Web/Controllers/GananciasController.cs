@@ -32,11 +32,11 @@ namespace TpMiercoles.Web.Controllers
         }
 
         [HttpGet("/ganancias")]
-        // criterio y limitarDesvio son null cuando se entra sin tocar el formulario (desde el menu
+        // criterio y desvioMaximoKm son null cuando se entra sin tocar el formulario (desde el menu
         // o el inicio): ahi se usa lo ultimo que eligio el usuario. Al enviar el formulario el
         // criterio siempre viene, y el checkbox destildado no manda nada, asi que null = false.
         public async Task<IActionResult> Index(int? anio, int? mes, CriterioOptimizacion? criterio = null,
-            bool? limitarDesvio = null, CancellationToken ct = default)
+            double? desvioMaximoKm = null, CancellationToken ct = default)
         {
             int? conductorId = _sesionWeb.UsuarioId;
             if (conductorId is null)
@@ -53,28 +53,28 @@ namespace TpMiercoles.Web.Controllers
                 : _preferencias.Leer(conductorId.Value) ?? PreferenciaDeGanancias.PorDefecto;
 
             CriterioOptimizacion criterioElegido = criterio ?? guardada.Criterio;
-            bool limitar = vieneDelFormulario ? limitarDesvio ?? false : limitarDesvio ?? guardada.LimitarDesvio;
+            double desvio = desvioMaximoKm ?? (vieneDelFormulario ? GananciasViewModel.TopeDesvioKm : guardada.DesvioMaximoKm);
 
-            if (mes is < 1 or > 12 || anio is < 2000 or > 2100 || !Enum.IsDefined(criterioElegido))
+            if (mes is < 1 or > 12 || anio is < 2000 or > 2100 || !Enum.IsDefined(criterioElegido) 
+                || !double.IsFinite(desvio) || desvio < 1 || desvio > GananciasViewModel.TopeDesvioKm)
             {
-                error = "El mes, el año o el criterio no son válidos. Mostramos el mes actual con el criterio Mayor ganancia.";
+                error = "El mes, el año, el criterio o el desvío no son válidos. Mostramos el mes actual con el criterio Mayor ganancia y 10 km de desvío máximo.";
                 anio = null;
                 mes = null;
                 criterioElegido = CriterioOptimizacion.MayorGanancia;
+                desvio = GananciasViewModel.TopeDesvioKm;
             }
             else if (vieneDelFormulario)
             {
-                _preferencias.Guardar(conductorId.Value, new PreferenciaDeGanancias(criterioElegido, limitar));
+                _preferencias.Guardar(conductorId.Value, new PreferenciaDeGanancias(criterioElegido, desvio));
             }
-
-            double? limite = limitar ? GananciasViewModel.DesvioDelSistemaKm : null;
 
             GananciasMensualDTO ganancias = await _servicio.CalcularAsync(
                 conductorId.Value,
                 anio ?? hoy.Year,
                 mes ?? hoy.Month,
                 criterioElegido,
-                limite,
+                desvio,
                 ct);
 
             GananciasViewModel modelo = _mapper.Map<GananciasViewModel>(ganancias);

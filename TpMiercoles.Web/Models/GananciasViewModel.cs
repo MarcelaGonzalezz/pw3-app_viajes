@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using TpMiercoles.Servicios;
 using TpMiercoles.Servicios.DTOs.Ganancias;
 
 namespace TpMiercoles.Web.Models
@@ -10,12 +11,9 @@ namespace TpMiercoles.Web.Models
         public int Anio { get; set; }
         public int Mes { get; set; }
         public CriterioOptimizacion Criterio { get; set; }
-        public const double DesvioDelSistemaKm = 5;
-        public double? DesvioMaximoKm { get; set; }
-        public bool LimitaDesvio => DesvioMaximoKm.HasValue;
-        public string DesvioMaximoTexto => DesvioMaximoKm is double km
-            ? $"{km.ToString("0.#", Argentina)} km"
-            : "sin límite";
+        public const double TopeDesvioKm = GananciasServicio.TopeDesvioKm;
+        public double DesvioMaximoKm { get; set; }
+        public string DesvioMaximoTexto => $"{DesvioMaximoKm.ToString("0.#", Argentina)} km";
         public string? Error { get; set; }
 
         public DateTime EfectivaDesde { get; set; }

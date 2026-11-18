@@ -60,11 +60,11 @@
                     }
                 </select>
             </div>
-            <div class="vf-campo gn-campo-check">
-                <label class="gn-check">
-                    <input type="checkbox" name="limitarDesvio" value="true" checked="@Model.LimitaDesvio" />
-                    Limitar el desvío a @GananciasViewModel.DesvioDelSistemaKm.ToString("0.#", argentina) km por viaje
-                </label>
+            <div class="vf-campo">
+                <label for="desvioMaximoKm">Desvío máx. por viaje (km)</label> 
+                <input type="number" id="desvioMaximoKm" name="desvioMaximoKm" 
+                    value="@Model.DesvioMaximoKm.ToString(CultureInfo.InvariantCulture)"
+                    min="1" max="10" step="0.5" />
             </div>
             <div class="hs-fechas-acciones">
                 <button type="submit" class="vl-btn vl-btn--principal">Calcular</button>
