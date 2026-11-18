@@ -27,11 +27,12 @@ namespace TpMiercoles.Api.Controllers
         /// Consulta las operaciones anteriores del usuario logueado.
         /// </summary>
         /// <remarks>
-        /// Incluye los viajes realizados como conductor (con su ganancia) y los envíos propios entregados o cancelados.
+        /// Incluye los viajes realizados como conductor (con su ganancia) y los envíos propios entregados.
         /// Devuelve un resumen (viajes realizados, envíos transportados y ganancia efectiva) y el detalle de cada operación.
         /// Nunca muestra información de otros usuarios.
         /// </remarks>
-        /// <param name="tipo">Filtro opcional: ViajeRealizado, EnvioEntregado o EnvioCancelado.</param>
+        /// <param name="tipo">Filtro opcional: 0 = ViajeRealizado (viajes hechos como conductor), 1 = EnvioEntregado (envíos propios entregados). Vacío trae los dos.</param>
+        /// <param name="estado">Filtro opcional, solo para los viajes: 0 = ACTIVO, 1 = INACTIVO.</param>
         /// <param name="desde">Filtro opcional: fecha desde (inclusive).</param>
         /// <param name="hasta">Filtro opcional: fecha hasta (inclusive).</param>
         /// <response code="200">Resumen y lista de operaciones (puede estar vacía).</response>
